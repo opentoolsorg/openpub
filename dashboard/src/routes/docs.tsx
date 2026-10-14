@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
+import { Logo } from '~/components/Logo'
 
 export const Route = createFileRoute('/docs')({
   component: DocsPage,
@@ -224,8 +225,8 @@ function DocsPage() {
       <header className="sticky top-0 z-40 border-b border-zinc-900 bg-[#0a0c0b]/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <a href="/" className="font-mono text-lg tracking-tight text-zinc-50">
-              <span className="text-emerald-400">o</span>penpost
+            <a href="/" className="transition-opacity hover:opacity-90">
+              <Logo />
             </a>
             <span className="rounded border border-zinc-800 bg-zinc-900 px-2 py-0.5 font-mono text-[11px] text-zinc-400">
               docs
