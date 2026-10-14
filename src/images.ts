@@ -12,18 +12,12 @@ images.post('/generate', async (c) => {
     if (!b64) throw new Error('no image returned')
     const key = `covers/${crypto.randomUUID()}.png`
     await c.env.MEDIA.put(key, Uint8Array.from(atob(b64), ch => ch.charCodeAt(0)), { httpMetadata: { contentType: 'image/png' } })
-    const url = `${c.env.BASE_URL}/api/images/${key}`
+    const url = `${c.env.BASE_URL}/covers/${key.replace(/^covers\//, '')}`
     if (draftId) await c.env.DB.prepare('UPDATE drafts SET cover_image = ? WHERE id = ?').bind(url, draftId).run()
     return c.json({ url })
-  } catch (e) {
+  } catch {
     // fallback: unsplash source
     const q = encodeURIComponent(prompt.split(' ').slice(0, 3).join(' '))
-    return c.json({ url: `https://source.unsplash.com/1200x630/?${q}`, fallback: 'unsplash', warning: e instanceof Error ? e.message : 'AI gen failed' })
+    return c.json({ url: `https://source.unsplash.com/1200x630/?${q}`, fallback: 'unsplash' })
   }
-})
-
-images.get('/covers/:key{.+}', async (c) => {
-  const obj = await c.env.MEDIA.get(`covers/${c.req.param('key')}`)
-  if (!obj) return c.notFound()
-  return new Response(obj.body, { headers: { 'Content-Type': 'image/png' } })
 })

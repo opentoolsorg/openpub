@@ -1,7 +1,8 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
+import { siteBase } from './guard'
 
 function base(creds: Record<string, string>): string {
-  return creds.site_url.replace(/\/+$/, '')
+  return siteBase(creds.site_url)
 }
 
 function auth(creds: Record<string, string>): string {

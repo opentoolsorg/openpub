@@ -3,7 +3,7 @@ import type { Draft, PublishLogRow, PlatformName } from './types'
 export async function getCreds(db: D1Database, platform: string): Promise<Record<string, string> | null> {
   const row = await db.prepare('SELECT credentials, enabled FROM platform_config WHERE platform = ?').bind(platform).first<{ credentials: string; enabled: number }>()
   if (!row || !row.enabled) return null
-  return JSON.parse(row.credentials)
+  try { return JSON.parse(row.credentials) } catch { return null }
 }
 
 export async function setCreds(db: D1Database, platform: string, creds: Record<string, string>) {
@@ -19,16 +19,23 @@ export async function createDraft(db: D1Database, d: { id: string; title?: strin
 export async function getDraft(db: D1Database, id: string): Promise<Draft | null> {
   const row = await db.prepare('SELECT * FROM drafts WHERE id = ?').bind(id).first<Record<string, unknown>>()
   if (!row) return null
-  return { ...row, platforms: JSON.parse((row.platforms as string) ?? '[]') } as Draft
+  let platforms: unknown = []
+  try { platforms = JSON.parse((row.platforms as string) ?? '[]') } catch { /* corrupt row */ }
+  return { ...row, platforms: Array.isArray(platforms) ? platforms : [] } as Draft
 }
 
 export async function listDrafts(db: D1Database): Promise<Draft[]> {
   const { results } = await db.prepare('SELECT * FROM drafts ORDER BY created_at DESC LIMIT 100').all<Record<string, unknown>>()
-  return results.map(r => ({ ...r, platforms: JSON.parse((r.platforms as string) ?? '[]') })) as Draft[]
+  return results.map(r => {
+    let platforms: unknown = []
+    try { platforms = JSON.parse((r.platforms as string) ?? '[]') } catch { /* corrupt row */ }
+    return { ...r, platforms: Array.isArray(platforms) ? platforms : [] }
+  }) as Draft[]
 }
 
 export async function deleteDraft(db: D1Database, id: string) {
   await db.prepare('DELETE FROM drafts WHERE id = ?').bind(id).run()
+  await db.prepare('DELETE FROM publish_log WHERE draft_id = ?').bind(id).run()
 }
 
 export async function setDraftStatus(db: D1Database, id: string, status: string) {
@@ -44,6 +51,26 @@ export async function upsertLog(db: D1Database, l: { id: string; draft_id: strin
     VALUES (?, ?, ?, ?, ?, ?, 1)
     ON CONFLICT(draft_id, platform) DO UPDATE SET status = excluded.status, url = excluded.url, error = excluded.error, attempts = publish_log.attempts + 1`)
     .bind(l.id, l.draft_id, l.platform, l.status, l.url ?? null, l.error ?? null).run()
+}
+
+// Atomic claim: one 'publishing' row per (draft,platform). Returns false if already
+// claimed/succeeded — prevents duplicate platform POSTs on queue redelivery.
+export async function claimPublish(db: D1Database, id: string, draftId: string, platform: string): Promise<boolean> {
+  const r = await db.prepare(
+    `INSERT OR IGNORE INTO publish_log (id, draft_id, platform, status, attempts) VALUES (?, ?, ?, 'publishing', 0)`)
+    .bind(id, draftId, platform).run()
+  if (r.meta.changes === 1) return true
+  // row exists: re-claim only a stale 'publishing' claim (worker crashed mid-publish >5min ago);
+  // 'success', 'failed', or a live claim all mean this redelivery is a dup
+  const cur = await db.prepare('SELECT status, created_at FROM publish_log WHERE draft_id = ? AND platform = ?')
+    .bind(draftId, platform).first<{ status: string; created_at: number }>()
+  return cur?.status === 'publishing' && cur.created_at < Math.floor(Date.now() / 1000) - 300
+}
+
+export async function finishPublish(db: D1Database, draftId: string, platform: string, status: string, url?: string, error?: string) {
+  await db.prepare(
+    `UPDATE publish_log SET status = ?, url = ?, error = ?, attempts = attempts + 1 WHERE draft_id = ? AND platform = ?`)
+    .bind(status, url ?? null, error ?? null, draftId, platform).run()
 }
 
 export async function alreadyPublished(db: D1Database, draftId: string, platform: string): Promise<string | null> {

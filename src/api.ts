@@ -9,25 +9,41 @@ import type { Env, PlatformName } from './types'
 export const api = new Hono<{ Bindings: Env }>()
 
 api.use('*', async (c, next) => {
+  const origin = c.env.DASHBOARD_URL ?? 'http://localhost:3000'
   if (c.req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization,Content-Type',
+        Vary: 'Origin',
       },
     })
   }
   await next()
-  c.res.headers.set('Access-Control-Allow-Origin', '*')
+  c.res.headers.set('Access-Control-Allow-Origin', origin)
   c.res.headers.set('Access-Control-Allow-Headers', 'Authorization,Content-Type')
 })
 
+// timing-safe-ish key compare; ?key= accepted on GET only (covers/previews need it)
+async function keyMatch(a: string, b: string): Promise<boolean> {
+  const enc = new TextEncoder()
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest('SHA-256', enc.encode(a)),
+    crypto.subtle.digest('SHA-256', enc.encode(b)),
+  ])
+  const x = new Uint8Array(ha), y = new Uint8Array(hb)
+  if (x.length !== y.length) return false
+  let d = 0
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i]
+  return d === 0
+}
+
 api.use('*', async (c, next) => {
   const m = c.req.header('Authorization')?.match(/^Bearer\s+(.+)$/i)
-  const key = m?.[1] ?? c.req.query('key')
-  if (!c.env.ADMIN_KEY || !key || key !== c.env.ADMIN_KEY) return c.json({ error: 'unauthorized' }, 401)
+  const key = m?.[1] ?? (c.req.method === 'GET' ? c.req.query('key') : undefined)
+  if (!c.env.ADMIN_KEY || !key || !(await keyMatch(key, c.env.ADMIN_KEY))) return c.json({ error: 'unauthorized' }, 401)
   return next()
 })
 
@@ -59,7 +75,10 @@ api.get('/drafts', async (c) => c.json({ drafts: await db.listDrafts(c.env.DB) }
 
 api.post('/drafts', async (c) => {
   let body: { id?: string; title?: string; content: string; platforms: string[]; cover_image?: string }
-  try { body = await c.req.json() } catch { return c.json({ error: 'invalid JSON body' }, 400) }
+  try {
+    if (Number(c.req.header('content-length') ?? 0) > 1_000_000) return c.json({ error: 'body too large' }, 413)
+    body = await c.req.json()
+  } catch { return c.json({ error: 'invalid JSON body' }, 400) }
   if (!body.content || !Array.isArray(body.platforms) || !body.platforms.length) {
     return c.json({ error: 'content + platforms[] required' }, 400)
   }
@@ -85,13 +104,17 @@ api.delete('/drafts/:id', async (c) => {
 })
 
 api.post('/publish', async (c) => {
-  const body = await c.req.json<{ draftId?: string; title?: string; content?: string; platforms?: string[] }>()
+  let body: { draftId?: string; title?: string; content?: string; platforms?: string[] }
+  try { body = await c.req.json() } catch { return c.json({ error: 'invalid JSON body' }, 400) }
   let draftId = body.draftId
   if (!draftId) {
     if (!body.content || !body.platforms?.length) return c.json({ error: 'draftId or content+platforms required' }, 400)
+    const bad = body.platforms.filter(p => !(p in adapters))
+    if (bad.length) return c.json({ error: `unknown platforms: ${bad.join(', ')}` }, 400)
     draftId = crypto.randomUUID().replace(/-/g, '').slice(0, 16)
     await db.createDraft(c.env.DB, { id: draftId, title: body.title, content: body.content, platforms: body.platforms })
   }
+  if (!await db.getDraft(c.env.DB, draftId)) return c.json({ error: 'draft not found' }, 404)
   const jobs = await enqueuePublish(c.env, draftId)
   return c.json({ draftId, jobs })
 })
@@ -130,7 +153,9 @@ api.get('/history', async (c) => c.json({ history: await db.listHistory(c.env.DB
 api.post('/history/:draftId/:platform/retry', async (c) => {
   const platform = c.req.param('platform') as PlatformName
   if (!adapters[platform]) return c.json({ error: `unknown platform ${platform}` }, 400)
-  if (!await db.getDraft(c.env.DB, c.req.param('draftId'))) return c.json({ error: 'not found' }, 404)
+  const draft = await db.getDraft(c.env.DB, c.req.param('draftId'))
+  if (!draft) return c.json({ error: 'not found' }, 404)
+  if (!(draft.platforms as string[]).includes(platform)) return c.json({ error: `${platform} not in draft platforms` }, 400)
   await c.env.DB.prepare("DELETE FROM publish_log WHERE draft_id = ? AND platform = ? AND status = 'failed'")
     .bind(c.req.param('draftId'), platform).run()
   const jobs = await enqueuePublish(c.env, c.req.param('draftId'), platform)

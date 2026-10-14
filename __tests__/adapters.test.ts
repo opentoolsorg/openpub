@@ -172,7 +172,7 @@ describe('github-pages', () => {
     expect(calls[1].headers.Authorization).toBe('Bearer GHTOK')
     const md = decodeURIComponent(escape(atob(calls[1].body.content)))
     expect(md).toContain('title: "Hello World"')
-    expect(md).toContain('canonical: https://canon.example/post')
+    expect(md).toContain('canonical: "https://canon.example/post"')
     expect(r.url).toBe('https://github.com/o/r/blob/main/content/posts/hello-world.md')
   })
 })

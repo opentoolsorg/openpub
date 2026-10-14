@@ -11,9 +11,11 @@ export async function enqueuePublish(env: Env, draftId: string, onlyPlatform?: P
   const draft = await db.getDraft(env.DB, draftId)
   if (!draft) throw new Error('draft not found')
   const jobs: string[] = []
+  const want = new Set(draft.platforms as string[])
   const targets = onlyPlatform ? [onlyPlatform] : (draft.platforms as PlatformName[])
   for (const platform of targets) {
     if (!adapters[platform]) continue
+    if (!want.has(platform)) throw new Error(`${platform} not in draft platforms`)
     const existing = await db.alreadyPublished(env.DB, draftId, platform)
     if (existing) continue // idempotent
     await env.PUBLISH_QUEUE.send({ draftId, platform })
@@ -24,23 +26,38 @@ export async function enqueuePublish(env: Env, draftId: string, onlyPlatform?: P
 }
 
 async function refreshDraftStatus(db_: D1Database, draftId: string) {
-  const { results } = await db_.prepare(
-    `SELECT platform, status FROM publish_log WHERE draft_id = ?`).bind(draftId).all<{ platform: string; status: string }>()
   const draft = await db.getDraft(db_, draftId)
   if (!draft) return
-  const total = (draft.platforms as string[]).length
-  const done = results.filter(r => r.status === 'success').length
-  const failed = results.filter(r => r.status === 'failed').length
+  const want = new Set(draft.platforms as string[])
+  const { results } = await db_.prepare(
+    `SELECT platform, status FROM publish_log WHERE draft_id = ?`).bind(draftId).all<{ platform: string; status: string }>()
+  const total = want.size
+  const done = results.filter(r => r.status === 'success' && want.has(r.platform)).length
+  const failed = results.filter(r => r.status === 'failed' && want.has(r.platform)).length
   if (done === total && total > 0) await db.setDraftStatus(db_, draftId, 'published')
   else if (done + failed === total && total > 0) await db.setDraftStatus(db_, draftId, 'partial')
 }
+
+// 4xx = permanent: retrying won't help (bad creds, bad request). 5xx/network = transient.
+export class HttpError extends Error {
+  constructor(public status: number, msg: string) { super(msg) }
+}
+const permanent = (e: unknown) =>
+  (e instanceof HttpError && e.status >= 400 && e.status < 500) ||
+  (e instanceof Error && /missing draft or creds|not in draft platforms/.test(e.message))
+
+const sanitize = (e: unknown) =>
+  (e instanceof Error ? e.message : String(e))
+    .replace(/[A-Za-z0-9_\-]{24,}/g, '***') // strip token-looking strings from upstream bodies
+    .slice(0, 300)
 
 export async function publishConsumer(batch: MessageBatch<{ draftId: string; platform: PlatformName }>, env: Env): Promise<void> {
   for (const msg of batch.messages) {
     const { draftId, platform } = msg.body
     try {
-      const existing = await db.alreadyPublished(env.DB, draftId, platform)
-      if (existing) { msg.ack(); continue }
+      // atomic claim: prevents double-publish on queue redelivery / concurrent triggers
+      const claimed = await db.claimPublish(env.DB, rid(), draftId, platform)
+      if (!claimed) { msg.ack(); continue }
 
       const draft = await db.getDraft(env.DB, draftId)
       const creds = await db.getCreds(env.DB, platform)
@@ -57,20 +74,19 @@ export async function publishConsumer(batch: MessageBatch<{ draftId: string; pla
       }
       const result = await adapters[platform].publish(input, creds)
       try {
-        await db.upsertLog(env.DB, { id: rid(), draft_id: draftId, platform, status: 'success', url: result.url })
+        await db.finishPublish(env.DB, draftId, platform, 'success', result.url)
         if (!draft.canonical_url) await db.setCanonical(env.DB, draftId, result.url)
         await refreshDraftStatus(env.DB, draftId)
-      } catch { /* log failure must not re-run publish */ }
+      } catch { /* post is live; log write failed — leave 'publishing' so a retry reports honestly */ }
       msg.ack()
     } catch (e) {
+      const perm = permanent(e)
       try {
-        await db.upsertLog(env.DB, {
-          id: rid(), draft_id: draftId, platform,
-          status: 'failed', error: e instanceof Error ? e.message.slice(0, 500) : String(e),
-        })
+        await db.finishPublish(env.DB, draftId, platform, 'failed', undefined, sanitize(e))
         await refreshDraftStatus(env.DB, draftId)
       } catch { /* ignore log failure */ }
-      msg.retry()
+      if (perm) msg.ack() // don't burn retries on a request that will never succeed
+      else msg.retry()
     }
   }
 }

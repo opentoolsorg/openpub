@@ -30,6 +30,18 @@ const TOOLS = [
 function ok(id: any, result: any) { return { jsonrpc: '2.0', id, result } }
 function err(id: any, code: number, message: string) { return { jsonrpc: '2.0', id, error: { code, message } } }
 
+async function keyEq(a: string, b: string): Promise<boolean> {
+  const enc = new TextEncoder()
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest('SHA-256', enc.encode(a)),
+    crypto.subtle.digest('SHA-256', enc.encode(b)),
+  ])
+  const x = new Uint8Array(ha), y = new Uint8Array(hb)
+  let d = x.length ^ y.length
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i]
+  return d === 0
+}
+
 async function callTool(env: Env, name: string, args: any): Promise<any> {
   switch (name) {
     case 'publish': {
@@ -73,7 +85,7 @@ async function callTool(env: Env, name: string, args: any): Promise<any> {
       if (!res.image) throw new Error('image generation failed')
       const key = `covers/${crypto.randomUUID()}.png`
       await env.MEDIA.put(key, Uint8Array.from(atob(res.image), ch => ch.charCodeAt(0)), { httpMetadata: { contentType: 'image/png' } })
-      const url = `${env.BASE_URL}/api/images/${key}`
+      const url = `${env.BASE_URL}/covers/${key.replace(/^covers\//, '')}`
       if (args.draftId) await env.DB.prepare('UPDATE drafts SET cover_image = ? WHERE id = ?').bind(url, args.draftId).run()
       return { url }
     }
@@ -81,10 +93,23 @@ async function callTool(env: Env, name: string, args: any): Promise<any> {
     case 'check_links': {
       const urls = [...(args.content as string).matchAll(/https?:\/\/[^\s)\]"']+/g)].map(m => m[0]).slice(0, 50)
       const blocked = (u: string) => {
-        try { const h = new URL(u).hostname; return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.)/.test(h) || h.endsWith('.internal') } catch { return true }
+        try {
+          const h = new URL(u).hostname.replace(/^\[|\]$/g, '').toLowerCase()
+          if (h === 'localhost' || h === '::1' || h.endsWith('.internal')) return true
+          const n = Number(h) // decimal/hex IPv4 like 2130706433 or 0x7f000001
+          if (Number.isInteger(n) && n >= 0 && n <= 0xffffffff) return true
+          const v4 = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/)
+          if (v4) {
+            const [a, b, c2, d2] = v4.slice(1).map(Number)
+            if ([a, b, c2, d2].some(o => o > 255)) return true
+            if (a === 0 || a === 10 || a === 127 || a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168) return true
+          }
+          if (/^(::ffff:|fe|fc|fd|ff)/.test(h)) return true // v6 mapped/link-local/ULA
+          return /^\d+\./.test(h) && !(v4) // partial IPs like 127.1
+        } catch { return true }
       }
       const results = await Promise.all(urls.filter(u => !blocked(u)).map(async u => {
-        try { const r = await fetch(u, { method: 'HEAD', redirect: 'follow' }); return { url: u, status: r.status } }
+        try { const r = await fetch(u, { method: 'HEAD', redirect: 'manual' }); return { url: u, status: r.status } }
         catch { return { url: u, status: 0 } }
       }))
       const skipped = urls.length - results.length
@@ -102,11 +127,12 @@ async function callTool(env: Env, name: string, args: any): Promise<any> {
 
 export async function mcpHandler(c: Context<{ Bindings: Env }>) {
   const m = c.req.header('Authorization')?.match(/^Bearer\s+(.+)$/i)
-  const key = m?.[1] ?? c.req.query('key')
-  if (!c.env.ADMIN_KEY || !key || key !== c.env.ADMIN_KEY) return c.json({ error: 'unauthorized' }, 401)
+  const key = m?.[1] // POST: Bearer only, ?key= is a GET convenience
+  if (!c.env.ADMIN_KEY || !key || !(await keyEq(key, c.env.ADMIN_KEY))) return c.json({ error: 'unauthorized' }, 401)
 
-  const body = await c.req.json<JsonRpc | JsonRpc[]>()
-  const reqs = Array.isArray(body) ? body : [body]
+  let body: JsonRpc | JsonRpc[]
+  try { body = await c.req.json() } catch { return c.json(err(null, -32700, 'parse error')) }
+  const reqs = (Array.isArray(body) ? body : [body]).slice(0, 25) // cap batch size
   const resps = []
 
   for (const req of reqs) {

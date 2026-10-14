@@ -8,16 +8,21 @@ export const githubPages: PlatformAdapter = {
   name: 'github-pages',
   async publish(input: PublishInput, creds): Promise<PublishResult> {
     const repo = creds.repo // owner/name
-    const dir = creds.dir || 'content/posts'
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo ?? '')) throw new Error('repo must be owner/name')
+    const dir = (creds.dir || 'content/posts').replace(/^\/+|\/+$/g, '')
     const branch = creds.branch || 'main'
+    if (/\.{2}|^\/|\/{2,}/.test(dir) || !/^[\w.\-/]+$/.test(dir) || !/^[\w.\-/]+$/.test(branch)) {
+      throw new Error('invalid dir or branch')
+    }
     const slug = slugify(input.title || 'post')
     const path = `${dir}/${slug}.md`
+    const yq = (s: string) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]+/g, ' ')
     const fm = [
       '---',
-      `title: "${input.title.replace(/"/g, '\\"')}"`,
+      `title: "${yq(input.title)}"`,
       `date: ${new Date().toISOString()}`,
-      input.tags.length ? `tags: [${input.tags.map(t => `"${t}"`).join(', ')}]` : null,
-      input.canonicalUrl ? `canonical: ${input.canonicalUrl}` : null,
+      input.tags.length ? `tags: [${input.tags.map(t => `"${yq(t)}"`).join(', ')}]` : null,
+      input.canonicalUrl ? `canonical: "${yq(input.canonicalUrl)}"` : null,
       '---',
       '',
     ].filter(l => l !== null).join('\n')
@@ -37,6 +42,7 @@ export const githubPages: PlatformAdapter = {
     return { url: `https://github.com/${repo}/blob/${branch}/${path}` }
   },
   async test(creds) {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(creds.repo ?? '')) return false
     const r = await fetch(`https://api.github.com/repos/${creds.repo}`, {
       headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpost/1.0' },
     })

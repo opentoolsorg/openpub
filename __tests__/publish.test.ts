@@ -18,7 +18,23 @@ function fakeD1() {
           if (!r) return {}
           if (sql.includes('status')) r.status = args[0]
           else if (sql.includes('canonical_url') && r.canonical_url == null) r.canonical_url = args[0]
+        } else if (sql.startsWith('INSERT OR IGNORE INTO publish_log')) {
+          // claimPublish: (id, draft_id, platform)
+          const k = `${args[1]}:${args[2]}`
+          if (log.has(k)) return { meta: { changes: 0 } }
+          log.set(k, { id: args[0], draft_id: args[1], platform: args[2], status: 'publishing', attempts: 0, created_at: 0 })
+          return { meta: { changes: 1 } }
+        } else if (sql.startsWith('UPDATE publish_log')) {
+          // finishPublish: (status, url, error, draft_id, platform)
+          const k = `${args[3]}:${args[4]}`
+          const prev = log.get(k)
+          if (!prev) return { meta: { changes: 0 } }
+          log.set(k, { ...prev, status: args[0], url: args[1], error: args[2], attempts: (prev.attempts as number) + 1 })
+          return { meta: { changes: 1 } }
+        } else if (sql.startsWith('DELETE FROM publish_log')) {
+          log.delete(`${args[0]}:${args[1]}`)
         } else if (sql.includes('publish_log')) {
+          // upsertLog: (id, draft_id, platform, status, url, error)
           const k = `${args[1]}:${args[2]}`
           const prev = log.get(k)
           log.set(k, {
@@ -41,7 +57,9 @@ function fakeD1() {
         if (sql.includes('FROM platform_config')) return cfg.get(args[0] as string) ?? null
         if (sql.includes('FROM publish_log')) {
           const r = log.get(`${args[0]}:${args[1]}`)
-          return r?.status === 'success' ? { url: r.url } : null
+          if (!r) return null
+          if (sql.includes('SELECT url')) return r.status === 'success' ? { url: r.url } : null
+          return { status: r.status, created_at: r.created_at }
         }
         return drafts.get(args[0] as string) ?? null
       },

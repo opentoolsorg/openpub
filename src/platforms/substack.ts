@@ -1,8 +1,8 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
+import { siteBase } from './guard'
 
 function base(creds: Record<string, string>): string {
-  const u = creds.publication_url.replace(/\/+$/, '')
-  return u.startsWith('http') ? u : `https://${u}`
+  return siteBase(creds.publication_url)
 }
 
 function toProseMirror(title: string, markdown: string) {

@@ -1,4 +1,5 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
+import { siteBase } from './guard'
 
 function base64url(input: ArrayBuffer | string): string {
   const s = typeof input === 'string' ? btoa(input) : btoa(String.fromCharCode(...new Uint8Array(input)))
@@ -19,7 +20,7 @@ async function ghostJwt(key: string): Promise<string> {
 }
 
 function base(creds: Record<string, string>): string {
-  return creds.site_url.replace(/\/+$/, '')
+  return siteBase(creds.site_url)
 }
 
 export const ghost: PlatformAdapter = {
