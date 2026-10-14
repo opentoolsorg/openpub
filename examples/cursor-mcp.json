@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "openpost": {
-      "url": "https://openpost.workers.dev/mcp",
+    "openpub": {
+      "url": "https://openpub.workers.dev/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_ADMIN_KEY"
       }

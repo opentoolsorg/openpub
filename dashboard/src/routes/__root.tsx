@@ -10,13 +10,13 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'OpenPost - Write once. Your agent ships it everywhere.' },
+      { title: 'OpenPub - Write once. Your agent ships it everywhere.' },
       {
         name: 'description',
         content:
           'Self-hosted cross-posting on Cloudflare. One markdown file to dev.to, Hashnode, Medium, Ghost, WordPress, Substack, X Articles, and your own site. MCP + CLI + REST.',
       },
-      { property: 'og:title', content: 'OpenPost' },
+      { property: 'og:title', content: 'OpenPub' },
       {
         property: 'og:description',
         content: 'One markdown file. Every platform. Driven by any agent over MCP.',

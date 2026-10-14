@@ -66,7 +66,7 @@ describe('mcpHandler', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.result.protocolVersion).toBe('2025-03-26')
-    expect(body.result.serverInfo).toEqual({ name: 'openpost', version: '0.1.0' })
+    expect(body.result.serverInfo).toEqual({ name: 'openpub', version: '0.1.0' })
     expect(body.result.capabilities).toHaveProperty('tools')
   })
 

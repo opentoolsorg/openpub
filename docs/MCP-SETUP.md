@@ -1,10 +1,10 @@
 # MCP Setup
 
-OpenPost exposes an MCP server over Streamable HTTP at `POST /mcp`. Stateless JSON mode: it answers `initialize`, `tools/list`, `tools/call`, `ping`, and ignores `notifications/*`. Auth is the same `ADMIN_KEY` as the REST API, sent as `Authorization: Bearer <ADMIN_KEY>`. Because `?key=` query authentication only works on GET requests, all MCP POST requests must use the `Authorization: Bearer` header.
+OpenPub exposes an MCP server over Streamable HTTP at `POST /mcp`. Stateless JSON mode: it answers `initialize`, `tools/list`, `tools/call`, `ping`, and ignores `notifications/*`. Auth is the same `ADMIN_KEY` as the REST API, sent as `Authorization: Bearer <ADMIN_KEY>`. Because `?key=` query authentication only works on GET requests, all MCP POST requests must use the `Authorization: Bearer` header.
 
 Prerequisite: a deployed worker (see [DEPLOY.md](DEPLOY.md)) and your `ADMIN_KEY`.
 
-Replace `https://openpost.<subdomain>.workers.dev` with your worker URL and `<ADMIN_KEY>` with your secret in every example below.
+Replace `https://openpub.<subdomain>.workers.dev` with your worker URL and `<ADMIN_KEY>` with your secret in every example below.
 
 ## Available tools
 
@@ -13,7 +13,7 @@ Replace `https://openpost.<subdomain>.workers.dev` with your worker URL and `<AD
 Verify the endpoint before wiring a client:
 
 ```bash
-curl -X POST https://openpost.<subdomain>.workers.dev/mcp \
+curl -X POST https://openpub.<subdomain>.workers.dev/mcp \
   -H "Authorization: Bearer <ADMIN_KEY>" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
@@ -26,8 +26,8 @@ A 401 means the key is wrong; a JSON-RPC response with the 13 tools means you ar
 Use the built-in HTTP transport:
 
 ```bash
-claude mcp add --transport http openpost \
-  https://openpost.<subdomain>.workers.dev/mcp \
+claude mcp add --transport http openpub \
+  https://openpub.<subdomain>.workers.dev/mcp \
   --header "Authorization: Bearer <ADMIN_KEY>"
 ```
 
@@ -36,9 +36,9 @@ Equivalent `.mcp.json` (project-scoped) or `~/.claude.json` (user-scoped):
 ```json
 {
   "mcpServers": {
-    "openpost": {
+    "openpub": {
       "type": "http",
-      "url": "https://openpost.<subdomain>.workers.dev/mcp",
+      "url": "https://openpub.<subdomain>.workers.dev/mcp",
       "headers": {
         "Authorization": "Bearer <ADMIN_KEY>"
       }
@@ -47,18 +47,18 @@ Equivalent `.mcp.json` (project-scoped) or `~/.claude.json` (user-scoped):
 }
 ```
 
-Verify inside Claude Code: run `/mcp` and confirm `openpost` shows connected with its tools listed.
+Verify inside Claude Code: run `/mcp` and confirm `openpub` shows connected with its tools listed.
 
 If your Claude Code version predates HTTP transport support, use `mcp-remote` as a stdio bridge:
 
 ```json
 {
   "mcpServers": {
-    "openpost": {
+    "openpub": {
       "command": "npx",
       "args": [
         "-y", "mcp-remote",
-        "https://openpost.<subdomain>.workers.dev/mcp",
+        "https://openpub.<subdomain>.workers.dev/mcp",
         "--header", "Authorization: Bearer <ADMIN_KEY>"
       ]
     }
@@ -73,8 +73,8 @@ Cursor supports remote MCP servers natively. Edit `~/.cursor/mcp.json` (global) 
 ```json
 {
   "mcpServers": {
-    "openpost": {
-      "url": "https://openpost.<subdomain>.workers.dev/mcp",
+    "openpub": {
+      "url": "https://openpub.<subdomain>.workers.dev/mcp",
       "headers": {
         "Authorization": "Bearer <ADMIN_KEY>"
       }
@@ -83,7 +83,7 @@ Cursor supports remote MCP servers natively. Edit `~/.cursor/mcp.json` (global) 
 }
 ```
 
-Then: Settings, Cursor Settings, MCP. Toggle `openpost` on if it is not auto-enabled; it should show a green status dot and list tools. The `headers` block with `Authorization: Bearer <ADMIN_KEY>` is required because POST endpoints do not accept `?key=` query authentication.
+Then: Settings, Cursor Settings, MCP. Toggle `openpub` on if it is not auto-enabled; it should show a green status dot and list tools. The `headers` block with `Authorization: Bearer <ADMIN_KEY>` is required because POST endpoints do not accept `?key=` query authentication.
 
 ## Windsurf
 
@@ -94,8 +94,8 @@ Native HTTP where supported:
 ```json
 {
   "mcpServers": {
-    "openpost": {
-      "serverUrl": "https://openpost.<subdomain>.workers.dev/mcp",
+    "openpub": {
+      "serverUrl": "https://openpub.<subdomain>.workers.dev/mcp",
       "headers": {
         "Authorization": "Bearer <ADMIN_KEY>"
       }
@@ -109,11 +109,11 @@ Windsurf versions that only accept stdio servers need the `mcp-remote` bridge:
 ```json
 {
   "mcpServers": {
-    "openpost": {
+    "openpub": {
       "command": "npx",
       "args": [
         "-y", "mcp-remote",
-        "https://openpost.<subdomain>.workers.dev/mcp",
+        "https://openpub.<subdomain>.workers.dev/mcp",
         "--header", "Authorization: Bearer <ADMIN_KEY>"
       ]
     }
@@ -127,7 +127,7 @@ After saving, reload Cascade (Command Palette, "Windsurf: Reload Window") so the
 
 Any MCP client speaking Streamable HTTP can connect. Requirements:
 
-- `POST https://openpost.<subdomain>.workers.dev/mcp`
+- `POST https://openpub.<subdomain>.workers.dev/mcp`
 - Header: `Authorization: Bearer <ADMIN_KEY>`
 - Header: `Content-Type: application/json`
 - Body: JSON-RPC 2.0, single object or batch array
@@ -142,7 +142,7 @@ Notes for client implementers:
 Minimal raw session:
 
 ```bash
-BASE=https://openpost.<subdomain>.workers.dev
+BASE=https://openpub.<subdomain>.workers.dev
 KEY=<ADMIN_KEY>
 
 # 1. initialize
@@ -179,6 +179,6 @@ Once connected, ask the agent (or call):
 |---|---|
 | `401 unauthorized` | Wrong/missing `ADMIN_KEY`, or header name typo. Test with the curl above. |
 | Tools not listed | Client never sent `tools/list`, or response blocked. Check client MCP logs. |
-| `fetch failed` / ECONNRESET | Worker URL wrong, or client forcing SSE. OpenPost is POST-only JSON. |
-| `method not found: notifications/...` | Harmless only if the client treats it as fatal; OpenPost skips `notifications/initialized` and `notifications/cancelled` silently. |
+| `fetch failed` / ECONNRESET | Worker URL wrong, or client forcing SSE. OpenPub is POST-only JSON. |
+| `method not found: notifications/...` | Harmless only if the client treats it as fatal; OpenPub skips `notifications/initialized` and `notifications/cancelled` silently. |
 | `test_platform` returns `ok:false` | Credentials are stored but rejected by the platform. Re-check keys in PLATFORMS.md. |

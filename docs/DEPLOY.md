@@ -1,6 +1,6 @@
-# Deploying OpenPost
+# Deploying OpenPub
 
-OpenPost runs as a single Cloudflare Worker backed by D1 (drafts and publish log), KV (config), R2 (cover images), a Queue (publish jobs), and Workers AI (cover generation). One worker, no servers.
+OpenPub runs as a single Cloudflare Worker backed by D1 (drafts and publish log), KV (config), R2 (cover images), a Queue (publish jobs), and Workers AI (cover generation). One worker, no servers.
 
 ## Prerequisites
 
@@ -18,27 +18,27 @@ wrangler login
 ## 1. Clone and install
 
 ```bash
-git clone <your-fork-or-repo-url> openpost
-cd openpost
+git clone <your-fork-or-repo-url> openpub
+cd openpub
 npm install
 ```
 
 ## 2. Create the Cloudflare resources
 
-OpenPost needs four bindings, matching `wrangler.toml`:
+OpenPub needs four bindings, matching `wrangler.toml`:
 
 ```bash
 # D1 database (drafts, publish log, platform credentials)
-wrangler d1 create openpost-db
+wrangler d1 create openpub-db
 
 # KV namespace (worker key/value config)
 wrangler kv namespace create KEYS
 
 # R2 bucket (generated cover images)
-wrangler r2 bucket create openpost-media
+wrangler r2 bucket create openpub-media
 
 # Queue (async publish jobs, with consumer configured in wrangler.toml)
-wrangler queues create openpost-publish
+wrangler queues create openpub-publish
 ```
 
 Each command prints an ID. Copy them into `wrangler.toml`:
@@ -46,7 +46,7 @@ Each command prints an ID. Copy them into `wrangler.toml`:
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "openpost-db"
+database_name = "openpub-db"
 database_id = "<id from d1 create>"
 
 [[kv_namespaces]]
@@ -55,14 +55,14 @@ id = "<id from kv namespace create>"
 
 [[r2_buckets]]
 binding = "MEDIA"
-bucket_name = "openpost-media"
+bucket_name = "openpub-media"
 
 [[queues.producers]]
 binding = "PUBLISH_QUEUE"
-queue = "openpost-publish"
+queue = "openpub-publish"
 
 [[queues.consumers]]
-queue = "openpost-publish"
+queue = "openpub-publish"
 max_batch_size = 5
 max_retries = 3
 
@@ -73,7 +73,7 @@ binding = "AI"
 ## 3. Apply the database schema
 
 ```bash
-wrangler d1 execute openpost-db --file=./migrations/init.sql
+wrangler d1 execute openpub-db --file=./migrations/init.sql
 ```
 
 This creates `platform_config`, `drafts`, and `publish_log`. Safe to re-run; all statements are `IF NOT EXISTS`.
@@ -98,8 +98,8 @@ Update `[vars]` in `wrangler.toml` for your deployment:
 
 ```toml
 [vars]
-BASE_URL = "https://openpost.<your-subdomain>.workers.dev"
-DASHBOARD_URL = "https://openpost-dashboard.<your-subdomain>.workers.dev"
+BASE_URL = "https://openpub.<your-subdomain>.workers.dev"
+DASHBOARD_URL = "https://openpub-dashboard.<your-subdomain>.workers.dev"
 ```
 
 - `BASE_URL`: Used to construct absolute URLs for generated cover images. If you do not know the worker URL yet, deploy once (step 6), note the printed URL, update `BASE_URL`, and deploy again.
@@ -115,40 +115,40 @@ Generated cover images are stored in R2 and served publicly at `GET /covers/<uui
 wrangler deploy
 ```
 
-Wrangler prints the worker URL, e.g. `https://openpost.<subdomain>.workers.dev`.
+Wrangler prints the worker URL, e.g. `https://openpub.<subdomain>.workers.dev`.
 
 ## 7. Verify
 
 Health check (no auth):
 
 ```bash
-curl https://openpost.<subdomain>.workers.dev/health
-# {"ok":true,"name":"openpost"}
+curl https://openpub.<subdomain>.workers.dev/health
+# {"ok":true,"name":"openpub"}
 ```
 
 Authenticated API check:
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_KEY" \
-  https://openpost.<subdomain>.workers.dev/api/status
+  https://openpub.<subdomain>.workers.dev/api/status
 # {"platforms":[],"available":["devto","hashnode","wordpress","ghost","medium","substack","github-pages","x"]}
 ```
 
 MCP endpoint check:
 
 ```bash
-curl https://openpost.<subdomain>.workers.dev/mcp
-# {"name":"openpost","transport":"streamable-http", ...}
+curl https://openpub.<subdomain>.workers.dev/mcp
+# {"name":"openpub","transport":"streamable-http", ...}
 ```
 
 If all three respond, the deployment is live. Next: configure platform credentials (see [PLATFORMS.md](PLATFORMS.md)) and wire up an MCP client (see [MCP-SETUP.md](MCP-SETUP.md)).
 
 ## Custom domain (optional)
 
-To serve OpenPost on your own domain:
+To serve OpenPub on your own domain:
 
 1. Add the domain's zone to your Cloudflare account.
-2. Dashboard: Workers & Pages, open `openpost`, Settings, Domains & Routes, Add, Custom Domain.
+2. Dashboard: Workers & Pages, open `openpub`, Settings, Domains & Routes, Add, Custom Domain.
 3. Enter e.g. `post.example.com`. Cloudflare provisions the cert automatically.
 4. Update `BASE_URL` in `wrangler.toml` to `https://post.example.com` and run `wrangler deploy` again.
 
@@ -162,7 +162,7 @@ routes = [
 
 ## Free tier notes
 
-Everything OpenPost uses fits inside the Cloudflare free plan for typical personal publishing volume:
+Everything OpenPub uses fits inside the Cloudflare free plan for typical personal publishing volume:
 
 | Resource | Free tier |
 |---|---|
@@ -184,4 +184,4 @@ git pull
 wrangler deploy
 ```
 
-Secrets (`ADMIN_KEY`) persist across deploys. Schema changes: apply new files in `migrations/` with `wrangler d1 execute openpost-db --file=./migrations/<name>.sql`.
+Secrets (`ADMIN_KEY`) persist across deploys. Schema changes: apply new files in `migrations/` with `wrangler d1 execute openpub-db --file=./migrations/<name>.sql`.

@@ -17,7 +17,7 @@ function toProseMirror(title: string, markdown: string) {
 
 async function cookieUserId(creds: Record<string, string>): Promise<string> {
   const r = await fetch(`${base(creds)}/api/v1/user/profile/self`, {
-    headers: { Cookie: `connect.sid=${creds.connect_sid}`, 'User-Agent': 'openpost/1.0' },
+    headers: { Cookie: `connect.sid=${creds.connect_sid}`, 'User-Agent': 'openpub/1.0' },
   })
   if (!r.ok) throw new Error(`substack auth ${r.status}`)
   const j = (await r.json()) as { id: number }
@@ -33,7 +33,7 @@ export const substack: PlatformAdapter = {
       headers: {
         Cookie: `connect.sid=${creds.connect_sid}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'openpost/1.0',
+        'User-Agent': 'openpub/1.0',
       },
       body: JSON.stringify({
         draft_title: input.title,

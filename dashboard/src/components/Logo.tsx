@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-// OpenPost mark: an "o" ring broken at top-right with an arrow launching out —
+// OpenPub mark: an "o" ring broken at top-right with an arrow launching out —
 // publish outward. One accent, geometric, readable at 16px.
 export function Mark({ className = 'h-6 w-6' }: { className?: string }) {
   return (
@@ -27,7 +27,7 @@ export function Logo({ className = '' }: { className?: string }) {
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <Mark className="h-5 w-5 text-emerald-400" />
       <span className="font-mono text-base font-medium tracking-tight text-zinc-50">
-        openpost
+        openpub
       </span>
     </span>
   )

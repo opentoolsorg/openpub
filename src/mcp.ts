@@ -9,7 +9,7 @@ import type { Env, PlatformName } from './types'
 
 interface JsonRpc { jsonrpc: string; id?: string | number; method: string; params?: any }
 
-const SERVER_INFO = { name: 'openpost', version: '0.1.0' }
+const SERVER_INFO = { name: 'openpub', version: '0.1.0' }
 
 const TOOLS = [
   { name: 'publish', description: 'Publish a draft to one platform. Auth: ADMIN_KEY required. Returns {draftId, jobs}.', inputSchema: { type: 'object', properties: { draftId: { type: 'string' }, platform: { type: 'string', enum: platformNames } }, required: ['draftId', 'platform'] } },

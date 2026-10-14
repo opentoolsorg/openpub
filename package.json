@@ -1,15 +1,35 @@
 {
-  "name": "openpost",
-  "version": "1.0.0",
-  "description": "",
+  "name": "openpub",
+  "version": "0.1.0",
+  "description": "Write once, publish everywhere. Self-hosted, agent-native cross-posting engine for technical blogs.",
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
-    "deploy": "npm --prefix dashboard run build && wrangler deploy"
+    "typecheck": "tsc --noEmit",
+    "deploy": "npm --prefix dashboard run build && wrangler deploy",
+    "cli:build": "npm --prefix cli run build",
+    "mcp:build": "npm --prefix mcp run build",
+    "action:test": "bash test/publish.test.sh"
   },
-  "keywords": [],
+  "keywords": [
+    "openpub",
+    "markdown",
+    "blog",
+    "publish",
+    "crosspost",
+    "mcp",
+    "mcp-server",
+    "devto",
+    "hashnode",
+    "medium",
+    "ghost",
+    "wordpress",
+    "substack",
+    "x-articles",
+    "cloudflare-workers"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
     "hono": "^4.13.13",

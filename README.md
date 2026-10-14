@@ -1,8 +1,8 @@
-# OpenPost
+# OpenPub
 
 Write once in Markdown. Publish everywhere. Own the infrastructure.
 
-OpenPost is a self-hosted, Cloudflare-native cross-posting engine for technical blogs. Drop a Markdown file in, and OpenPost fans it out to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, a GitHub Pages repo, and X Articles - with per-platform adapters, canonical URL wiring, automatic retries, and a publish log you actually control.
+OpenPub is a self-hosted, Cloudflare-native cross-posting engine for technical blogs. Drop a Markdown file in, and OpenPub fans it out to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, a GitHub Pages repo, and X Articles - with per-platform adapters, canonical URL wiring, automatic retries, and a publish log you actually control.
 
 It runs as a single Cloudflare Worker, so there is no server to babysit, no Docker container to keep alive, and no SaaS middleman holding your credentials. Your drafts, credentials, and publish history live in your own D1 database.
 
@@ -10,7 +10,7 @@ It runs as a single Cloudflare Worker, so there is no server to babysit, no Dock
 
 ## Why
 
-Cross-posting tools either want your platform tokens on their servers, charge per publication, or quietly rot as platform APIs change. OpenPost keeps the credential store in your account, treats every platform as a small adapter you can read in one screen, and exposes the whole thing over MCP so your coding agent can publish a post without you leaving the editor.
+Cross-posting tools either want your platform tokens on their servers, charge per publication, or quietly rot as platform APIs change. OpenPub keeps the credential store in your account, treats every platform as a small adapter you can read in one screen, and exposes the whole thing over MCP so your coding agent can publish a post without you leaving the editor.
 
 ## Features
 
@@ -19,31 +19,31 @@ Cross-posting tools either want your platform tokens on their servers, charge pe
 - **Canonical URL wiring** - first successful publish becomes the canonical URL for the rest; atomic claim rows prevent duplicate publishes on concurrent triggers or queue redelivery
 - **Queue-backed publishes** - Cloudflare Queues with a retry classifier (4xx permanent, 5xx retry); failed platforms retry without touching succeeded ones (idempotent)
 - **MCP server** - Streamable HTTP, works with Claude Code, Cursor, and any MCP client
-- **CLI** - `openpost publish post.md --to devto,hashnode` from your terminal
+- **CLI** - `openpub publish post.md --to devto,hashnode` from your terminal
 - **Cover images** - Workers AI (FLUX schnell) generates covers via authenticated POST /api/images/generate, stored in R2 and served publicly at GET /covers/<uuid>.png (no auth)
 - **Dashboard** - TanStack Start web UI for drafts, platform status, and history
 
 ## Deploy
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/<you>/openpost)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/<you>/openpub)
 
 ## Quickstart
 
 Requires [Wrangler](https://developers.cloudflare.com/workers/wrangler/) and a Cloudflare account (free tier is fine).
 
 ```bash
-git clone https://github.com/<you>/openpost.git
-cd openpost
+git clone https://github.com/<you>/openpub.git
+cd openpub
 npm install
 
 # Provision the bindings referenced in wrangler.toml
-wrangler d1 create openpost-db          # paste database_id into wrangler.toml
+wrangler d1 create openpub-db          # paste database_id into wrangler.toml
 wrangler kv namespace create KEYS       # paste id into wrangler.toml
-wrangler r2 bucket create openpost-media
-wrangler queues create openpost-publish
+wrangler r2 bucket create openpub-media
+wrangler queues create openpub-publish
 
 # Apply the schema
-wrangler d1 execute openpost-db --file=migrations/init.sql
+wrangler d1 execute openpub-db --file=migrations/init.sql
 
 # Your admin key - guards the API and the MCP endpoint
 wrangler secret put ADMIN_KEY
@@ -55,19 +55,19 @@ wrangler deploy
 Then connect the CLI:
 
 ```bash
-npm install -g openpost-cli
-openpost login --url https://openpost.<your-subdomain>.workers.dev --key <ADMIN_KEY>
+npm install -g openpub-cli
+openpub login --url https://openpub.<your-subdomain>.workers.dev --key <ADMIN_KEY>
 ```
 
 Publish your first post:
 
 ```bash
-openpost publish hello.md --to devto,hashnode
+openpub publish hello.md --to devto,hashnode
 ```
 
 ## Platform setup
 
-Credentials are stored per-platform in your own D1 database via `openpost setup <platform> '<json>'` (or a path to a JSON file), then verified with `openpost test <platform>`.
+Credentials are stored per-platform in your own D1 database via `openpub setup <platform> '<json>'` (or a path to a JSON file), then verified with `openpub test <platform>`.
 
 | Platform      | Credentials                                                                 | Where to get them |
 |---------------|------------------------------------------------------------------------------|-------------------|
@@ -83,29 +83,29 @@ Credentials are stored per-platform in your own D1 database via `openpost setup 
 Example:
 
 ```bash
-openpost setup devto '{"api_key": "xxxxx"}'
-openpost test devto
-openpost status          # shows configured vs available platforms
+openpub setup devto '{"api_key": "xxxxx"}'
+openpub test devto
+openpub status          # shows configured vs available platforms
 ```
 
 ## CLI
 
-`openpost` is a thin client over the REST API. Config lives at `~/.openpost/config.json`.
+`openpub` is a thin client over the REST API. Config lives at `~/.openpub/config.json`.
 
 ```bash
-openpost login --url <worker-url> --key <admin-key>
-openpost setup <platform> '<creds-json-or-file>'
-openpost test <platform>
-openpost draft <file.md> [--to devto,hashnode] [--title "Override"]
-openpost publish <file.md> [--to devto,hashnode]
-openpost cover <prompt words...> [--prompt "..."]
-openpost drafts          # list drafts with status
-openpost status          # configured + available platforms
-openpost history         # publish log with per-platform URLs and errors
-openpost docs <dir>      # render a directory of .md files into a static HTML site
+openpub login --url <worker-url> --key <admin-key>
+openpub setup <platform> '<creds-json-or-file>'
+openpub test <platform>
+openpub draft <file.md> [--to devto,hashnode] [--title "Override"]
+openpub publish <file.md> [--to devto,hashnode]
+openpub cover <prompt words...> [--prompt "..."]
+openpub drafts          # list drafts with status
+openpub status          # configured + available platforms
+openpub history         # publish log with per-platform URLs and errors
+openpub docs <dir>      # render a directory of .md files into a static HTML site
 ```
 
-Frontmatter is supported - `title`, `tags`, `platforms`, `cover_image` - so `openpost publish post.md` works with no flags:
+Frontmatter is supported - `title`, `tags`, `platforms`, `cover_image` - so `openpub publish post.md` works with no flags:
 
 ```markdown
 ---
@@ -119,12 +119,12 @@ Body goes here.
 
 ## MCP server
 
-OpenPost speaks MCP over Streamable HTTP at `POST /mcp`. Point any MCP client at it with your admin key as a bearer token.
+OpenPub speaks MCP over Streamable HTTP at `POST /mcp`. Point any MCP client at it with your admin key as a bearer token.
 
 Claude Code:
 
 ```bash
-claude mcp add --transport http openpost https://openpost.<your-subdomain>.workers.dev/mcp \
+claude mcp add --transport http openpub https://openpub.<your-subdomain>.workers.dev/mcp \
   --header "Authorization: Bearer <ADMIN_KEY>"
 ```
 
@@ -133,8 +133,8 @@ Cursor / other clients (`mcp.json`):
 ```json
 {
   "mcpServers": {
-    "openpost": {
-      "url": "https://openpost.<your-subdomain>.workers.dev/mcp",
+    "openpub": {
+      "url": "https://openpub.<your-subdomain>.workers.dev/mcp",
       "headers": { "Authorization": "Bearer <ADMIN_KEY>" }
     }
   }
@@ -184,7 +184,7 @@ Endpoints require `Authorization: Bearer <ADMIN_KEY>`. The `?key=` query paramet
 
 ```
                           ┌─────────────────────────────────────────────┐
-  openpost-cli ──────────▶│                                             │
+  openpub-cli ──────────▶│                                             │
   MCP clients ───────────▶│   Cloudflare Worker (Hono)                  │
   (Claude Code, Cursor)   │                                             │
   Dashboard ─────────────▶│   /api/* REST   /mcp JSON-RPC   /covers/*   │
@@ -192,7 +192,7 @@ Endpoints require `Authorization: Bearer <ADMIN_KEY>`. The `?key=` query paramet
                                  │                  │
                     ┌────────────▼───┐      ┌───────▼────────┐
                     │  D1            │      │  Queue         │
-                    │  drafts, creds,│      │  openpost-     │
+                    │  drafts, creds,│      │  openpub-     │
                     │  publish_log   │      │  publish       │
                     └────────────▲───┘      └───────┬────────┘
                                │                   │ consumer (retry x3)

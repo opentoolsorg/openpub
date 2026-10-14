@@ -5,7 +5,7 @@ export const Route = createFileRoute('/docs')({
   component: DocsPage,
 })
 
-const GITHUB = 'https://github.com/princepal9120/openpost'
+const GITHUB = 'https://github.com/princepal9120/openpub'
 
 interface NavSection {
   id: string
@@ -318,12 +318,12 @@ function DocsPage() {
                 id="getting-started"
                 badge="Deployment & Setup"
                 title="Getting Started"
-                subtitle="OpenPost runs as a single Cloudflare Worker backed by D1 (drafts and publish log), KV (config), R2 (cover images), a Queue (publish jobs), and Workers AI (cover generation). One worker, no servers."
+                subtitle="OpenPub runs as a single Cloudflare Worker backed by D1 (drafts and publish log), KV (config), R2 (cover images), a Queue (publish jobs), and Workers AI (cover generation). One worker, no servers."
               />
 
               <SubHeading id="overview" title="Architecture Overview" />
               <p className="text-sm leading-relaxed text-zinc-400">
-                Cross-posting tools typically keep your credentials on third-party servers, charge monthly subscriptions, or quietly break when platform APIs change. OpenPost runs inside your own Cloudflare account. Your drafts, credentials, and publish logs reside in your own D1 SQLite database.
+                Cross-posting tools typically keep your credentials on third-party servers, charge monthly subscriptions, or quietly break when platform APIs change. OpenPub runs inside your own Cloudflare account. Your drafts, credentials, and publish logs reside in your own D1 SQLite database.
               </p>
 
               <SubHeading id="prerequisites" title="Prerequisites" />
@@ -341,16 +341,16 @@ function DocsPage() {
 
               <SubHeading id="step-1-install" title="1. Clone and Install" />
               <CodeBlock
-                code={`git clone https://github.com/princepal9120/openpost.git openpost\ncd openpost\nnpm install`}
+                code={`git clone https://github.com/princepal9120/openpub.git openpub\ncd openpub\nnpm install`}
                 title="terminal"
               />
 
               <SubHeading id="step-2-resources" title="2. Create Cloudflare Resources" />
               <p className="text-sm text-zinc-400">
-                OpenPost provisions four distinct Cloudflare bindings matching <code className="rounded bg-zinc-900 px-1.5 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">wrangler.toml</code>:
+                OpenPub provisions four distinct Cloudflare bindings matching <code className="rounded bg-zinc-900 px-1.5 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">wrangler.toml</code>:
               </p>
               <CodeBlock
-                code={`# D1 database (drafts, publish log, platform credentials)\nwrangler d1 create openpost-db\n\n# KV namespace (worker key/value config)\nwrangler kv namespace create KEYS\n\n# R2 bucket (generated cover images)\nwrangler r2 bucket create openpost-media\n\n# Queue (async publish jobs, with consumer configured in wrangler.toml)\nwrangler queues create openpost-publish`}
+                code={`# D1 database (drafts, publish log, platform credentials)\nwrangler d1 create openpub-db\n\n# KV namespace (worker key/value config)\nwrangler kv namespace create KEYS\n\n# R2 bucket (generated cover images)\nwrangler r2 bucket create openpub-media\n\n# Queue (async publish jobs, with consumer configured in wrangler.toml)\nwrangler queues create openpub-publish`}
                 title="bash"
               />
 
@@ -358,13 +358,13 @@ function DocsPage() {
                 Each command outputs an ID. Paste those values into <code className="rounded bg-zinc-900 px-1.5 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">wrangler.toml</code>:
               </p>
               <CodeBlock
-                code={`[[d1_databases]]\nbinding = "DB"\ndatabase_name = "openpost-db"\ndatabase_id = "<id from d1 create>"\n\n[[kv_namespaces]]\nbinding = "KEYS"\nid = "<id from kv namespace create>"\n\n[[r2_buckets]]\nbinding = "MEDIA"\nbucket_name = "openpost-media"\n\n[[queues.producers]]\nbinding = "PUBLISH_QUEUE"\nqueue = "openpost-publish"\n\n[[queues.consumers]]\nqueue = "openpost-publish"\nmax_batch_size = 5\nmax_retries = 3\n\n[ai]\nbinding = "AI"`}
+                code={`[[d1_databases]]\nbinding = "DB"\ndatabase_name = "openpub-db"\ndatabase_id = "<id from d1 create>"\n\n[[kv_namespaces]]\nbinding = "KEYS"\nid = "<id from kv namespace create>"\n\n[[r2_buckets]]\nbinding = "MEDIA"\nbucket_name = "openpub-media"\n\n[[queues.producers]]\nbinding = "PUBLISH_QUEUE"\nqueue = "openpub-publish"\n\n[[queues.consumers]]\nqueue = "openpub-publish"\nmax_batch_size = 5\nmax_retries = 3\n\n[ai]\nbinding = "AI"`}
                 title="wrangler.toml"
               />
 
               <SubHeading id="step-3-schema" title="3. Apply the Database Schema" />
               <CodeBlock
-                code="wrangler d1 execute openpost-db --file=./migrations/init.sql"
+                code="wrangler d1 execute openpub-db --file=./migrations/init.sql"
                 title="bash"
               />
               <p className="text-sm text-zinc-400">
@@ -388,7 +388,7 @@ function DocsPage() {
                 Generated cover image URLs are constructed from <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">BASE_URL</code>. Update <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">[vars]</code> in <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">wrangler.toml</code>:
               </p>
               <CodeBlock
-                code={`[vars]\nBASE_URL = "https://openpost.<your-subdomain>.workers.dev"`}
+                code={`[vars]\nBASE_URL = "https://openpub.<your-subdomain>.workers.dev"`}
                 title="wrangler.toml"
               />
               <p className="text-xs text-zinc-500">
@@ -404,29 +404,29 @@ function DocsPage() {
               <SubHeading id="step-7-verify" title="7. Verify Endpoints" />
               <p className="text-sm text-zinc-400">Health check (unauthenticated public ping):</p>
               <CodeBlock
-                code={`curl https://openpost.<subdomain>.workers.dev/health\n# {"ok":true,"name":"openpost"}`}
+                code={`curl https://openpub.<subdomain>.workers.dev/health\n# {"ok":true,"name":"openpub"}`}
                 title="bash"
               />
 
               <p className="text-sm text-zinc-400">Authenticated API status check:</p>
               <CodeBlock
-                code={`curl -H "Authorization: Bearer $ADMIN_KEY" \\\n  https://openpost.<subdomain>.workers.dev/api/status\n# {"platforms":[],"available":["devto","hashnode","wordpress","ghost","medium","substack","github-pages","x"]}`}
+                code={`curl -H "Authorization: Bearer $ADMIN_KEY" \\\n  https://openpub.<subdomain>.workers.dev/api/status\n# {"platforms":[],"available":["devto","hashnode","wordpress","ghost","medium","substack","github-pages","x"]}`}
                 title="bash"
               />
 
               <p className="text-sm text-zinc-400">MCP endpoint handshake:</p>
               <CodeBlock
-                code={`curl https://openpost.<subdomain>.workers.dev/mcp\n# {"name":"openpost","transport":"streamable-http", ...}`}
+                code={`curl https://openpub.<subdomain>.workers.dev/mcp\n# {"name":"openpub","transport":"streamable-http", ...}`}
                 title="bash"
               />
 
               <SubHeading id="custom-domain" title="Custom Domain (Optional)" />
               <p className="text-sm text-zinc-400">
-                To serve OpenPost on your own apex or subdomain:
+                To serve OpenPub on your own apex or subdomain:
               </p>
               <ol className="list-decimal list-inside space-y-1 text-sm text-zinc-400">
                 <li>Add the domain zone to your Cloudflare account.</li>
-                <li>In Cloudflare Dashboard: Workers & Pages -&gt; open <code className="font-mono text-xs">openpost</code> -&gt; Settings -&gt; Domains & Routes -&gt; Add Custom Domain.</li>
+                <li>In Cloudflare Dashboard: Workers & Pages -&gt; open <code className="font-mono text-xs">openpub</code> -&gt; Settings -&gt; Domains & Routes -&gt; Add Custom Domain.</li>
                 <li>Enter e.g. <code className="font-mono text-xs">post.example.com</code>. Cloudflare automatically issues and manages the TLS certificate.</li>
                 <li>Update <code className="font-mono text-xs">BASE_URL</code> in <code className="font-mono text-xs">wrangler.toml</code> to <code className="font-mono text-xs">https://post.example.com</code> and run <code className="font-mono text-xs">wrangler deploy</code>.</li>
               </ol>
@@ -476,9 +476,9 @@ function DocsPage() {
                 </table>
               </div>
 
-              <SubHeading id="updating" title="Updating OpenPost" />
+              <SubHeading id="updating" title="Updating OpenPub" />
               <CodeBlock
-                code={`git pull\nwrangler deploy\n# For database updates:\nwrangler d1 execute openpost-db --file=./migrations/<name>.sql`}
+                code={`git pull\nwrangler deploy\n# For database updates:\nwrangler d1 execute openpub-db --file=./migrations/<name>.sql`}
                 title="bash"
               />
               <p className="text-sm text-zinc-400">
@@ -492,12 +492,12 @@ function DocsPage() {
                 id="platforms"
                 badge="Adapters & Credentials"
                 title="Platforms Table"
-                subtitle="OpenPost supports eight platforms out of the box. Credential keys are exact: adapters read them verbatim from the stored JSON record."
+                subtitle="OpenPub supports eight platforms out of the box. Credential keys are exact: adapters read them verbatim from the stored JSON record."
               />
 
               <SubHeading id="platforms-overview" title="Storing and Testing Credentials" />
               <p className="text-sm leading-relaxed text-zinc-400">
-                Store credentials via REST API using <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">POST /api/platforms/:name</code> or via CLI with <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">openpost setup</code>:
+                Store credentials via REST API using <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">POST /api/platforms/:name</code> or via CLI with <code className="rounded bg-zinc-900 px-1 py-0.5 font-mono text-xs text-emerald-300 border border-zinc-800">openpub setup</code>:
               </p>
               <CodeBlock
                 code={`# Via REST API:\ncurl -X POST \\\n  -H "Authorization: Bearer $ADMIN_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"api_key": "your-devto-key"}' \\\n  https://<worker>/api/platforms/devto\n\n# Test credentials:\ncurl -X POST -H "Authorization: Bearer $ADMIN_KEY" \\\n  https://<worker>/api/platforms/devto/test\n# {"ok":true}`}
@@ -580,7 +580,7 @@ function DocsPage() {
               {/* Individual Platform Details */}
               <SubHeading id="platform-devto" title="dev.to (devto)" />
               <p className="text-sm text-zinc-400">
-                Scope: read and write articles. Go to <code className="font-mono text-xs text-zinc-300">dev.to -&gt; Settings (avatar) -&gt; Extensions -&gt; DEV Community API Keys</code>. Create a key named <code className="font-mono text-xs text-zinc-300">openpost</code> and copy it.
+                Scope: read and write articles. Go to <code className="font-mono text-xs text-zinc-300">dev.to -&gt; Settings (avatar) -&gt; Extensions -&gt; DEV Community API Keys</code>. Create a key named <code className="font-mono text-xs text-zinc-300">openpub</code> and copy it.
               </p>
               <CodeBlock
                 code={`{\n  "api_key": "xxxxxxxxxxxxxxxxxxxxxxxx"\n}`}
@@ -599,12 +599,12 @@ function DocsPage() {
                 title="hashnode credentials JSON"
               />
               <p className="text-xs text-zinc-500">
-                Notes: If <code className="font-mono">publication_id</code> is omitted, OpenPost automatically resolves your first publication via GraphQL. Publishes via <code className="font-mono">publishPost</code> mutation at gql.hashnode.com with <code className="font-mono">publishAs: LIVE</code>. Max 5 tags; canonical URL (<code className="font-mono">originalArticleURL</code>) supported.
+                Notes: If <code className="font-mono">publication_id</code> is omitted, OpenPub automatically resolves your first publication via GraphQL. Publishes via <code className="font-mono">publishPost</code> mutation at gql.hashnode.com with <code className="font-mono">publishAs: LIVE</code>. Max 5 tags; canonical URL (<code className="font-mono">originalArticleURL</code>) supported.
               </p>
 
               <SubHeading id="platform-wordpress" title="WordPress (wordpress)" />
               <p className="text-sm text-zinc-400">
-                Works for self-hosted WordPress 5.6+ and WordPress.com. Go to <code className="font-mono text-xs text-zinc-300">WP Admin -&gt; Users -&gt; Profile (or Edit User) -&gt; Application Passwords</code>. Name it <code className="font-mono text-xs text-zinc-300">openpost</code> and generate. Copy the 24-character password.
+                Works for self-hosted WordPress 5.6+ and WordPress.com. Go to <code className="font-mono text-xs text-zinc-300">WP Admin -&gt; Users -&gt; Profile (or Edit User) -&gt; Application Passwords</code>. Name it <code className="font-mono text-xs text-zinc-300">openpub</code> and generate. Copy the 24-character password.
               </p>
               <CodeBlock
                 code={`{\n  "site_url": "https://yourblog.com",\n  "username": "your-wp-username",\n  "app_password": "xxxx xxxx xxxx xxxx xxxx xxxx"\n}`}
@@ -616,14 +616,14 @@ function DocsPage() {
 
               <SubHeading id="platform-ghost" title="Ghost (ghost)" />
               <p className="text-sm text-zinc-400">
-                Works on Ghost(Pro) and self-hosted Ghost 4/5/6. Go to <code className="font-mono text-xs text-zinc-300">Ghost Admin (/ghost) -&gt; Settings -&gt; Integrations -&gt; Add custom integration</code>. Name it <code className="font-mono text-xs text-zinc-300">openpost</code>. Copy the <strong>Admin API Key</strong> (format: <code className="font-mono text-xs text-zinc-300">&lt;24-hex&gt;:&lt;64-hex&gt;</code>). Do not use the Content API key (read-only).
+                Works on Ghost(Pro) and self-hosted Ghost 4/5/6. Go to <code className="font-mono text-xs text-zinc-300">Ghost Admin (/ghost) -&gt; Settings -&gt; Integrations -&gt; Add custom integration</code>. Name it <code className="font-mono text-xs text-zinc-300">openpub</code>. Copy the <strong>Admin API Key</strong> (format: <code className="font-mono text-xs text-zinc-300">&lt;24-hex&gt;:&lt;64-hex&gt;</code>). Do not use the Content API key (read-only).
               </p>
               <CodeBlock
                 code={`{\n  "site_url": "https://yourblog.ghost.io",\n  "admin_key": "64f1a2b3c4d5e6f7a8b9c0d1:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"\n}`}
                 title="ghost credentials JSON"
               />
               <p className="text-xs text-zinc-500">
-                Notes: The key is split into <code className="font-mono">id:secret</code>, and OpenPost signs a 5-minute HS256 JWT per request. Publishes HTML via <code className="font-mono">POST /ghost/api/admin/posts/?source=html</code>. Max 10 tags; canonical URL and feature image supported.
+                Notes: The key is split into <code className="font-mono">id:secret</code>, and OpenPub signs a 5-minute HS256 JWT per request. Publishes HTML via <code className="font-mono">POST /ghost/api/admin/posts/?source=html</code>. Max 10 tags; canonical URL and feature image supported.
               </p>
 
               <SubHeading id="platform-medium" title="Medium (medium)" />
@@ -640,7 +640,7 @@ function DocsPage() {
 
               <SubHeading id="platform-substack" title="Substack (substack)" />
               <p className="text-sm text-zinc-400">
-                Substack does not provide a public API. OpenPost authenticates via your publication session cookie <code className="font-mono text-xs text-zinc-300">connect.sid</code> against the internal web editor endpoints.
+                Substack does not provide a public API. OpenPub authenticates via your publication session cookie <code className="font-mono text-xs text-zinc-300">connect.sid</code> against the internal web editor endpoints.
               </p>
               <ol className="list-decimal list-inside space-y-1 text-sm text-zinc-400">
                 <li>Log in to your publication on substack.com in a desktop browser.</li>
@@ -692,19 +692,19 @@ function DocsPage() {
                 id="cli"
                 badge="Terminal Workflow"
                 title="CLI Reference"
-                subtitle="The openpost-cli tool connects to your self-hosted worker, letting you manage drafts, store platform tokens, inspect publish logs, and publish directly from your terminal."
+                subtitle="The openpub-cli tool connects to your self-hosted worker, letting you manage drafts, store platform tokens, inspect publish logs, and publish directly from your terminal."
               />
 
               <SubHeading id="cli-install" title="Installation & Authentication" />
               <p className="text-sm text-zinc-400">Install globally or run via npx:</p>
-              <CodeBlock code="npm install -g openpost-cli" title="bash" />
-              <p className="text-sm text-zinc-400">Log in to your OpenPost deployment:</p>
+              <CodeBlock code="npm install -g openpub-cli" title="bash" />
+              <p className="text-sm text-zinc-400">Log in to your OpenPub deployment:</p>
               <CodeBlock
-                code="openpost login --url https://openpost.<subdomain>.workers.dev --key <ADMIN_KEY>"
+                code="openpub login --url https://openpub.<subdomain>.workers.dev --key <ADMIN_KEY>"
                 title="bash"
               />
               <p className="text-xs text-zinc-500">
-                If flags are omitted, the CLI interactively prompts for the URL and key, validates the connection against <code className="font-mono">/api/status</code>, and saves configuration to <code className="font-mono">~/.openpost/config.json</code>.
+                If flags are omitted, the CLI interactively prompts for the URL and key, validates the connection against <code className="font-mono">/api/status</code>, and saves configuration to <code className="font-mono">~/.openpub/config.json</code>.
               </p>
 
               <SubHeading id="cli-matrix" title="Command Reference Matrix" />
@@ -790,19 +790,19 @@ function DocsPage() {
               <SubHeading id="cli-commands" title="Command Examples" />
               <p className="text-sm text-zinc-400">Publish a post to dev.to and Hashnode:</p>
               <CodeBlock
-                code="openpost publish my-article.md --to devto,hashnode"
+                code="openpub publish my-article.md --to devto,hashnode"
                 title="bash"
               />
 
               <p className="text-sm text-zinc-400">Retry a single failed platform:</p>
               <CodeBlock
-                code="openpost retry clx123abc devto"
+                code="openpub retry clx123abc devto"
                 title="bash"
               />
 
               <p className="text-sm text-zinc-400">Generate an AI cover image for a post:</p>
               <CodeBlock
-                code="openpost cover 'minimalist dark emerald circuit diagram illustration'"
+                code="openpub cover 'minimalist dark emerald circuit diagram illustration'"
                 title="bash"
               />
 
@@ -811,7 +811,7 @@ function DocsPage() {
                 You can specify target platforms, canonical URLs, and cover images directly in your Markdown file frontmatter:
               </p>
               <CodeBlock
-                code={`---\ntitle: "Shipping Edge Workers on Cloudflare"\ncanonical: "https://myblog.com/posts/shipping-edge-workers"\ncover_image: "https://openpost.workers.dev/api/images/covers/cover-abc.png"\nplatforms:\n  - devto\n  - hashnode\n  - ghost\n  - wordpress\ntags:\n  - typescript\n  - cloudflare\n  - webdev\n---\n\n## Introduction\n\nYour article content starts here in standard Markdown...`}
+                code={`---\ntitle: "Shipping Edge Workers on Cloudflare"\ncanonical: "https://myblog.com/posts/shipping-edge-workers"\ncover_image: "https://openpub.workers.dev/api/images/covers/cover-abc.png"\nplatforms:\n  - devto\n  - hashnode\n  - ghost\n  - wordpress\ntags:\n  - typescript\n  - cloudflare\n  - webdev\n---\n\n## Introduction\n\nYour article content starts here in standard Markdown...`}
                 title="article.md"
               />
             </section>
@@ -822,7 +822,7 @@ function DocsPage() {
                 id="mcp"
                 badge="Agent Integration"
                 title="MCP Setup"
-                subtitle="OpenPost exposes an MCP server over Streamable HTTP at POST /mcp. Stateless JSON mode: answers initialize, tools/list, tools/call, ping, and ignores notifications."
+                subtitle="OpenPub exposes an MCP server over Streamable HTTP at POST /mcp. Stateless JSON mode: answers initialize, tools/list, tools/call, ping, and ignores notifications."
               />
 
               <SubHeading id="mcp-overview" title="Streamable HTTP Protocol" />
@@ -913,14 +913,14 @@ function DocsPage() {
               <SubHeading id="mcp-claude-code" title="Claude Code Configuration" />
               <p className="text-sm text-zinc-400">Add the server using Claude Code built-in HTTP transport:</p>
               <CodeBlock
-                code={`claude mcp add --transport http openpost \\\n  https://openpost.<subdomain>.workers.dev/mcp \\\n  --header "Authorization: Bearer <ADMIN_KEY>"`}
+                code={`claude mcp add --transport http openpub \\\n  https://openpub.<subdomain>.workers.dev/mcp \\\n  --header "Authorization: Bearer <ADMIN_KEY>"`}
                 title="terminal"
               />
               <p className="text-sm text-zinc-400">
                 Or add to project-level <code className="font-mono text-xs text-zinc-300">.mcp.json</code> or user-level <code className="font-mono text-xs text-zinc-300">~/.claude.json</code>:
               </p>
               <CodeBlock
-                code={`{\n  "mcpServers": {\n    "openpost": {\n      "type": "http",\n      "url": "https://openpost.<subdomain>.workers.dev/mcp",\n      "headers": {\n        "Authorization": "Bearer <ADMIN_KEY>"\n      }\n    }\n  }\n}`}
+                code={`{\n  "mcpServers": {\n    "openpub": {\n      "type": "http",\n      "url": "https://openpub.<subdomain>.workers.dev/mcp",\n      "headers": {\n        "Authorization": "Bearer <ADMIN_KEY>"\n      }\n    }\n  }\n}`}
                 title=".mcp.json"
               />
 
@@ -929,11 +929,11 @@ function DocsPage() {
                 Edit <code className="font-mono text-xs text-zinc-300">~/.cursor/mcp.json</code> or <code className="font-mono text-xs text-zinc-300">.cursor/mcp.json</code> in your project root:
               </p>
               <CodeBlock
-                code={`{\n  "mcpServers": {\n    "openpost": {\n      "url": "https://openpost.<subdomain>.workers.dev/mcp",\n      "headers": {\n        "Authorization": "Bearer <ADMIN_KEY>"\n      }\n    }\n  }\n}`}
+                code={`{\n  "mcpServers": {\n    "openpub": {\n      "url": "https://openpub.<subdomain>.workers.dev/mcp",\n      "headers": {\n        "Authorization": "Bearer <ADMIN_KEY>"\n      }\n    }\n  }\n}`}
                 title="mcp.json"
               />
               <p className="text-xs text-zinc-500">
-                Open Cursor Settings -&gt; MCP, verify the green status dot, and check tool listing. If headers are not forwarded, pass the key as query parameter: <code className="font-mono text-xs">"url": "https://openpost.&lt;subdomain&gt;.workers.dev/mcp?key=&lt;ADMIN_KEY&gt;"</code>.
+                Open Cursor Settings -&gt; MCP, verify the green status dot, and check tool listing. If headers are not forwarded, pass the key as query parameter: <code className="font-mono text-xs">"url": "https://openpub.&lt;subdomain&gt;.workers.dev/mcp?key=&lt;ADMIN_KEY&gt;"</code>.
               </p>
 
               <SubHeading id="mcp-windsurf" title="Windsurf Configuration" />
@@ -941,13 +941,13 @@ function DocsPage() {
                 Add to <code className="font-mono text-xs text-zinc-300">~/.codeium/windsurf/mcp_config.json</code>:
               </p>
               <CodeBlock
-                code={`{\n  "mcpServers": {\n    "openpost": {\n      "serverUrl": "https://openpost.<subdomain>.workers.dev/mcp",\n      "headers": {\n        "Authorization": "Bearer <ADMIN_KEY>"\n      }\n    }\n  }\n}`}
+                code={`{\n  "mcpServers": {\n    "openpub": {\n      "serverUrl": "https://openpub.<subdomain>.workers.dev/mcp",\n      "headers": {\n        "Authorization": "Bearer <ADMIN_KEY>"\n      }\n    }\n  }\n}`}
                 title="mcp_config.json"
               />
 
               <SubHeading id="mcp-curl" title="Generic HTTP / curl Verification" />
               <CodeBlock
-                code={`BASE=https://openpost.<subdomain>.workers.dev\nKEY=<ADMIN_KEY>\n\n# 1. Initialize\ncurl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{\n  "jsonrpc": "2.0", "id": 1, "method": "initialize",\n  "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "curl-client", "version": "1.0"}}\n}'\n\n# 2. List tools\ncurl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{\n  "jsonrpc": "2.0", "id": 2, "method": "tools/list"\n}'\n\n# 3. Call tool (status)\ncurl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{\n  "jsonrpc": "2.0", "id": 3, "method": "tools/call",\n  "params": {"name": "status", "arguments": {}}\n}'`}
+                code={`BASE=https://openpub.<subdomain>.workers.dev\nKEY=<ADMIN_KEY>\n\n# 1. Initialize\ncurl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{\n  "jsonrpc": "2.0", "id": 1, "method": "initialize",\n  "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "curl-client", "version": "1.0"}}\n}'\n\n# 2. List tools\ncurl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{\n  "jsonrpc": "2.0", "id": 2, "method": "tools/list"\n}'\n\n# 3. Call tool (status)\ncurl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{\n  "jsonrpc": "2.0", "id": 3, "method": "tools/call",\n  "params": {"name": "status", "arguments": {}}\n}'`}
                 title="bash"
               />
 
@@ -987,7 +987,7 @@ function DocsPage() {
                     <tr>
                       <td className="px-3.5 py-2.5 font-mono text-red-400">fetch failed / ECONNRESET</td>
                       <td className="px-3.5 py-2.5">Incorrect worker URL or client forced SSE</td>
-                      <td className="px-3.5 py-2.5">OpenPost uses POST-only JSON; check URL format</td>
+                      <td className="px-3.5 py-2.5">OpenPub uses POST-only JSON; check URL format</td>
                     </tr>
                     <tr>
                       <td className="px-3.5 py-2.5 font-mono text-yellow-400">test_platform ok: false</td>
@@ -1005,13 +1005,13 @@ function DocsPage() {
                 id="architecture"
                 badge="System Design"
                 title="Architecture"
-                subtitle="OpenPost relies entirely on Cloudflare edge primitives. No servers, no containers, no external databases."
+                subtitle="OpenPub relies entirely on Cloudflare edge primitives. No servers, no containers, no external databases."
               />
 
               <SubHeading id="arch-diagram" title="System Diagram" />
               <div className="my-4 overflow-x-auto rounded-lg border border-zinc-800/80 bg-zinc-950/90 p-5 font-mono text-xs leading-relaxed text-zinc-300">
                 <pre>{`                          +---------------------------------------------+
-  openpost-cli ---------->|                                             |
+  openpub-cli ---------->|                                             |
   MCP clients ----------->|   Cloudflare Worker (Hono)                  |
   (Claude Code, Cursor)   |                                             |
   Dashboard ------------->|   /api/*   REST    /mcp   JSON-RPC          |
@@ -1019,7 +1019,7 @@ function DocsPage() {
                                  | |                  | |
                     +------------v-+ |      +---------v-+-+
                     |  D1            |      |  Queue      |
-                    |  drafts, creds,|      |  openpost-  |
+                    |  drafts, creds,|      |  openpub-  |
                     |  publish_log   |      |  publish    |
                     +------------+-+-+      +---------+-+-+
                                | |                 | | consumer (retry x3)
@@ -1204,7 +1204,7 @@ function DocsPage() {
             {/* Footer */}
             <footer className="mt-20 border-t border-zinc-900 pt-8 pb-12">
               <div className="flex flex-wrap items-center justify-between gap-4 font-mono text-xs text-zinc-500">
-                <span>openpost · MIT License</span>
+                <span>openpub · MIT License</span>
                 <div className="flex items-center gap-6">
                   <a href="/" className="hover:text-zinc-200 transition-colors">
                     Landing

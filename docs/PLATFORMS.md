@@ -1,6 +1,6 @@
 # Platform Credentials
 
-OpenPost supports eight platforms. Each needs credentials stored via `POST /api/platforms/:name` (REST) or the `setup` MCP tool. Credential keys are exact: the adapters read them verbatim from the stored JSON object.
+OpenPub supports eight platforms. Each needs credentials stored via `POST /api/platforms/:name` (REST) or the `setup` MCP tool. Credential keys are exact: the adapters read them verbatim from the stored JSON object.
 
 > **URL host requirements:** Any `site_url` or `publication_url` credential must be a public HTTPS host (e.g. `https://yourblog.com`). Plaintext HTTP, localhost, loopback addresses, internal hosts (`.internal`, `.local`), private network IP ranges, and URLs with embedded credentials are automatically rejected by platform URL guards.
 
@@ -32,7 +32,7 @@ Screenshot placeholders live under `docs/screenshots/<platform>-*.png`.
 
 Dev.to API key. Scope: read + write articles.
 
-**Get it:** dev.to, Settings (top-right avatar), Extensions, "DEV Community API Keys" section. Name the key (e.g. `openpost`), Generate.
+**Get it:** dev.to, Settings (top-right avatar), Extensions, "DEV Community API Keys" section. Name the key (e.g. `openpub`), Generate.
 
 **Credentials:**
 
@@ -83,7 +83,7 @@ Notes: publishes through the `publishPost` mutation at `https://gql.hashnode.com
 
 WordPress.com or self-hosted WP 5.6+ with Application Passwords. Auth: HTTP Basic `username:app_password` against `/wp-json/wp/v2`.
 
-**Get it:** WP Admin, Users, Profile (or Edit User), scroll to "Application Passwords". Name it `openpost`, Add New Application Password. Copy the generated password (24 chars, displayed with spaces; spaces are fine, Basic auth handles them).
+**Get it:** WP Admin, Users, Profile (or Edit User), scroll to "Application Passwords". Name it `openpub`, Add New Application Password. Copy the generated password (24 chars, displayed with spaces; spaces are fine, Basic auth handles them).
 
 On WordPress.com: Settings, Security, Application Passwords. Requires 2FA enabled first.
 
@@ -109,7 +109,7 @@ Self-hosted gotchas: Application Passwords require HTTPS. Some hosts (e.g. certa
 
 Ghost Admin API key (JWT-signed requests). Works on Ghost(Pro) and self-hosted Ghost 4+/5+/6+.
 
-**Get it:** Ghost Admin (`/ghost`), Settings (gear), Integrations, Add custom integration. Name it `openpost`. Copy the **Admin API Key** (format: `<24-hex>:<64-hex>`). Do not use the Content API key; that one is read-only.
+**Get it:** Ghost Admin (`/ghost`), Settings (gear), Integrations, Add custom integration. Name it `openpub`. Copy the **Admin API Key** (format: `<24-hex>:<64-hex>`). Do not use the Content API key; that one is read-only.
 
 **Credentials:**
 
@@ -130,7 +130,7 @@ Notes: the key is `id:secret`; the adapter splits on `:` and signs a 5-minute HS
 
 Medium Integration Token.
 
-**Get it:** medium.com, avatar, Settings, Security and apps, "Integration tokens". Enter a description (`openpost`), Get token. Copy it.
+**Get it:** medium.com, avatar, Settings, Security and apps, "Integration tokens". Enter a description (`openpub`), Get token. Copy it.
 
 (If the Integration tokens section is missing, Medium has restricted new token issuance on some accounts; check your Settings page. Existing tokens keep working.)
 
@@ -140,7 +140,7 @@ Medium Integration Token.
 { "integration_token": "2a1b3c4d5e6f..." }
 ```
 
-Notes: Medium's API only creates **unlisted/draft/public** posts and cannot update them. OpenPost sends `publishStatus: public` or `draft`. Max 5 tags; canonical URL supported (use it, Medium respects it for SEO). No cover image support in the API. Medium API is officially in maintenance mode but functional.
+Notes: Medium's API only creates **unlisted/draft/public** posts and cannot update them. OpenPub sends `publishStatus: public` or `draft`. Max 5 tags; canonical URL supported (use it, Medium respects it for SEO). No cover image support in the API. Medium API is officially in maintenance mode but functional.
 
 ![medium integration tokens](screenshots/medium-integration-token.png)
 
@@ -148,7 +148,7 @@ Notes: Medium's API only creates **unlisted/draft/public** posts and cannot upda
 
 ## substack
 
-Substack has no public API. OpenPost uses your `connect.sid` session cookie against the same internal endpoints the web app uses (`/api/v1/drafts`). Posts are created as **drafts** in your dashboard; you publish/send manually.
+Substack has no public API. OpenPub uses your `connect.sid` session cookie against the same internal endpoints the web app uses (`/api/v1/drafts`). Posts are created as **drafts** in your dashboard; you publish/send manually.
 
 **Get it:**
 
@@ -204,7 +204,7 @@ Notes: files are written as `<dir>/<slugified-title>.md` with YAML frontmatter (
 
 ## x
 
-X Articles API (v2). Long-form articles on X, not tweets. Publishing is two-step: OpenPost creates a draft article via `POST /2/articles/draft`, then publishes it via `POST /2/articles/:id/publish`. Draft-status publishes stop after step one and return the composer URL.
+X Articles API (v2). Long-form articles on X, not tweets. Publishing is two-step: OpenPub creates a draft article via `POST /2/articles/draft`, then publishes it via `POST /2/articles/:id/publish`. Draft-status publishes stop after step one and return the composer URL.
 
 **Get it:** developer.x.com, create a project + app, enable OAuth 2.0 (user context) with the `tweet.write` scope (plus `tweet.read`/`users.read` for the test call), then run the authorization-code flow to obtain a user access token. Client credentials / app-only tokens will not work - the token must act as your account.
 

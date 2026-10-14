@@ -6,7 +6,7 @@ export const Route = createFileRoute("/app")({
   component: App,
 })
 
-const DEFAULT_BASE = "https://openpost.princslabs.workers.dev"
+const DEFAULT_BASE = "https://openpub.princslabs.workers.dev"
 
 const PLATFORMS = [
   "devto",

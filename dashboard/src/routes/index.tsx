@@ -6,9 +6,9 @@ export const Route = createFileRoute('/')({
   component: Landing,
 })
 
-const GITHUB = 'https://github.com/princepal9120/openpost'
+const GITHUB = 'https://github.com/princepal9120/openpub'
 const DEPLOY =
-  'https://deploy.workers.cloudflare.com/?url=https://github.com/princepal9120/openpost'
+  'https://deploy.workers.cloudflare.com/?url=https://github.com/princepal9120/openpub'
 
 const PLATFORMS = [
   { slug: 'devdotto', label: 'dev.to' },
@@ -30,49 +30,49 @@ const AGENTS = [
   { slug: 'openai', label: 'Codex' },
 ]
 
-const MCP_SNIPPET = `claude mcp add --transport http openpost \\
-  https://openpost.your-sub.workers.dev/mcp \\
+const MCP_SNIPPET = `claude mcp add --transport http openpub \\
+  https://openpub.your-sub.workers.dev/mcp \\
   --header "Authorization: Bearer ADMIN_KEY"`
 
 const MCP_JSON = `// .cursor/mcp.json (any MCP client)
 {
   "mcpServers": {
-    "openpost": {
-      "url": "https://openpost.your-sub.workers.dev/mcp",
+    "openpub": {
+      "url": "https://openpub.your-sub.workers.dev/mcp",
       "headers": { "Authorization": "Bearer ADMIN_KEY" }
     }
   }
 }`
 
-const CLI_DEMO = `npm i -g openpost-cli
-openpost login --url https://openpost.your-sub.workers.dev
-openpost publish post.md --to devto,hashnode,x
+const CLI_DEMO = `npm i -g openpub-cli
+openpub login --url https://openpub.your-sub.workers.dev
+openpub publish post.md --to devto,hashnode,x
 
 # from your agent, same thing
-openpost docs ./posts          # static site
-openpost status                # platforms wired`
+openpub docs ./posts          # static site
+openpub status                # platforms wired`
 
 const STEPS = [
   {
     n: '01',
     title: 'Clone and install',
-    code: 'git clone https://github.com/princepal9120/openpost\ncd openpost && npm install',
+    code: 'git clone https://github.com/princepal9120/openpub\ncd openpub && npm install',
   },
   {
     n: '02',
     title: 'Provision the free tier',
-    code: 'npx wrangler d1 create openpost-db\nnpx wrangler kv namespace create KEYS\nnpx wrangler r2 bucket create openpost-media\nnpx wrangler queues create openpost-publish\nnpx wrangler secret put ADMIN_KEY',
+    code: 'npx wrangler d1 create openpub-db\nnpx wrangler kv namespace create KEYS\nnpx wrangler r2 bucket create openpub-media\nnpx wrangler queues create openpub-publish\nnpx wrangler secret put ADMIN_KEY',
   },
   {
     n: '03',
     title: 'Migrate and deploy',
-    code: 'npx wrangler d1 execute openpost-db --file=migrations/init.sql\nnpm run deploy',
+    code: 'npx wrangler d1 execute openpub-db --file=migrations/init.sql\nnpm run deploy',
   },
 ]
 
-const WIRE_PLATFORM = `openpost setup devto '{"api_key": "..."}'
-openpost test devto        # verifies creds live
-openpost publish post.md --to devto,hashnode,x`
+const WIRE_PLATFORM = `openpub setup devto '{"api_key": "..."}'
+openpub test devto        # verifies creds live
+openpub publish post.md --to devto,hashnode,x`
 
 const FEATURES = [
   {
@@ -80,7 +80,7 @@ const FEATURES = [
     d: 'One remote MCP server. Claude Code, Cursor, Windsurf, Codex, Zed, Copilot publish without local setup.',
   },
   {
-    t: 'openpost-cli',
+    t: 'openpub-cli',
     d: 'Ship posts from your terminal or your agent shell. Drafts, platforms, publish history, all scriptable.',
   },
   {
@@ -98,6 +98,81 @@ const FEATURES = [
   {
     t: 'Zero cost',
     d: 'Workers + D1 + KV + R2 + Queues. Static SPA served free. Everything runs on the Cloudflare free tier.',
+  },
+]
+
+// pipepost-style agent transcript: one prompt, full pipeline
+const TRANSCRIPT: { t: 'user' | 'tool' | 'ok' | 'plain'; x: string }[] = [
+  { t: 'user', x: '"Publish my-mcp-post.md to devto, hashnode and my ghost site, then show me the links."' },
+  { t: 'tool', x: 'create_draft' },
+  { t: 'plain', x: 'draft b31c9e · 2,140 words · tags mcp, cloudflare' },
+  { t: 'tool', x: 'cover_image' },
+  { t: 'plain', x: 'generated /covers/a91f… og:image wired' },
+  { t: 'tool', x: 'publish → devto, hashnode, ghost' },
+  { t: 'ok', x: 'published → dev.to/you/my-mcp-post' },
+  { t: 'ok', x: 'published → hashnode.dev/@you/my-mcp-post' },
+  { t: 'ok', x: 'published → you.ghost.io/my-mcp-post' },
+  { t: 'plain', x: 'canonical → you.ghost.io/my-mcp-post' },
+  { t: 'ok', x: 'done. 3/3 live. history saved.' },
+]
+
+const TOOL_GROUPS = [
+  {
+    n: '01',
+    t: 'Draft',
+    code: 'create_draft + get_draft + list_drafts',
+    d: 'One markdown file in. Drafts, metadata, tags and canonical URL handled server-side.',
+  },
+  {
+    n: '02',
+    t: 'Publish',
+    code: 'publish + retry + history',
+    d: 'Fan out to 8 platforms with atomic claim rows. Retries never double-post.',
+  },
+  {
+    n: '03',
+    t: 'Platforms',
+    code: 'setup + test + status',
+    d: 'Wire credentials per platform, verify them live, see what is connected.',
+  },
+  {
+    n: '04',
+    t: 'Media',
+    code: 'cover_image + upload_image',
+    d: 'Generate covers, upload images to R2, wire og:image on every copy.',
+  },
+  {
+    n: '05',
+    t: 'Inspect',
+    code: 'check_links + analytics',
+    d: 'Validate outbound links pre-publish. Pull per-platform results after.',
+  },
+]
+
+const FAQ = [
+  {
+    q: 'What is OpenPub?',
+    a: 'A self-hosted cross-posting worker. One markdown file goes in; OpenPub ships it to every platform you wire, sets canonical URLs back to your site, and keeps an atomic publish log so retries never double-post.',
+  },
+  {
+    q: 'How do agents use it?',
+    a: 'OpenPub exposes a remote MCP server over streamable HTTP at /mcp. Add one header in Claude Code, Cursor, Windsurf, Codex or any MCP client and the agent gets 13 tools: drafts, publish, covers, setup, link checks.',
+  },
+  {
+    q: 'Where do my keys live?',
+    a: 'In your Cloudflare account. Platform credentials sit in your own D1 behind your ADMIN_KEY. Nothing is proxied through a third party. No telemetry, no external relay.',
+  },
+  {
+    q: 'What does it cost?',
+    a: 'Zero. It runs entirely on the Cloudflare free tier: Workers, D1, KV, R2, Queues, and static assets for this site. MIT-licensed, so fork it, rebrand it, ship it.',
+  },
+  {
+    q: 'Which platforms are supported?',
+    a: 'dev.to, Hashnode, Medium, Ghost, WordPress, Substack, X Articles, and your own site via GitHub Pages. Each adapter handles tags, canonical URLs, and cover images where the platform allows.',
+  },
+  {
+    q: 'Why not Buffer, Zapier, or Pipepost?',
+    a: 'Those are SaaS relays or per-run credit meters. OpenPub is yours: self-hosted, MIT, no credits, no relay, no subscription. The agent calls your worker directly.',
   },
 ]
 
@@ -457,7 +532,7 @@ function Landing() {
               <div className="font-mono text-[11px] text-zinc-400">
                 <span className="text-emerald-400/90">cli</span>
                 <span className="mx-1.5 text-zinc-600">/</span>
-                <span>openpost-cli</span>
+                <span>openpub-cli</span>
               </div>
               <button
                 type="button"
@@ -477,6 +552,95 @@ function Landing() {
             </pre>
           </div>
         </Reveal>
+
+        {/* agent transcript — pipepost-style "one prompt, full pipeline" */}
+        <Reveal delay={100}>
+          <div className="mt-10">
+            <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
+              one prompt. full pipeline.
+            </p>
+            <h3 className="mt-2 text-xl font-semibold tracking-tight text-zinc-50">
+              Tell your agent what to ship. OpenPub does the rest.
+            </h3>
+          </div>
+          <div className="mt-5 overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-950/70 shadow-lg shadow-black/40">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
+              </div>
+              <div className="font-mono text-[11px] text-zinc-400">
+                <span className="text-emerald-400/90">mcp</span>
+                <span className="mx-1.5 text-zinc-600">/</span>
+                <span>agent transcript</span>
+              </div>
+            </div>
+            <div className="space-y-2.5 p-5 font-mono text-xs leading-relaxed">
+              {TRANSCRIPT.map((l, i) =>
+                l.t === 'user' ? (
+                  <p key={i} className="text-zinc-100">
+                    <span className="mr-2 text-zinc-600">you:</span>
+                    {l.x}
+                  </p>
+                ) : l.t === 'tool' ? (
+                  <p key={i} className="text-zinc-500">
+                    <span className="mr-2 rounded border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                      tool
+                    </span>
+                    {l.x}
+                  </p>
+                ) : l.t === 'ok' ? (
+                  <p key={i} className="text-emerald-400">
+                    <span className="mr-1.5">✓</span>
+                    {l.x}
+                  </p>
+                ) : (
+                  <p key={i} className="pl-3 text-zinc-500">
+                    {l.x}
+                  </p>
+                )
+              )}
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* tool groups — numbered like pipepost */}
+      <section className="border-t border-zinc-900 bg-zinc-950/30">
+        <div className="mx-auto max-w-5xl px-6 py-20">
+          <Reveal>
+            <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
+              13 tools
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+              One pipeline. Every tool does one thing.
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
+              Chain them in natural language or call them direct. Same surface
+              over MCP, REST, and the CLI.
+            </p>
+          </Reveal>
+
+          <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-800/60 sm:grid-cols-2 lg:grid-cols-3">
+            {TOOL_GROUPS.map((g, idx) => (
+              <Reveal key={g.n} delay={idx * 60}>
+                <div className="group h-full bg-[#0a0c0b] p-6 transition-colors duration-200 hover:bg-zinc-900/40">
+                  <p className="font-mono text-xs text-emerald-500/80">{g.n}</p>
+                  <h3 className="mt-2 text-sm font-semibold tracking-tight text-zinc-100">
+                    {g.t}
+                  </h3>
+                  <p className="mt-1.5 font-mono text-[11px] text-zinc-500">
+                    {g.code}
+                  </p>
+                  <p className="mt-2.5 text-sm leading-relaxed text-zinc-400">
+                    {g.d}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-20">
@@ -509,6 +673,29 @@ function Landing() {
             ))}
           </div>
         </Reveal>
+      </section>
+
+      {/* faq */}
+      <section className="border-t border-zinc-900">
+        <div className="mx-auto max-w-3xl px-6 py-20">
+          <Reveal>
+            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
+              Questions.
+            </h2>
+          </Reveal>
+          <div className="mt-8 divide-y divide-zinc-900">
+            {FAQ.map((f, idx) => (
+              <Reveal key={f.q} delay={idx * 40}>
+                <div className="py-5">
+                  <h3 className="text-sm font-semibold text-zinc-100">{f.q}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    {f.a}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </section>
 
       <footer className="border-t border-zinc-900">

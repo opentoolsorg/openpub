@@ -30,12 +30,12 @@ export const githubPages: PlatformAdapter = {
     // check existing (update in place)
     let sha: string | undefined
     const cur = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
-      headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpost/1.0', Accept: 'application/vnd.github+json' },
+      headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpub/1.0', Accept: 'application/vnd.github+json' },
     })
     if (cur.ok) sha = ((await cur.json()) as { sha: string }).sha
     const r = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpost/1.0', 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpub/1.0', 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: `post: ${input.title}`, content, branch, sha }),
     })
     if (!r.ok) throw new Error(`github ${r.status}: ${(await r.text()).slice(0, 300)}`)
@@ -44,7 +44,7 @@ export const githubPages: PlatformAdapter = {
   async test(creds) {
     if (!/^[\w.-]+\/[\w.-]+$/.test(creds.repo ?? '')) return false
     const r = await fetch(`https://api.github.com/repos/${creds.repo}`, {
-      headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpost/1.0' },
+      headers: { Authorization: `Bearer ${creds.token}`, 'User-Agent': 'openpub/1.0' },
     })
     return r.ok
   },
