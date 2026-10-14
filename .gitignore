@@ -6,3 +6,7 @@ dist/
 dashboard/node_modules/
 dashboard/.output/
 dashboard/.tanstack/
+.omc/
+.omx/
+.claude/
+site/.DS_Store

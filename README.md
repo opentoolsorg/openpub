@@ -1,234 +1,207 @@
 # OpenPub
 
-Write once in Markdown. Publish everywhere. Own the infrastructure.
+**Write once. Publish everywhere.**
 
-OpenPub is a self-hosted, Cloudflare-native cross-posting engine for technical blogs. Drop a Markdown file in, and OpenPub fans it out to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, a GitHub Pages repo, and X Articles - with per-platform adapters, canonical URL wiring, automatic retries, and a publish log you actually control.
+One Markdown file fans out to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, GitHub Pages, and X Articles. Per-platform adapters, canonical URL wiring, idempotent republish, and a publish ledger you own.
 
-It runs as a single Cloudflare Worker, so there is no server to babysit, no Docker container to keep alive, and no SaaS middleman holding your credentials. Your drafts, credentials, and publish history live in your own D1 database.
+OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machine and go nowhere except the platform you are publishing to. No SaaS middleman, no cloud relay, no telemetry, no credit system.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 
 ## Why
 
-Cross-posting tools either want your platform tokens on their servers, charge per publication, or quietly rot as platform APIs change. OpenPub keeps the credential store in your account, treats every platform as a small adapter you can read in one screen, and exposes the whole thing over MCP so your coding agent can publish a post without you leaving the editor.
+| Task | Without OpenPub | With OpenPub |
+|---|---|---|
+| Publish to dev.to | Open a browser, paste, fix formatting, add tags, submit | `openpub publish post.md --to devto` |
+| Cross-post to five platforms | Repeat the above five times | `openpub publish post.md` |
+| Canonical URLs | Set them by hand on every platform afterwards | Wired automatically from the first successful publish |
+| Re-publishing an edit | Find the old post, edit it again, hope you picked the right one | Skipped when unchanged, updated when it changed |
+| Publishing from CI | A bespoke script per platform | `uses: princepal9120/openpub@v1` |
+| Letting your agent publish | Paste the file into chat, then paste the result back | OpenPub is an MCP server |
 
-## Features
-
-- **One Markdown source of truth** - frontmatter for title, tags, platforms, canonical URL
-- **8 platform adapters** - devto, hashnode, wordpress, ghost, medium, substack, github-pages, x
-- **Canonical URL wiring** - first successful publish becomes the canonical URL for the rest; atomic claim rows prevent duplicate publishes on concurrent triggers or queue redelivery
-- **Queue-backed publishes** - Cloudflare Queues with a retry classifier (4xx permanent, 5xx retry); failed platforms retry without touching succeeded ones (idempotent)
-- **MCP server** - Streamable HTTP, works with Claude Code, Cursor, and any MCP client
-- **CLI** - `openpub publish post.md --to devto,hashnode` from your terminal
-- **Cover images** - Workers AI (FLUX schnell) generates covers via authenticated POST /api/images/generate, stored in R2 and served publicly at GET /covers/<uuid>.png (no auth)
-- **Dashboard** - TanStack Start web UI for drafts, platform status, and history
-
-## Deploy
-
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/<you>/openpub)
-
-## Quickstart
-
-Requires [Wrangler](https://developers.cloudflare.com/workers/wrangler/) and a Cloudflare account (free tier is fine).
+## Quick start
 
 ```bash
-git clone https://github.com/<you>/openpub.git
-cd openpub
-npm install
+# Store credentials for a platform. They never leave your machine.
+npx openpub-cli setup devto '{"api_key": "dv1_..."}'
 
-# Provision the bindings referenced in wrangler.toml
-wrangler d1 create openpub-db          # paste database_id into wrangler.toml
-wrangler kv namespace create KEYS       # paste id into wrangler.toml
-wrangler r2 bucket create openpub-media
-wrangler queues create openpub-publish
+# See what is configured and reachable.
+npx openpub-cli status
 
-# Apply the schema
-wrangler d1 execute openpub-db --file=migrations/init.sql
-
-# Your admin key - guards the API and the MCP endpoint
-wrangler secret put ADMIN_KEY
-
-# Point BASE_URL in wrangler.toml at your worker URL, then ship it
-wrangler deploy
+# Publish. Platforms come from --to, or from the file's frontmatter.
+npx openpub-cli publish post.md --to devto,hashnode,github-pages
 ```
 
-Then connect the CLI:
-
-```bash
-npm install -g openpub-cli
-openpub login --url https://openpub.<your-subdomain>.workers.dev --key <ADMIN_KEY>
-```
-
-Publish your first post:
-
-```bash
-openpub publish hello.md --to devto,hashnode
-```
-
-## Platform setup
-
-Credentials are stored per-platform in your own D1 database via `openpub setup <platform> '<json>'` (or a path to a JSON file), then verified with `openpub test <platform>`.
-
-| Platform      | Credentials                                                                 | Where to get them |
-|---------------|------------------------------------------------------------------------------|-------------------|
-| `devto`       | `{"api_key": "..."}`                                                         | dev.to → Settings → Extensions → DEV Community API Keys |
-| `hashnode`    | `{"token": "...", "publication_id": "...?"}`                                 | Hashnode → Account Settings → Developer → Personal Access Token. `publication_id` optional - auto-detected from your first publication. |
-| `wordpress`   | `{"site_url": "...", "username": "...", "app_password": "..."}`              | WP Admin → Users → Profile → Application Passwords |
-| `ghost`       | `{"site_url": "...", "admin_key": "id:secret"}`                              | Ghost Admin → Settings → Integrations → Custom Integration → Admin API Key |
-| `medium`      | `{"integration_token": "..."}`                                               | medium.com/me/settings → Security and apps → Integration tokens |
-| `substack`    | `{"publication_url": "...", "connect_sid": "..."}`                           | Log in to Substack, copy the `connect.sid` cookie from browser devtools. Creates drafts, not live posts. |
-| `github-pages`| `{"token": "...", "repo": "owner/name", "dir": "?", "branch": "?"}`          | GitHub fine-grained PAT with Contents: read/write on your site repo. `dir` defaults to `content/posts`, `branch` to `main`. Writes Markdown + frontmatter straight into your repo - Hugo/Jekyll/Astro pick it up on the next build. |
-| `x`           | `{"access_token": "..."}`                                                    | X Articles API (v2). OAuth2 user-context token with `tweet.write` scope. Requires X Premium on the publishing account. Creates a draft article, then publishes it. |
-
-Example:
-
-```bash
-openpub setup devto '{"api_key": "xxxxx"}'
-openpub test devto
-openpub status          # shows configured vs available platforms
-```
-
-## CLI
-
-`openpub` is a thin client over the REST API. Config lives at `~/.openpub/config.json`.
-
-```bash
-openpub login --url <worker-url> --key <admin-key>
-openpub setup <platform> '<creds-json-or-file>'
-openpub test <platform>
-openpub draft <file.md> [--to devto,hashnode] [--title "Override"]
-openpub publish <file.md> [--to devto,hashnode]
-openpub cover <prompt words...> [--prompt "..."]
-openpub drafts          # list drafts with status
-openpub status          # configured + available platforms
-openpub history         # publish log with per-platform URLs and errors
-openpub docs <dir>      # render a directory of .md files into a static HTML site
-```
-
-Frontmatter is supported - `title`, `tags`, `platforms`, `cover_image` - so `openpub publish post.md` works with no flags:
-
-```markdown
----
-title: "Shipping an MCP server on Workers"
-tags: [cloudflare, mcp]
-platforms: [devto, hashnode, github-pages]
----
-
-Body goes here.
-```
-
-## MCP server
-
-OpenPub speaks MCP over Streamable HTTP at `POST /mcp`. Point any MCP client at it with your admin key as a bearer token.
-
-Claude Code:
-
-```bash
-claude mcp add --transport http openpub https://openpub.<your-subdomain>.workers.dev/mcp \
-  --header "Authorization: Bearer <ADMIN_KEY>"
-```
-
-Cursor / other clients (`mcp.json`):
+Or let an agent do it. Add OpenPub to your MCP client:
 
 ```json
 {
   "mcpServers": {
-    "openpub": {
-      "url": "https://openpub.<your-subdomain>.workers.dev/mcp",
-      "headers": { "Authorization": "Bearer <ADMIN_KEY>" }
-    }
+    "openpub": { "command": "npx", "args": ["-y", "openpub-mcp"] }
   }
 }
 ```
 
-Tools exposed:
+Then ask Claude Code or Cursor: *publish posts/why-i-left-kubernetes.md to dev.to and Substack.*
 
-| Tool | What it does |
-|------|--------------|
-| `save_draft` | Save Markdown as a draft |
-| `list_drafts` / `get_draft` / `delete_draft` | Draft CRUD |
-| `publish` | Publish one draft to one platform |
-| `cross_publish` | Publish a draft (or inline content) to all its platforms |
-| `setup` / `status` / `test_platform` | Manage and verify platform credentials |
-| `generate_cover` | FLUX schnell cover image, stored in R2, optionally attached to a draft |
-| `list_posts` | Publish history with per-platform status and URLs |
-| `check_links` | HEAD-check every URL in a Markdown body |
-| `frontmatter` | Generate frontmatter for hugo/jekyll/astro/nextjs/devto/hashnode/ghost |
+## Commands
 
-That means prompts like *"save this as a draft and cross-publish to devto and hashnode"* just work.
+| Command | What it does |
+|---|---|
+| `openpub init` | Create `~/.openpub` and show the next step |
+| `openpub setup <platform> <json\|file>` | Store and verify credentials |
+| `openpub test <platform>` | Check stored credentials against the live API |
+| `openpub status` | List configured platforms and their reachability |
+| `openpub publish <file.md>` | Fan out to every selected platform |
+| `openpub preview <file.md>` | Render to HTML in `~/.openpub/preview/` |
+| `openpub frontmatter <file.md> --format <f>` | Emit frontmatter for Hugo, Jekyll, Astro, Next.js, dev.to, Hashnode, or Ghost |
+| `openpub audit <file.md>` | Score the post and list what is missing |
+| `openpub check-links <file.md>` | Validate every URL in the post |
+| `openpub forget <platform>` | Remove stored credentials |
 
-## REST API
+`publish` flags: `--to a,b,c`, `--status draft|published`, `--canonical <url>`, `--dry-run`, `--force`.
 
-Endpoints require `Authorization: Bearer <ADMIN_KEY>`. The `?key=` query parameter is only accepted on GET requests; POST and DELETE requests must use the `Authorization: Bearer` header. Public endpoints without authentication include `/health`, `/docs`, and `GET /covers/:key`. CORS is restricted to `DASHBOARD_URL` (not `*`).
+## Platforms
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Liveness check |
-| GET | `/api/status` | Configured + available platforms |
-| POST | `/api/platforms/:name` | Store credentials for a platform |
-| POST | `/api/platforms/:name/test` | Verify stored credentials |
-| GET | `/api/drafts` | List drafts |
-| POST | `/api/drafts` | Create a draft `{title?, content, platforms[], cover_image?}` |
-| GET | `/api/drafts/:id` | Get one draft |
-| GET | `/api/drafts/:id/preview` | Rendered HTML preview |
-| DELETE | `/api/drafts/:id` | Delete a draft |
-| POST | `/api/publish` | `{draftId}` or `{content, platforms[]}` - enqueues platform jobs |
-| GET | `/api/posts` | Posts grouped by draft with per-platform status |
-| GET | `/api/history` | Publish log |
-| POST | `/api/history/:draftId/:platform/retry` | Requeue failed publishes for one platform |
-| POST | `/api/images/generate` | Generate cover `{prompt, draftId?}` → `{url}` (authenticated) |
-| GET | `/covers/:key` | Serve a cover image publicly from R2 at `/covers/<uuid>.png` (no auth) |
-| POST | `/mcp` | MCP JSON-RPC endpoint |
+| Platform | Credentials | Where to get them |
+|---|---|---|
+| `devto` | `{"api_key": "..."}` | dev.to, Settings, Extensions, DEV Community API Keys |
+| `hashnode` | `{"token": "...", "publication_id": "..."}` | Hashnode, Account Settings, Developer, Personal Access Token |
+| `wordpress` | `{"site_url": "...", "username": "...", "app_password": "..."}` | WP Admin, Users, Profile, Application Passwords |
+| `ghost` | `{"site_url": "...", "admin_key": "id:secret"}` | Ghost Admin, Settings, Integrations, Custom Integration |
+| `medium` | `{"integration_token": "..."}` | medium.com/me/settings, Security and apps, Integration tokens |
+| `substack` | `{"publication_url": "...", "connect_sid": "..."}` | Log in, then copy the `connect.sid` cookie from devtools |
+| `github-pages` | `{"token": "...", "repo": "owner/name", "dir": "content/posts", "branch": "main"}` | A fine-grained PAT with Contents read and write on your site repo |
+| `x` | `{"access_token": "..."}` | X Articles API v2. OAuth2 user token with `tweet.write`. X Premium required |
+
+Two upstream limits worth knowing, documented rather than hidden:
+
+- **Substack creates drafts, not live posts.** Substack has no public API, so the adapter uses the same authenticated endpoint the web editor uses. You publish from the Substack dashboard.
+- **Medium's publishing API is deprecated.** Medium stopped issuing new integration tokens and marked the API unsupported. The adapter still works for existing tokens and may stop working without warning.
+
+`github-pages` writes Markdown plus frontmatter straight into your site repo, so Hugo, Jekyll, Astro, or Next.js pick the post up on the next build. That is the personal website destination.
+
+## Three surfaces, one engine
+
+OpenPub is one publishing engine with three ways in.
+
+**CLI** for a terminal, a Makefile, or a cron job.
+
+**MCP server** (`openpub-mcp`) over stdio, for Claude Code, Cursor, and any MCP client. Tools: `publish`, `cross_publish`, `list_published`, `setup`, `status`, `test_platform`, `content_audit`, `check_links`, `frontmatter`, `x_article`.
+
+**GitHub Action** for publishing from a repo:
+
+```yaml
+name: Publish
+on:
+  push:
+    branches: [main]
+    paths: ["posts/**/*.md"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: princepal9120/openpub@v1
+        with:
+          config: ${{ secrets.OPENPUB_CONFIG }}
+```
+
+The action publishes only the files the push actually changed, and reports `published-count`.
+
+## How publishing works
+
+1. **Selection.** `--to` beats the file's `platforms:` frontmatter, which beats your configured defaults, which beats every platform you hold credentials for.
+2. **Idempotency.** `~/.openpub/state.json` maps `file::platform` to the content hash it last published there. Unchanged content is skipped. `--force` overrides.
+3. **Canonical wiring.** The first successful platform's URL becomes the canonical URL for every platform after it. Set frontmatter `primary:` to choose which goes first, or `canonical_url:` to pin it yourself.
+4. **Failure isolation.** One platform failing never aborts the others. Every run reports a per-platform outcome.
+
+```markdown
+---
+title: "Shipping a Cloudflare-native publishing pipeline"
+tags: [cloudflare, typescript, publishing]
+platforms: [devto, hashnode, github-pages]
+primary: github-pages
+---
+
+Body goes here. The first heading is used as the title when frontmatter omits one.
+```
+
+## What makes it different
+
+Most cross-posting tools stop at dev.to, Hashnode, and Medium. Several still advertise Medium support that has not worked since Medium deprecated its publishing API.
+
+OpenPub ships **X Articles, Substack, Ghost, and git-push in the same binary**, alongside the usual platforms. If you publish long-form to X or run a Substack, this is the tool that covers the whole set.
+
+It is also local-first by default: no account, no credits, no hosted relay. Your keys sit in a `0600` file you can read.
 
 ## Architecture
 
 ```
-                          ┌─────────────────────────────────────────────┐
-  openpub-cli ──────────▶│                                             │
-  MCP clients ───────────▶│   Cloudflare Worker (Hono)                  │
-  (Claude Code, Cursor)   │                                             │
-  Dashboard ─────────────▶│   /api/* REST   /mcp JSON-RPC   /covers/*   │
-                          └──────┬──────────────────┬──────────────────┘
-                                 │                  │
-                    ┌────────────▼───┐      ┌───────▼────────┐
-                    │  D1            │      │  Queue         │
-                    │  drafts, creds,│      │  openpub-     │
-                    │  publish_log   │      │  publish       │
-                    └────────────▲───┘      └───────┬────────┘
-                               │                   │ consumer (retry x3)
-                               │                   ▼
-                               │          ┌────────────────┐
-                               │          │ Platform       │──▶ dev.to API
-                               │          │ adapters       │──▶ Hashnode GraphQL
-                               │          │                │──▶ WP REST
-                               │          │                │──▶ Ghost Admin API
-                               │          │                │──▶ Medium API
-                               │          │                │──▶ Substack drafts
-                               │          │                │──▶ GitHub Contents API
-                               │          │                │──▶ X Articles API
-                               │          └───────┬────────┘
-                               │                  │ canonical URL of first
-                               └──────────────────┘ success feeds the rest
-
-        KV: KEYS      R2: MEDIA (cover images)      Workers AI: FLUX schnell
+openpub/
+├── src/core/            the engine (no cloud dependencies)
+│   ├── types.ts         PlatformName, PublishInput, Config, PublishReport
+│   ├── config.ts        ~/.openpub/config.json (0600) + state.json
+│   ├── frontmatter.ts   dependency-free parse and emit, 8 formats
+│   ├── state.ts         content-hash idempotency ledger
+│   ├── publish.ts       fan-out, canonical wiring, dry-run
+│   └── adapters/        one file per platform: (input, creds) => fetch
+├── cli/                 npm: openpub-cli, bin: openpub
+├── mcp/                 npm: openpub-mcp, stdio MCP server
+├── site/                landing page
+├── action.yml           composite GitHub Action
+├── scripts/publish.sh   action entrypoint: git pathspec to changed files to CLI
+└── test/                action tests (real git fixture, fake npx)
 ```
 
-The publish flow is deliberately boring: `POST /api/publish` enqueues one message per platform, and the queue consumer claims each job with an atomic claim row in D1 to prevent duplicate publishes on redelivery or concurrent triggers. The consumer invokes the platform adapter and records the result in `publish_log`. The retry classifier distinguishes failure types: 4xx errors are treated as permanent failures (such as invalid credentials or bad payloads) and acknowledged without burning retries, while 5xx server errors and network faults trigger automatic retries up to max_retries. The first successful publish URL becomes the draft's canonical URL, feeding downstream adapters so every cross-post points back at the original. Re-running a draft is a no-op for platforms that already succeeded; only failures get retried.
+```
+  openpub CLI ──┐
+  MCP client ───┼──▶  src/core  ──▶  adapter per platform  ──▶  dev.to API
+  GitHub Action ┘        │                                     Hashnode GraphQL
+                         │                                     WordPress REST
+                    ~/.openpub/                                Ghost Admin API
+                    config.json  (credentials, 0600)           Medium API
+                    state.json   (file::platform -> hash)      Substack drafts
+                                                               GitHub Contents API
+                                                               X Articles API
+```
 
-## Stack
+Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `src/core/adapters/`, register it in `src/core/adapters/index.ts`, and it appears in the CLI, the MCP server, and the action with no further wiring.
 
-Hono · Cloudflare Workers · D1 · KV · R2 · Queues · Workers AI · MCP (Streamable HTTP) · marked · Wrangler · TanStack Start (dashboard)
+## Self-hosting
+
+`src/` outside `src/core`, plus `dashboard/`, are an optional self-host mode: a Cloudflare Worker with D1, KV, R2, Queues, and Workers AI cover images, and a TanStack Start dashboard, for running OpenPub as a shared service. None of the three surfaces above require it.
+
+```bash
+wrangler d1 create openpub-db
+wrangler kv namespace create KEYS
+wrangler r2 bucket create openpub-media
+wrangler queues create openpub-publish
+wrangler d1 execute openpub-db --file=migrations/init.sql
+wrangler secret put ADMIN_KEY
+wrangler deploy
+```
+
+The worker REST surface, its queue-backed retry classifier, and the dashboard are documented in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Development
 
 ```bash
-npm install
-npx wrangler dev        # local worker with bindings
-npx tsc --noEmit        # typecheck
+git clone https://github.com/princepal9120/openpub
+cd openpub
+
+npm --prefix cli install && npm --prefix cli run build   # build the CLI
+bash test/publish.test.sh                                # action tests
+npm test                                                 # core tests
 ```
 
-Adding a platform is one file: implement `PlatformAdapter` (`publish` + `test`) in `src/platforms/`, register it in `src/platforms/index.ts`, and it shows up in the API, CLI, and MCP tools automatically.
+Architecture and contracts: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## License
 
-MIT. Fork it, ship it, vendor it - see [LICENSE](LICENSE).
+MIT. Fork it, ship it, vendor it. See [LICENSE](LICENSE).

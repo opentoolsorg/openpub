@@ -1,0 +1,70 @@
+name: OpenPub Publish
+description: Publish changed Markdown articles to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, GitHub Pages, and X Articles.
+author: OpenPub
+
+branding:
+  icon: upload-cloud
+  color: purple
+
+inputs:
+  posts:
+    description: Git pathspec selecting the Markdown articles to publish.
+    required: false
+    default: ":(glob)posts/**/*.md"
+  changed-only:
+    description: Publish only files changed by the current push when history is available.
+    required: false
+    default: "true"
+  platforms:
+    description: Comma-separated platforms to target. Overrides each file's frontmatter.
+    required: false
+    default: ""
+  status:
+    description: Publish state passed to each platform - draft or published.
+    required: false
+    default: ""
+  canonical:
+    description: Explicit canonical URL applied to every article.
+    required: false
+    default: ""
+  config:
+    description: JSON contents for ~/.openpub/config.json. Pass from a secret.
+    required: false
+    default: ""
+  dry-run:
+    description: Validate selected articles without publishing them.
+    required: false
+    default: "false"
+  cli-version:
+    description: Exact published version of the openpub-cli npm package to execute.
+    required: false
+    default: "0.1.0"
+
+outputs:
+  published-count:
+    description: Number of Markdown files successfully processed.
+    value: ${{ steps.publish.outputs.published-count }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Publish Markdown articles
+      id: publish
+      shell: bash
+      env:
+        INPUT_POSTS: ${{ inputs.posts }}
+        INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
+        INPUT_PLATFORMS: ${{ inputs.platforms }}
+        INPUT_STATUS: ${{ inputs.status }}
+        INPUT_CANONICAL: ${{ inputs.canonical }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_CLI_VERSION: ${{ inputs.cli-version }}
+        BEFORE_SHA: ${{ github.event.before }}
+        AFTER_SHA: ${{ github.sha }}
+      run: "${{ github.action_path }}/scripts/publish.sh"

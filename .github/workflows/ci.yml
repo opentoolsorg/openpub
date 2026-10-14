@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+
+  cli:
+    name: cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm --prefix cli install
+      - run: npm --prefix cli run build
+      - name: smoke test
+        run: |
+          node cli/dist/index.js help
+          node cli/dist/index.js init
+          node cli/dist/index.js status
+
+  action:
+    name: action
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: action tests
+        run: bash test/publish.test.sh
+
+  mcp:
+    name: mcp
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm --prefix mcp install
+      - run: npm --prefix mcp run build
+      - name: MCP handshake
+        run: python3 test/mcp-handshake.py
