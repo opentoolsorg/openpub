@@ -198,7 +198,7 @@ const FAQ = [
   },
   {
     q: 'How do agents use it?',
-    a: 'OpenPub exposes a remote MCP server over streamable HTTP at /mcp. Add one header in Claude Code, Cursor, Windsurf, Codex or any MCP client and the agent gets 13 tools: drafts, publish, covers, setup, link checks.',
+    a: 'OpenPub exposes a remote MCP server over streamable HTTP at /mcp. Add one header in Claude Code, Cursor, Windsurf, Codex, Hermes, OpenCode or any MCP client and the agent gets 13 tools: drafts, publish, covers, setup, link checks.',
   },
   {
     q: 'Where do my keys live?',
@@ -213,10 +213,51 @@ const FAQ = [
     a: 'dev.to, Hashnode, Medium, Ghost, WordPress, Substack, X Articles, and your own site via GitHub Pages. Each adapter handles tags, canonical URLs, and cover images where the platform allows.',
   },
   {
+    q: 'Does it publish the same article to Medium, Substack and X Articles?',
+    a: 'Yes. Each adapter translates your markdown into that platform native format. Substack gets ProseMirror JSON via your session, Medium gets raw markdown via the official API, X Articles gets DraftJS content_state. One command, three real posts.',
+  },
+  {
     q: 'Why not Buffer, Zapier, or Pipepost?',
     a: 'Those are SaaS relays or per-run credit meters. OpenPub is yours: self-hosted, MIT, no credits, no relay, no subscription. The agent calls your worker directly.',
   },
 ]
+
+function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <div className="border-b border-zinc-900">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-between gap-4 py-4 text-left"
+      >
+        <span className="text-sm font-medium text-zinc-200 transition-colors group-hover:text-zinc-50">
+          {q}
+        </span>
+        <svg
+          className={`h-4 w-4 shrink-0 text-zinc-600 transition-transform duration-200 ${open ? 'rotate-45 text-emerald-400' : ''}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+      <div
+        className={`grid transition-all duration-200 ease-out ${
+          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <p className="pb-5 pr-8 text-sm leading-relaxed text-zinc-400">{a}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function Reveal({
   children,
@@ -762,15 +803,10 @@ function Landing() {
               Questions.
             </h2>
           </Reveal>
-          <div className="mt-8 divide-y divide-zinc-900">
+          <div className="mt-8 border-t border-zinc-900">
             {FAQ.map((f, idx) => (
               <Reveal key={f.q} delay={idx * 40}>
-                <div className="py-5">
-                  <h3 className="text-sm font-semibold text-zinc-100">{f.q}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                    {f.a}
-                  </p>
-                </div>
+                <FaqItem q={f.q} a={f.a} index={idx} />
               </Reveal>
             ))}
           </div>
