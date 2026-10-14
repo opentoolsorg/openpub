@@ -98,6 +98,20 @@ function useToast() {
 }
 
 function App() {
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
+  if (!mounted) {
+    return (
+      <div className="wrap">
+        <h1>OpenPost</h1>
+        <p className="sub">write once, publish everywhere</p>
+      </div>
+    )
+  }
+  return <Main />
+}
+
+function Main() {
   const { base, key, setBase, setKey, api } = useApi()
   const { msg, toast } = useToast()
   const [tab, setTab] = React.useState<Tab>('drafts')

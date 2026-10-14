@@ -3,3 +3,6 @@ node_modules/
 dist/
 *.dev.vars
 .env
+dashboard/node_modules/
+dashboard/.output/
+dashboard/.tanstack/

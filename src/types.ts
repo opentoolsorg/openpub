@@ -6,6 +6,7 @@ export interface Env {
   AI: Ai
   ADMIN_KEY: string
   BASE_URL: string
+  DASHBOARD_URL?: string
 }
 
 export type PlatformName =

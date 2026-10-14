@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 BASE_URL = "https://openpost.princslabs.workers.dev"
+DASHBOARD_URL = "https://openpost-dashboard.princslabs.workers.dev"
 
 [[d1_databases]]
 binding = "DB"

@@ -4,7 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "PORT=3000 vite dev",
     "build": "vite build && tsc --noEmit",
     "preview": "vite preview",
     "deploy": "NITRO_PRESET=cloudflare-module npm run build && wrangler deploy"
