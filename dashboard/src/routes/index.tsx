@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
+import { Logo, Mark } from '~/components/Logo'
 
 export const Route = createFileRoute('/')({
   component: Landing,
@@ -60,47 +61,43 @@ const STEPS = [
   {
     n: '02',
     title: 'Provision the free tier',
-    code: 'npx wrangler d1 create openpost-db\nnpx wrangler kv namespace create KEYS\nnpx wrangler queues create openpost-publish',
+    code: 'npx wrangler d1 create openpost-db\nnpx wrangler kv namespace create KEYS\nnpx wrangler r2 bucket create openpost-media\nnpx wrangler queues create openpost-publish\nnpx wrangler secret put ADMIN_KEY',
   },
   {
     n: '03',
-    title: 'Configure platforms, deploy',
-    code: 'openpost platform add devto\nnpx wrangler deploy',
+    title: 'Migrate and deploy',
+    code: 'npx wrangler d1 execute openpost-db --file=migrations/init.sql\nnpm run deploy',
   },
 ]
+
+const WIRE_PLATFORM = `openpost setup devto '{"api_key": "..."}'
+openpost test devto        # verifies creds live
+openpost publish post.md --to devto,hashnode,x`
 
 const FEATURES = [
   {
     t: 'Any agent via MCP',
-    d: 'One remote MCP server. Claude Code, Cursor, Windsurf, Codex, Zed, Copilot can publish without local setup.',
+    d: 'One remote MCP server. Claude Code, Cursor, Windsurf, Codex, Zed, Copilot publish without local setup.',
   },
   {
     t: 'openpost-cli',
     d: 'Ship posts from your terminal or your agent shell. Drafts, platforms, publish history, all scriptable.',
   },
   {
-    t: 'REST API',
-    d: 'Bearer-key API for drafts, credentials, publish, and history. Build whatever front you want.',
-  },
-  {
-    t: 'Idempotent publishes',
-    d: 'Stable post IDs mean reruns update instead of duplicating. Safe to retry, safe to redeploy.',
-  },
-  {
     t: 'Canonical wiring',
-    d: 'Every platform copy links back to your canonical URL. Search equity stays on your domain.',
+    d: 'First success becomes the canonical URL. Every other platform links back to it.',
   },
   {
-    t: 'Queue retries',
-    d: 'Cloudflare Queues isolate each platform publish. One flaky API never blocks the rest.',
+    t: 'Idempotent',
+    d: 'Atomic claim rows mean retries and redeploys never double-post.',
   },
   {
-    t: 'Your-website adapter',
-    d: 'Push markdown to your own site too, not just the platforms. Your blog stays the source of truth.',
+    t: 'Your site too',
+    d: 'The github-pages adapter commits markdown into your own repo. Your blog stays source of truth.',
   },
   {
     t: 'Zero cost',
-    d: 'Workers, D1, KV, R2, Queues. The whole stack runs on the Cloudflare free tier.',
+    d: 'Workers + D1 + KV + R2 + Queues. Static SPA served free. Everything runs on the Cloudflare free tier.',
   },
 ]
 
@@ -177,14 +174,8 @@ function Landing() {
       />
 
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-        <a
-          href="/"
-          className="group inline-flex items-center font-mono text-lg tracking-tight text-zinc-50 transition-opacity hover:opacity-90"
-        >
-          <span className="text-emerald-400 transition-transform group-hover:scale-110">
-            o
-          </span>
-          penpost
+        <a href="/" className="transition-opacity hover:opacity-90">
+          <Logo />
         </a>
         <div className="flex items-center gap-6 font-mono text-xs text-zinc-400">
           <a
@@ -215,8 +206,8 @@ function Landing() {
         </div>
 
         <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-zinc-50 sm:text-5xl md:text-6xl md:leading-[1.1]">
-          Your blog, <span className="text-emerald-400">everywhere</span> it
-          matters.
+          Write once. Your agent ships it{' '}
+          <span className="text-emerald-400">everywhere</span>.
         </h1>
 
         <p className="mt-6 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
@@ -232,10 +223,10 @@ function Landing() {
             Deploy to Cloudflare
           </a>
           <a
-            href={GITHUB}
+            href="/docs"
             className="inline-flex items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/40 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-50 active:scale-[0.98]"
           >
-            Star on GitHub
+            Read the docs
           </a>
         </div>
       </header>
@@ -273,11 +264,23 @@ function Landing() {
       <section className="mx-auto max-w-5xl px-6 py-20">
         <Reveal>
           <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
-            install
+            setup
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-            Live in three commands.
+            Live in three steps.
           </h2>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
+            Everything runs in your Cloudflare account. Provision, migrate,
+            deploy. Then wire each platform with your keys and publish. Full
+            detail in{' '}
+            <a
+              href="/docs"
+              className="text-emerald-400 underline-offset-4 hover:underline"
+            >
+              the docs
+            </a>
+            .
+          </p>
         </Reveal>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
@@ -511,9 +514,7 @@ function Landing() {
       <footer className="border-t border-zinc-900">
         <Reveal>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-8">
-            <span className="font-mono text-xs text-zinc-600">
-              openpost · MIT License
-            </span>
+            <Logo className="opacity-70" />
             <div className="flex items-center gap-6 font-mono text-xs text-zinc-500">
               <a
                 href="/docs"

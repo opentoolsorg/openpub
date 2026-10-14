@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
+import { Logo } from "~/components/Logo"
 
 export const Route = createFileRoute("/app")({
   component: App,
@@ -210,8 +211,8 @@ function Main() {
       <div className="min-h-screen bg-[#0a0c0b] text-zinc-200 font-sans antialiased selection:bg-emerald-500/30 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
           <div className="mb-6">
-            <a href="/" className="font-mono text-2xl tracking-tight text-zinc-50 inline-flex items-center gap-1.5">
-              <span className="text-emerald-400">o</span>penpost
+            <a href="/" className="inline-flex items-center hover:opacity-90 transition-opacity">
+              <Logo />
             </a>
             <p className="text-xs text-zinc-400 mt-1.5">
               enter admin key to continue
@@ -243,8 +244,8 @@ function Main() {
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
           <div>
             <div className="flex items-center gap-2">
-              <a href="/" className="font-mono text-xl tracking-tight text-zinc-50 hover:opacity-90 transition-opacity">
-                <span className="text-emerald-400">o</span>penpost
+              <a href="/" className="hover:opacity-90 transition-opacity">
+                <Logo />
               </a>
               <span className="font-sans text-[11px] px-2 py-0.5 rounded-md border border-zinc-800 bg-zinc-900/90 text-zinc-400">
                 console

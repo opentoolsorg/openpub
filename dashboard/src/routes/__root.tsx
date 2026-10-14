@@ -10,10 +10,23 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'OpenPost' },
+      { title: 'OpenPost - Write once. Your agent ships it everywhere.' },
+      {
+        name: 'description',
+        content:
+          'Self-hosted cross-posting on Cloudflare. One markdown file to dev.to, Hashnode, Medium, Ghost, WordPress, Substack, X Articles, and your own site. MCP + CLI + REST.',
+      },
+      { property: 'og:title', content: 'OpenPost' },
+      {
+        property: 'og:description',
+        content: 'One markdown file. Every platform. Driven by any agent over MCP.',
+      },
+      { property: 'og:type', content: 'website' },
+      { name: 'theme-color', content: '#0a0c0b' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
       { rel: 'icon', href: '/favicon.ico' },
     ],
   }),
