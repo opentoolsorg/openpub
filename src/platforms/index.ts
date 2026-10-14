@@ -6,6 +6,7 @@ import { ghost } from './ghost'
 import { medium } from './medium'
 import { substack } from './substack'
 import { githubPages } from './github-pages'
+import { x } from './x'
 
 export const adapters: Record<PlatformName, PlatformAdapter> = {
   devto,
@@ -15,6 +16,7 @@ export const adapters: Record<PlatformName, PlatformAdapter> = {
   medium,
   substack,
   'github-pages': githubPages,
+  x,
 }
 
 export const platformNames = Object.keys(adapters) as PlatformName[]

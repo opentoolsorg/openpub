@@ -11,7 +11,7 @@ export interface Env {
 
 export type PlatformName =
   | 'devto' | 'hashnode' | 'wordpress' | 'ghost'
-  | 'medium' | 'substack' | 'github-pages'
+  | 'medium' | 'substack' | 'github-pages' | 'x'
 
 export interface PublishInput {
   title: string

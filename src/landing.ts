@@ -1,138 +1,217 @@
+const css = `:root{--bg:#0c0d0e;--card:#131416;--line:#242628;--txt:#e9eaec;--mut:#8b8e93;--acc:#34d399;--mono:ui-monospace,'SF Mono',Menlo,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);line-height:1.65}
+a{color:var(--txt);text-decoration:none}
+.wrap{max-width:46rem;margin:0 auto;padding:0 1.25rem}
+nav{display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:1px solid var(--line);font-size:.85rem}
+.logo{font-family:var(--mono);font-size:1rem}.logo b{color:var(--acc)}
+.nav-links{display:flex;gap:1.25rem;color:var(--mut)}.nav-links a:hover{color:var(--txt)}
+.btn{display:inline-block;padding:.55rem 1.1rem;border-radius:.5rem;font-size:.88rem;font-weight:500;border:1px solid var(--line);transition:border-color .15s}
+.btn:hover{border-color:var(--mut)}
+.btn.pri{background:var(--acc);color:#052e1f;border-color:var(--acc);font-weight:600}.btn.pri:hover{filter:brightness(1.1)}
+.hero{padding:4.5rem 0 3rem}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;color:var(--acc);text-transform:uppercase;margin-bottom:1rem}
+h1{font-size:clamp(2.1rem,5vw,3.1rem);line-height:1.1;font-weight:640;letter-spacing:-.02em;max-width:15ch}
+.sub{color:var(--mut);font-size:1.02rem;max-width:50ch;margin-top:1rem}
+.cta{display:flex;gap:.65rem;margin-top:1.75rem;flex-wrap:wrap}
+.plats{padding:1.75rem 0;border-top:1px solid var(--line);font-size:.78rem;color:var(--mut)}
+.plats .row{display:flex;gap:1.6rem;align-items:center;margin-top:.9rem;flex-wrap:wrap}
+.plats img{height:18px;opacity:.7;filter:grayscale(1) brightness(1.5)}
+.plats img:hover{opacity:1}
+section{padding:3rem 0;border-top:1px solid var(--line)}
+h2{font-size:1.35rem;font-weight:600;margin-bottom:.4rem}
+.lead{color:var(--mut);font-size:.92rem;max-width:56ch;margin-bottom:1.75rem}
+.steps{display:grid;gap:1.4rem}
+.step{display:flex;gap:1rem}
+.step .num{font-family:var(--mono);color:var(--acc);font-size:.85rem;flex-shrink:0;padding-top:.1rem}
+.step h3{font-size:.95rem;font-weight:600}
+.step p{font-size:.85rem;color:var(--mut);margin-top:.2rem}
+.term{background:#0a0b0c;border:1px solid var(--line);border-radius:.6rem;padding:1rem 1.25rem;font-family:var(--mono);font-size:.8rem;line-height:1.85;overflow-x:auto;margin-top:1rem}
+.term .c{color:var(--mut)}.term .g{color:var(--acc)}
+.feat{border-top:1px solid var(--line);padding:1rem 0;display:flex;gap:1rem;align-items:baseline}
+.feat h3{font-size:.9rem;font-weight:600;flex-shrink:0;width:10rem}
+.feat p{font-size:.83rem;color:var(--mut)}
+code.ic{font-family:var(--mono);font-size:.8em;color:var(--acc);background:var(--card);padding:.1em .4em;border-radius:.3rem}
+footer{border-top:1px solid var(--line);padding:1.75rem 0;font-size:.8rem;color:var(--mut);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.75rem}
+footer a{color:var(--mut)}footer a:hover{color:var(--txt)}
+@media(max-width:640px){.feat{flex-direction:column;gap:.15rem}.feat h3{width:auto}}`
+
+const nav = `<nav>
+  <a class="logo" href="/">open<b>post</b></a>
+  <div class="nav-links"><a href="/docs">Docs</a><a href="https://github.com/princepal9120/openpost">GitHub</a><a href="/dashboard">Dashboard</a></div>
+</nav>`
+
+const foot = `<footer>
+  <span>MIT. Self-hosted. Your keys, your data.</span>
+  <span><a href="/docs">Docs</a> &nbsp;<a href="/dashboard">Dashboard</a> &nbsp;<a href="https://github.com/princepal9120/openpost">GitHub</a></span>
+</footer>`
+
 export function landingHtml(): string {
   return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OpenPost - Write once, publish everywhere</title>
-<meta name="description" content="Self-hosted, Cloudflare-native cross-publisher for blogs. One markdown file to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, and your own site.">
-<style>
-:root{--bg:#0c0d0e;--card:#121315;--line:#222427;--txt:#e8e9ea;--mut:#8a8d91;--acc:#34d399;--mono:ui-monospace,'SF Mono',Menlo,monospace}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}
-a{color:var(--txt);text-decoration:none}
-.wrap{max-width:64rem;margin:0 auto;padding:0 1.5rem}
-nav{display:flex;align-items:center;justify-content:space-between;height:64px;border-bottom:1px solid var(--line)}
-.logo{font-family:var(--mono);font-size:1.05rem;font-weight:600}.logo b{color:var(--acc)}
-.nav-links{display:flex;gap:1.5rem;font-size:.85rem;color:var(--mut)}
-.nav-links a:hover{color:var(--txt)}
-.btn{display:inline-block;padding:.6rem 1.25rem;border-radius:.5rem;font-size:.9rem;font-weight:500;border:1px solid var(--line);color:var(--txt);transition:border-color .15s}
-.btn:hover{border-color:var(--mut)}
-.btn.pri{background:var(--acc);color:#052e1f;border-color:var(--acc);font-weight:600}
-.btn.pri:hover{background:#4be0a9}
-.hero{padding:5rem 0 3.5rem}
-.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;color:var(--acc);text-transform:uppercase;margin-bottom:1.25rem}
-h1{font-size:clamp(2.4rem,5.5vw,3.6rem);line-height:1.08;font-weight:650;letter-spacing:-.02em;max-width:16ch}
-.sub{color:var(--mut);font-size:1.08rem;max-width:52ch;margin-top:1.25rem}
-.cta{display:flex;gap:.75rem;margin-top:2rem;flex-wrap:wrap}
-.plats{padding:2rem 0 2.5rem;border-top:1px solid var(--line)}
-.plats-label{font-size:.78rem;color:var(--mut);margin-bottom:1.1rem}
-.logo-row{display:flex;gap:2rem;align-items:center;flex-wrap:wrap}
-.logo-row img{height:20px;opacity:.75;filter:grayscale(1) brightness(1.4)}
-.logo-row img:hover{opacity:1}
-.logo-row span{font-family:var(--mono);font-size:.95rem;color:var(--mut)}
-.logo-row span:hover{color:var(--txt)}
-section{padding:3.5rem 0}
-h2{font-size:1.6rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.5rem}
-.sec-sub{color:var(--mut);font-size:.95rem;max-width:60ch;margin-bottom:2rem}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
-.step{border-top:1px solid var(--line);padding-top:1.25rem}
-.step .n{font-family:var(--mono);color:var(--acc);font-size:.8rem;margin-bottom:.5rem;display:block}
-.step h3{font-size:1rem;font-weight:600;margin-bottom:.35rem}
-.step p{font-size:.85rem;color:var(--mut)}
-.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
-.cell{background:var(--card);border:1px solid var(--line);border-radius:.75rem;padding:1.5rem;grid-column:span 2}
-.cell.wide{grid-column:span 3}
-.cell h3{font-size:.95rem;font-weight:600;margin-bottom:.4rem}
-.cell p{font-size:.83rem;color:var(--mut)}
-.cell .mono{font-family:var(--mono);font-size:.78rem;color:var(--acc)}
-.term{background:#0a0b0c;border:1px solid var(--line);border-radius:.75rem;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:.82rem;line-height:1.9;overflow-x:auto}
-.term .c{color:var(--mut)}
-.term .g{color:var(--acc)}
-footer{border-top:1px solid var(--line);padding:2rem 0;font-size:.82rem;color:var(--mut);display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-footer a{color:var(--mut)}footer a:hover{color:var(--txt)}
-@media(max-width:768px){.steps{grid-template-columns:1fr}.cell,.cell.wide{grid-column:span 6}.nav-links{display:none}}
-</style>
-</head>
-<body>
-<div class="wrap">
-<nav>
-  <a class="logo" href="/">open<b>post</b></a>
-  <div class="nav-links">
-    <a href="https://github.com/princepal9120/openpost">GitHub</a>
-    <a href="https://github.com/princepal9120/openpost/blob/main/docs/DEPLOY.md">Docs</a>
-    <a href="/dashboard">Dashboard</a>
-  </div>
-</nav>
-
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenPost - write once, publish everywhere</title>
+<meta name="description" content="Self-hosted cross-publisher for blogs on Cloudflare. One markdown file to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, X Articles, and your own site.">
+<style>${css}</style></head><body><div class="wrap">
+${nav}
 <header class="hero">
   <div class="eyebrow">Self-hosted on Cloudflare free tier</div>
-  <h1>Write once. Publish everywhere.</h1>
-  <p class="sub">One markdown file to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, and your own site. MCP server, CLI, and REST API included.</p>
+  <h1>Your blog, everywhere it matters.</h1>
+  <p class="sub">One markdown file to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, X Articles, and your own site. No subscription. Your keys never leave your account.</p>
   <div class="cta">
-    <a class="btn pri" href="https://github.com/princepal9120/openpost">Star on GitHub</a>
-    <a class="btn" href="https://github.com/princepal9120/openpost/blob/main/docs/DEPLOY.md">Deploy yours</a>
+    <a class="btn pri" href="https://deploy.workers.cloudflare.com/?url=https://github.com/princepal9120/openpost">Deploy to Cloudflare</a>
+    <a class="btn" href="https://github.com/princepal9120/openpost">Star on GitHub</a>
   </div>
 </header>
 
 <div class="plats">
-  <p class="plats-label">Publishes to</p>
-  <div class="logo-row">
-    <img src="https://cdn.simpleicons.org/devdotto/e8e9ea" alt="dev.to" height="20">
-    <img src="https://cdn.simpleicons.org/hashnode/e8e9ea" alt="Hashnode" height="20">
-    <img src="https://cdn.simpleicons.org/medium/e8e9ea" alt="Medium" height="20">
-    <img src="https://cdn.simpleicons.org/ghost/e8e9ea" alt="Ghost" height="20">
-    <img src="https://cdn.simpleicons.org/wordpress/e8e9ea" alt="WordPress" height="20">
-    <img src="https://cdn.simpleicons.org/substack/e8e9ea" alt="Substack" height="20">
-    <img src="https://cdn.simpleicons.org/github/e8e9ea" alt="GitHub Pages" height="20">
+  Publishes to
+  <div class="row">
+    <img src="https://cdn.simpleicons.org/devdotto/e9eaec" alt="dev.to" height="18">
+    <img src="https://cdn.simpleicons.org/hashnode/e9eaec" alt="Hashnode" height="18">
+    <img src="https://cdn.simpleicons.org/medium/e9eaec" alt="Medium" height="18">
+    <img src="https://cdn.simpleicons.org/ghost/e9eaec" alt="Ghost" height="18">
+    <img src="https://cdn.simpleicons.org/wordpress/e9eaec" alt="WordPress" height="18">
+    <img src="https://cdn.simpleicons.org/substack/e9eaec" alt="Substack" height="18">
+    <img src="https://cdn.simpleicons.org/x/e9eaec" alt="X Articles" height="18">
+    <img src="https://cdn.simpleicons.org/github/e9eaec" alt="your site" height="18">
   </div>
 </div>
 
 <section>
   <h2>Three commands</h2>
-  <p class="sec-sub">Clone, set one secret, deploy. Your instance is live on the edge in under two minutes.</p>
-  <div class="term">
-<span class="c"># deploy your own</span>
+  <p class="lead">Clone, set one secret, deploy. Running on the edge in under two minutes.</p>
+  <div class="term"><span class="c"># deploy your own</span>
 git clone https://github.com/princepal9120/openpost && cd openpost
 npx wrangler secret put ADMIN_KEY
 npx wrangler deploy
 
 <span class="c"># publish to everything</span>
 openpost login --url https://openpost.you.workers.dev --key &lt;key&gt;
-openpost publish post.md --to devto,hashnode,ghost <span class="g"># done</span>
-  </div>
+openpost publish post.md --to devto,hashnode,x <span class="g"># done</span></div>
 </section>
 
 <section>
-  <h2>Built for agents and humans</h2>
-  <p class="sec-sub">Use it from Claude Code, Cursor, your terminal, or the dashboard. Same pipeline underneath.</p>
-  <div class="bento">
-    <div class="cell wide"><h3>MCP server</h3><p>Streamable HTTP endpoint with 13 tools. Claude Code publishes your draft while you keep writing.</p><p class="mono">POST /mcp</p></div>
-    <div class="cell wide"><h3>openpost-cli</h3><p>npm package for terminal publishing. Draft, publish, preview, retry, generate covers, build a static docs site.</p><p class="mono">openpost publish post.md</p></div>
-    <div class="cell"><h3>Idempotent</h3><p>UNIQUE(draft_id, platform) in D1. Re-runs never double-post.</p></div>
-    <div class="cell"><h3>Canonical wiring</h3><p>First success URL becomes the canonical link for every platform after it.</p></div>
-    <div class="cell"><h3>Queue retries</h3><p>Cloudflare Queues fan out publishes. Failed platforms retry without touching the rest.</p></div>
-    <div class="cell wide"><h3>AI cover images</h3><p>Workers AI generates a cover per draft and re-uploads it to each platform's media endpoint.</p><p class="mono">openpost cover "minimal desk setup"</p></div>
-    <div class="cell"><h3>Zero cost</h3><p>D1 + KV + R2 + Queues all inside the free tier. Your credentials never leave your account.</p></div>
-    <div class="cell"><h3>MIT licensed</h3><p>Fork it, extend it, add a platform adapter in ~60 lines.</p></div>
-  </div>
+  <h2>Made for agents and humans</h2>
+  <p class="lead">Same pipeline underneath every surface. Claude Code publishes your draft while you keep writing.</p>
+  <div class="feat"><h3>MCP server</h3><p>Streamable HTTP, 13 tools. Claude Code, Cursor, Windsurf connect directly.</p></div>
+  <div class="feat"><h3>openpost-cli</h3><p>Terminal publishing. Draft, publish, preview, retry, AI covers, docs generation.</p></div>
+  <div class="feat"><h3>REST API</h3><p>Every operation over plain HTTP for scripts, Shortcuts, and CI.</p></div>
+  <div class="feat"><h3>Idempotent</h3><p>Re-runs never double-post. One row per draft per platform.</p></div>
+  <div class="feat"><h3>Canonical wiring</h3><p>First live URL becomes the canonical link for every platform after it.</p></div>
+  <div class="feat"><h3>Queue retries</h3><p>Failed platforms retry without touching the ones that succeeded.</p></div>
+  <div class="feat"><h3>Your website</h3><p>The github-pages adapter commits the post to your repo. Hugo, Astro, Jekyll, Next.js rebuild it.</p></div>
+  <div class="feat"><h3>Zero cost</h3><p>D1 + KV + R2 + Queues inside the free tier. MIT licensed.</p></div>
 </section>
 
-<section>
-  <h2>How a publish runs</h2>
-  <p class="sec-sub">The pipeline underneath every surface.</p>
-  <div class="steps">
-    <div class="step"><span class="n">01</span><h3>Draft stored</h3><p>Markdown lands in D1 with its target platforms. Frontmatter tags extracted.</p></div>
-    <div class="step"><span class="n">02</span><h3>Queue fans out</h3><p>One message per platform. Each adapter formats for its API and authenticates from stored creds.</p></div>
-    <div class="step"><span class="n">03</span><h3>Canonical links</h3><p>First live URL becomes canonical for the rest. Every platform cross-links back to the origin.</p></div>
-  </div>
-</section>
+${foot}
+</div></body></html>`
+}
 
-<footer>
-  <span>MIT License. Self-hosted. Your keys, your data.</span>
-  <span><a href="https://github.com/princepal9120/openpost">GitHub</a> &nbsp;·&nbsp; <a href="/dashboard">Dashboard</a> &nbsp;·&nbsp; <a href="/api/status">API</a></span>
-</footer>
+export function docsHtml(): string {
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenPost docs</title>
+<style>${css}
+.docnav{display:flex;gap:.4rem;margin:1.5rem 0;flex-wrap:wrap}
+.docnav a{font-size:.8rem;padding:.3rem .8rem;border:1px solid var(--line);border-radius:1rem;color:var(--mut)}
+.docnav a:hover{color:var(--txt);border-color:var(--mut)}
+section{padding:2rem 0}
+h2{font-size:1.2rem}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.5rem}
+td,th{padding:.5rem .6rem;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-family:var(--mono);font-size:.78rem;color:var(--acc);white-space:nowrap}
+pre{background:#0a0b0c;border:1px solid var(--line);border-radius:.5rem;padding:.9rem 1.1rem;font-family:var(--mono);font-size:.78rem;line-height:1.8;overflow-x:auto;margin:.75rem 0}
+</style></head><body><div class="wrap">
+${nav.replace('/docs">', '/">').replace('<a href="/">Home</a>', '').replace('<a href="/">Docs</a>', '<a href="/">Home</a>')}
+<div class="docnav">
+  <a href="#deploy">Deploy</a><a href="#platforms">Platforms</a><a href="#cli">CLI</a><a href="#mcp">MCP</a><a href="#api">API</a>
 </div>
-</body>
-</html>`
+
+<section id="deploy">
+  <h2>Deploy</h2>
+  <div class="steps">
+    <div class="step"><span class="num">1</span><div><h3>Clone + create resources</h3>
+      <pre>git clone https://github.com/princepal9120/openpost
+cd openpost && npm install
+cf d1 create --name openpost-db
+cf kv namespaces create --title openpost-keys
+cf r2 buckets create-by-name openpost-media
+cf queues create --queue-name openpost-publish
+cf d1 query &lt;db-id&gt; --sql "$(cat migrations/init.sql)"</pre>
+      <p>Copy the returned ids into <code class="ic">wrangler.toml</code>.</p></div></div>
+    <div class="step"><span class="num">2</span><div><h3>Set the admin key + deploy</h3>
+      <pre>npx wrangler secret put ADMIN_KEY
+npx wrangler deploy</pre>
+      <p>One secret protects every surface: API, MCP, dashboard login.</p></div></div>
+    <div class="step"><span class="num">3</span><div><h3>Add a platform, publish</h3>
+      <pre>openpost login --url https://openpost.you.workers.dev --key &lt;ADMIN_KEY&gt;
+openpost setup devto '{"api_key": "..."}'
+openpost publish post.md --to devto,hashnode,x</pre>
+      <p>Or paste creds in the dashboard's Setup modal, or call the MCP <code class="ic">setup</code> tool from Claude Code.</p></div></div>
+  </div>
+</section>
+
+<section id="platforms">
+  <h2>Platform credentials</h2>
+  <p class="lead">Each platform stores one JSON blob. Dashboard Setup accepts the same shape.</p>
+  <table>
+    <tr><th>platform</th><th>credentials</th><th>where to get them</th></tr>
+    <tr><td>devto</td><td>api_key</td><td>dev.to Settings &gt; Extensions &gt; API keys</td></tr>
+    <tr><td>hashnode</td><td>token, publication_id</td><td>Hashnode &gt; Developer settings &gt; PAT. publication_id auto-resolves if blank.</td></tr>
+    <tr><td>wordpress</td><td>site_url, username, app_password</td><td>WP admin &gt; Users &gt; Application Passwords</td></tr>
+    <tr><td>ghost</td><td>site_url, admin_key</td><td>Ghost &gt; Integrations &gt; Admin API key (id:secret)</td></tr>
+    <tr><td>medium</td><td>integration_token</td><td>medium.com &gt; Settings &gt; Security &gt; Integration tokens</td></tr>
+    <tr><td>substack</td><td>publication_url, connect_sid</td><td>DevTools &gt; Application &gt; Cookies &gt; connect.sid. Publishes as draft.</td></tr>
+    <tr><td>x</td><td>access_token</td><td>X developer app, OAuth2 user token, tweet.write scope. X Premium required.</td></tr>
+    <tr><td>github-pages</td><td>token, repo, dir?, branch?</td><td>GitHub PAT with repo scope. dir defaults to content/posts.</td></tr>
+  </table>
+</section>
+
+<section id="cli">
+  <h2>CLI</h2>
+  <pre>npm i -g openpost-cli
+openpost login --url &lt;worker&gt; --key &lt;key&gt;
+openpost setup &lt;platform&gt; '{"k":"v"}'
+openpost test &lt;platform&gt;
+openpost draft post.md --to devto,hashnode
+openpost publish post.md --to devto,hashnode,x,github-pages
+openpost preview post.md
+openpost cover "minimal desk setup"
+openpost retry &lt;draftId&gt; &lt;platform&gt;
+openpost docs ./posts        # markdown to static site
+openpost drafts | status | history</pre>
+</section>
+
+<section id="mcp">
+  <h2>MCP</h2>
+  <p class="lead">Any MCP client (Claude Code, Cursor, Windsurf) gets 13 tools over Streamable HTTP.</p>
+  <pre>claude mcp add openpost --transport http \\
+  https://openpost.you.workers.dev/mcp \\
+  --header "Authorization: Bearer &lt;ADMIN_KEY&gt;"</pre>
+  <p>Tools: publish, cross_publish, save_draft, list_drafts, get_draft, delete_draft, setup, status, test_platform, generate_cover, list_posts, check_links, frontmatter.</p>
+</section>
+
+<section id="api">
+  <h2>API</h2>
+  <table>
+    <tr><th>endpoint</th><th>what it does</th></tr>
+    <tr><td>GET /api/status</td><td>configured + available platforms</td></tr>
+    <tr><td>POST /api/platforms/:name</td><td>store creds JSON</td></tr>
+    <tr><td>POST /api/platforms/:name/test</td><td>test creds</td></tr>
+    <tr><td>GET /api/drafts</td><td>list drafts</td></tr>
+    <tr><td>POST /api/drafts</td><td>save draft {title, content, platforms[]}</td></tr>
+    <tr><td>GET /api/drafts/:id/preview</td><td>rendered HTML + frontmatter</td></tr>
+    <tr><td>POST /api/publish</td><td>{draftId} or {content, platforms[]}</td></tr>
+    <tr><td>GET /api/posts</td><td>per-draft publish matrix</td></tr>
+    <tr><td>GET /api/history</td><td>publish log</td></tr>
+    <tr><td>POST /api/history/:draft/:platform/retry</td><td>retry one platform</td></tr>
+    <tr><td>POST /api/images/generate</td><td>AI cover {prompt, draftId?}</td></tr>
+  </table>
+  <p>Auth everywhere: <code class="ic">Authorization: Bearer &lt;ADMIN_KEY&gt;</code> or <code class="ic">?key=</code>.</p>
+</section>
+
+${foot}
+</div></body></html>`
 }
