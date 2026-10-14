@@ -1,25 +1,15 @@
 import { Hono } from 'hono'
 import { api } from './api'
-import { dashboardHtml } from './dashboard'
-import { docsHtml, landingHtml } from './landing'
 import { mcpHandler } from './mcp'
 import { publishConsumer } from './publish'
 import type { Env } from './types'
 
 const app = new Hono<{ Bindings: Env }>()
 
-app.get('/', (c) =>
-  c.env.DASHBOARD_URL
-    ? c.redirect(c.env.DASHBOARD_URL, 302)
-    : c.html(landingHtml()),
-)
+// SPA shell served by Workers Static Assets (see wrangler.toml [assets]):
+// '/', '/app', '/docs' resolve to dashboard/.output/public/index.html.
 app.get('/health', (c) => c.json({ ok: true, name: 'openpost' }))
-app.get('/docs', (c) => c.html(docsHtml()))
-app.get('/dashboard', (c) =>
-  c.env.DASHBOARD_URL
-    ? c.redirect(c.env.DASHBOARD_URL, 302)
-    : c.html(dashboardHtml()),
-)
+app.get('/dashboard', (c) => c.redirect('/app', 302))
 app.route('/api', api)
 // public covers: random UUID keys, read-only — published og:images must not need auth
 app.get('/covers/:key{.+}', async (c) => {

@@ -80,7 +80,9 @@ This creates `platform_config`, `drafts`, and `publish_log`. Safe to re-run; all
 
 ## 4. Set the admin secret
 
-`ADMIN_KEY` authenticates every `/api/*` and `/mcp` request (Bearer header or `?key=` query param). Generate a strong one:
+`ADMIN_KEY` authenticates requests to `/api/*` and `/mcp`. Note: `?key=` query authentication only works on GET requests; POST and DELETE requests must use the `Authorization: Bearer <ADMIN_KEY>` header. Public endpoints such as `/health`, `/docs`, and `GET /covers/<uuid>.png` do not require authentication.
+
+Generate a strong one:
 
 ```bash
 openssl rand -hex 32
@@ -90,16 +92,22 @@ wrangler secret put ADMIN_KEY
 
 Store this key in your password manager. It is the only credential for the whole deployment.
 
-## 5. Set BASE_URL
+## 5. Set BASE_URL and DASHBOARD_URL
 
-Generated cover image URLs are built from `BASE_URL`. Update `[vars]` in `wrangler.toml` to your worker URL:
+Update `[vars]` in `wrangler.toml` for your deployment:
 
 ```toml
 [vars]
 BASE_URL = "https://openpost.<your-subdomain>.workers.dev"
+DASHBOARD_URL = "https://openpost-dashboard.<your-subdomain>.workers.dev"
 ```
 
-If you do not know the URL yet, deploy once (step 6), note the printed URL, update `BASE_URL`, and deploy again.
+- `BASE_URL`: Used to construct absolute URLs for generated cover images. If you do not know the worker URL yet, deploy once (step 6), note the printed URL, update `BASE_URL`, and deploy again.
+- `DASHBOARD_URL`: Restricts CORS for API requests (CORS is restricted to `DASHBOARD_URL` instead of `*`). In local development, it defaults to `http://localhost:3000` if unset.
+
+### Cover images
+
+Generated cover images are stored in R2 and served publicly at `GET /covers/<uuid>.png`. Covers are public-by-design with unguessable keys (random UUIDs) so that external social platforms, scrapers, and reader apps can fetch `og:image` preview cards without credentials. Cover generation via `POST /api/images/generate` remains authenticated with `ADMIN_KEY`.
 
 ## 6. Deploy
 
@@ -123,7 +131,7 @@ Authenticated API check:
 ```bash
 curl -H "Authorization: Bearer $ADMIN_KEY" \
   https://openpost.<subdomain>.workers.dev/api/status
-# {"platforms":[],"available":["devto","hashnode","wordpress","ghost","medium","substack","github-pages"]}
+# {"platforms":[],"available":["devto","hashnode","wordpress","ghost","medium","substack","github-pages","x"]}
 ```
 
 MCP endpoint check:

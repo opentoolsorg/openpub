@@ -78,6 +78,7 @@ api.post('/drafts', async (c) => {
   try {
     if (Number(c.req.header('content-length') ?? 0) > 1_000_000) return c.json({ error: 'body too large' }, 413)
     body = await c.req.json()
+    if (JSON.stringify(body).length > 1_000_000) return c.json({ error: 'body too large' }, 413)
   } catch { return c.json({ error: 'invalid JSON body' }, 400) }
   if (!body.content || !Array.isArray(body.platforms) || !body.platforms.length) {
     return c.json({ error: 'content + platforms[] required' }, 400)
@@ -156,7 +157,7 @@ api.post('/history/:draftId/:platform/retry', async (c) => {
   const draft = await db.getDraft(c.env.DB, c.req.param('draftId'))
   if (!draft) return c.json({ error: 'not found' }, 404)
   if (!(draft.platforms as string[]).includes(platform)) return c.json({ error: `${platform} not in draft platforms` }, 400)
-  await c.env.DB.prepare("DELETE FROM publish_log WHERE draft_id = ? AND platform = ? AND status = 'failed'")
+  await c.env.DB.prepare("DELETE FROM publish_log WHERE draft_id = ? AND platform = ? AND status IN ('failed','retryable')")
     .bind(c.req.param('draftId'), platform).run()
   const jobs = await enqueuePublish(c.env, c.req.param('draftId'), platform)
   return c.json({ jobs })

@@ -11,7 +11,7 @@ export const githubPages: PlatformAdapter = {
     if (!/^[\w.-]+\/[\w.-]+$/.test(repo ?? '')) throw new Error('repo must be owner/name')
     const dir = (creds.dir || 'content/posts').replace(/^\/+|\/+$/g, '')
     const branch = creds.branch || 'main'
-    if (/\.{2}|^\/|\/{2,}/.test(dir) || !/^[\w.\-/]+$/.test(dir) || !/^[\w.\-/]+$/.test(branch)) {
+    if (/\.{2}|^\/|\/{2,}/.test(dir) || !/^[\w.\-/]+$/.test(dir) || /\.{2}|^\/|\/{2,}/.test(branch) || !/^[\w.\-/]+$/.test(branch)) {
       throw new Error('invalid dir or branch')
     }
     const slug = slugify(input.title || 'post')

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// openpost-cli — thin client for a self-hosted OpenPost worker.
+// openpost-cli - thin client for a self-hosted OpenPost worker.
 // Usage: openpost <command> [args] [--flags]
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
@@ -39,7 +39,7 @@ function die(msg: string): never {
 }
 
 function need() {
-  if (!cfg.url || !cfg.key) die(`not logged in — configure your worker first:\n  ${cyan('openpost login')}`)
+  if (!cfg.url || !cfg.key) die(`not logged in - configure your worker first:\n  ${cyan('openpost login')}`)
 }
 
 async function call(path: string, method = 'GET', body?: any) {
@@ -50,7 +50,7 @@ async function call(path: string, method = 'GET', body?: any) {
   })
   const j = await r.json().catch(() => ({})) as any
   if (!r.ok) {
-    if (r.status === 401) die(`unauthorized — bad key or url; re-run: ${cyan('openpost login')}`)
+    if (r.status === 401) die(`unauthorized - bad key or url; re-run: ${cyan('openpost login')}`)
     die(j.error ?? `HTTP ${r.status}`)
   }
   return j
@@ -89,7 +89,7 @@ function prompt(label: string, mask = false): Promise<string> {
 async function promptOr(flag: string | undefined, label: string, flagName: string, mask = false) {
   if (flag) return flag
   try { return await prompt(label, mask) }
-  catch (e) { die(`${(e as Error).message} — pass --${flagName} instead`) }
+  catch (e) { die(`${(e as Error).message} - pass --${flagName} instead`) }
   return '' // unreachable
 }
 
@@ -175,8 +175,8 @@ async function watchJobs(draftId: string, jobs: string[]) {
   const badN = rows.filter(r => r.status === 'failed').length
   const pend = rows.length - good - badN
   if (badN === 0 && pend === 0) ok(`${good}/${rows.length} published`)
-  else if (badN) bad(`${good} published · ${badN} failed${pend ? ` · ${pend} pending` : ''} — retry: openpost retry ${draftId} <platform>`)
-  else console.log(`${yellow('…')} ${good} published · ${pend} still pending (30s poll exhausted — check: openpost history)`)
+  else if (badN) bad(`${good} published · ${badN} failed${pend ? ` · ${pend} pending` : ''} - retry: openpost retry ${draftId} <platform>`)
+  else console.log(`${yellow('…')} ${good} published · ${pend} still pending (30s poll exhausted - check: openpost history)`)
 }
 
 function parseFrontmatter(md: string) {
@@ -224,7 +224,7 @@ type Cmd = { usage: string; desc: string; auth?: boolean; run: (a: Args) => Prom
 const commands: Record<string, Cmd> = {
   login: {
     usage: 'login [--url <worker-url>] [--key <admin-key>]',
-    desc: 'Save worker URL + admin key — prompts if flags omitted, validates before saving',
+    desc: 'Save worker URL + admin key - prompts if flags omitted, validates before saving',
     async run(a) {
       const url = await promptOr(a.flag('url'), 'worker url', 'url')
       if (!/^https?:\/\//.test(url)) die('--url must start with http:// or https://')
@@ -232,13 +232,13 @@ const commands: Record<string, Cmd> = {
       const base = url.replace(/\/+$/, '')
       const st = await withSpinner(`connecting to ${new NodeURL(base).host}…`, async () => {
         const r = await fetch(`${base}/api/status`, { headers: { Authorization: `${BEARER} ${key}` } })
-        if (r.status === 401) die('unauthorized — worker rejected that admin key')
+        if (r.status === 401) die('unauthorized - worker rejected that admin key')
         if (!r.ok) die(`worker returned HTTP ${r.status}`)
         return r.json() as any
       })
       save({ url: base, key })
       const configured = (st.platforms ?? []).filter((p: any) => p.enabled).map((p: any) => p.platform)
-      ok(`connected to ${bold(new NodeURL(base).host)}${configured.length ? dim(` — platforms: ${configured.join(', ')}`) : ''}`)
+      ok(`connected to ${bold(new NodeURL(base).host)}${configured.length ? dim(` - platforms: ${configured.join(', ')}`) : ''}`)
       console.log(dim(`  saved to ${CFG}`))
     },
   },
@@ -375,7 +375,7 @@ async function draftOrPublish(a: Args, publish: boolean) {
   if (!platforms?.length) die('no platforms: add `platforms: [...]` to frontmatter or use --to')
   const title = a.flag('title') ?? data.title ?? basename(file, '.md')
   const j = await call('/api/drafts', 'POST', { title, content: body, platforms, cover_image: data.cover_image })
-  ok(`draft ${bold(j.id)} — ${dim(title)}`)
+  ok(`draft ${bold(j.id)} - ${dim(title)}`)
   if (publish) {
     const p = await call('/api/publish', 'POST', { draftId: j.id })
     if (!p.jobs?.length) return console.log(dim('nothing enqueued (all platforms already published)'))
@@ -393,7 +393,7 @@ function openUrl(path: string) {
 }
 
 function globalHelp() {
-  console.log(`${cyan(bold('openpost'))} ${dim(`v${VERSION}`)} — publish markdown to dev.to, Hashnode, Medium, Ghost, WordPress, Substack
+  console.log(`${cyan(bold('openpost'))} ${dim(`v${VERSION}`)} - publish markdown to devto, hashnode, wordpress, ghost, medium, substack, github-pages, x
 
 ${bold('usage')}  openpost <command> [args]  ·  openpost <command> --help
 

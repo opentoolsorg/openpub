@@ -1,3 +1,7 @@
+@import "tailwindcss";
+
+@layer components {
+
 * {
   margin: 0;
   padding: 0;
@@ -6,8 +10,8 @@
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  background: #fafafa;
-  color: #111;
+  background: #0a0c0b;
+  color: #e4e4e7;
 }
 
 .wrap {
@@ -265,4 +269,6 @@ a {
   max-width: 22rem;
   margin: 6rem auto;
   text-align: center;
+}
+
 }

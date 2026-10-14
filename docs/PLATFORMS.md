@@ -1,6 +1,8 @@
 # Platform Credentials
 
-OpenPost supports seven platforms. Each needs credentials stored via `POST /api/platforms/:name` (REST) or the `setup` MCP tool. Credential keys are exact: the adapters read them verbatim from the stored JSON object.
+OpenPost supports eight platforms. Each needs credentials stored via `POST /api/platforms/:name` (REST) or the `setup` MCP tool. Credential keys are exact: the adapters read them verbatim from the stored JSON object.
+
+> **URL host requirements:** Any `site_url` or `publication_url` credential must be a public HTTPS host (e.g. `https://yourblog.com`). Plaintext HTTP, localhost, loopback addresses, internal hosts (`.internal`, `.local`), private network IP ranges, and URLs with embedded credentials are automatically rejected by platform URL guards.
 
 Store credentials:
 
@@ -95,7 +97,7 @@ On WordPress.com: Settings, Security, Application Passwords. Requires 2FA enable
 }
 ```
 
-Notes: publishes HTML to `/wp-json/wp/v2/posts`. `site_url` must be the site root (not `/wp-admin`, not a post URL). Canonical URL is sent as `meta.canonical_url` (only surfaces if your theme/SEO plugin reads that meta key; Yoast/RankMath use their own). The user needs `publish_posts` capability for live posts; authors can only create drafts.
+Notes: publishes HTML to `/wp-json/wp/v2/posts`. `site_url` must be an HTTPS public host at the site root (not plaintext HTTP, not localhost or internal IPs, not `/wp-admin`, not a post URL). Canonical URL is sent as `meta.canonical_url` (only surfaces if your theme/SEO plugin reads that meta key; Yoast/RankMath use their own). The user needs `publish_posts` capability for live posts; authors can only create drafts.
 
 Self-hosted gotchas: Application Passwords require HTTPS. Some hosts (e.g. certain Apache/cPanel setups) strip the `Authorization` header; if `test` fails with 401, add `SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1` to `.htaccess` or use a plugin like "Application Passwords" fix.
 
@@ -118,7 +120,7 @@ Ghost Admin API key (JWT-signed requests). Works on Ghost(Pro) and self-hosted G
 }
 ```
 
-Notes: the key is `id:secret`; the adapter splits on `:` and signs a 5-minute HS256 JWT per request. Publishes HTML via `POST /ghost/api/admin/posts/?source=html` (the `source=html` param is required or content comes out empty). Max 10 tags; canonical URL and feature image supported. `site_url` is your public site URL, no trailing path.
+Notes: the key is `id:secret`; the adapter splits on `:` and signs a 5-minute HS256 JWT per request. Publishes HTML via `POST /ghost/api/admin/posts/?source=html` (the `source=html` param is required or content comes out empty). Max 10 tags; canonical URL and feature image supported. `site_url` must be an HTTPS public host with no trailing path (not plaintext HTTP, not internal or private hostnames).
 
 ![ghost integrations](screenshots/ghost-admin-key.png)
 
@@ -165,7 +167,7 @@ Firefox: Storage tab instead of Application. Safari: Develop menu, Show Web Insp
 }
 ```
 
-Notes: the cookie expires (rotate when `test_platform` starts failing; re-extract the same way). Drafts land at `https://<pub>.substack.com/publish/post/<id>`. Markdown is converted to a minimal ProseMirror doc: headings, paragraphs. Rich embeds/tweets in markdown are not carried over. Keep the cookie secret; it is full account access.
+Notes: the cookie expires (rotate when `test_platform` starts failing; re-extract the same way). `publication_url` must be an HTTPS public host (e.g. `https://yourpub.substack.com`; plaintext HTTP, localhost, and internal hosts are rejected). Drafts land at `https://<pub>.substack.com/publish/post/<id>`. Markdown is converted to a minimal ProseMirror doc: headings, paragraphs. Rich embeds/tweets in markdown are not carried over. Keep the cookie secret; it is full account access.
 
 ![substack connect.sid cookie](screenshots/substack-connect-sid.png)
 
@@ -200,6 +202,26 @@ Notes: files are written as `<dir>/<slugified-title>.md` with YAML frontmatter (
 
 ---
 
+## x
+
+X Articles API (v2). Long-form articles on X, not tweets. Publishing is two-step: OpenPost creates a draft article via `POST /2/articles/draft`, then publishes it via `POST /2/articles/:id/publish`. Draft-status publishes stop after step one and return the composer URL.
+
+**Get it:** developer.x.com, create a project + app, enable OAuth 2.0 (user context) with the `tweet.write` scope (plus `tweet.read`/`users.read` for the test call), then run the authorization-code flow to obtain a user access token. Client credentials / app-only tokens will not work - the token must act as your account.
+
+**Requires X Premium** on the publishing account; the Articles endpoint rejects non-Premium accounts.
+
+**Credentials:**
+
+```json
+{ "access_token": "xxxxxxxxxxxxxxxxxxxxxxxx" }
+```
+
+Notes: Markdown is converted to X's DraftJS-style `content_state` (headings, lists, quotes, bold/italic/code/links). Code fences are flattened to plain lines; images and embeds are not carried over. Access tokens expire (default 2h) - refresh tokens are not yet stored, so rotate `access_token` via `setup` when `test_platform` fails. `test` calls `GET /2/users/me`.
+
+![x oauth2 token](screenshots/x-oauth2-token.png)
+
+---
+
 ## Quick reference
 
 | Platform | Credential keys | Token location |
@@ -211,6 +233,7 @@ Notes: files are written as `<dir>/<slugified-title>.md` with YAML frontmatter (
 | `medium` | `integration_token` | Settings, Security and apps |
 | `substack` | `publication_url`, `connect_sid` | DevTools, Cookies |
 | `github-pages` | `token`, `repo`, `dir?`, `branch?` | Developer settings, PAT |
+| `x` | `access_token` | developer.x.com, OAuth2 user token |
 
 Verify any platform after storing:
 

@@ -53,18 +53,21 @@ export async function upsertLog(db: D1Database, l: { id: string; draft_id: strin
     .bind(l.id, l.draft_id, l.platform, l.status, l.url ?? null, l.error ?? null).run()
 }
 
-// Atomic claim: one 'publishing' row per (draft,platform). Returns false if already
-// claimed/succeeded — prevents duplicate platform POSTs on queue redelivery.
+// Atomic claim: one row per (draft,platform). Fresh claim wins INSERT OR IGNORE.
+// Re-claim allowed only for: 'retryable' rows (a transient failure being redelivered)
+// or stale 'publishing' (worker crashed mid-publish >5min ago) — via conditional
+// UPDATE that refreshes created_at, so only ONE racer wins the reclaim.
 export async function claimPublish(db: D1Database, id: string, draftId: string, platform: string): Promise<boolean> {
   const r = await db.prepare(
     `INSERT OR IGNORE INTO publish_log (id, draft_id, platform, status, attempts) VALUES (?, ?, ?, 'publishing', 0)`)
     .bind(id, draftId, platform).run()
   if (r.meta.changes === 1) return true
-  // row exists: re-claim only a stale 'publishing' claim (worker crashed mid-publish >5min ago);
-  // 'success', 'failed', or a live claim all mean this redelivery is a dup
-  const cur = await db.prepare('SELECT status, created_at FROM publish_log WHERE draft_id = ? AND platform = ?')
-    .bind(draftId, platform).first<{ status: string; created_at: number }>()
-  return cur?.status === 'publishing' && cur.created_at < Math.floor(Date.now() / 1000) - 300
+  const stale = Math.floor(Date.now() / 1000) - 300
+  const re = await db.prepare(
+    `UPDATE publish_log SET status = 'publishing', created_at = unixepoch()
+     WHERE draft_id = ? AND platform = ? AND (status = 'retryable' OR (status = 'publishing' AND created_at < ?))`)
+    .bind(draftId, platform, stale).run()
+  return re.meta.changes === 1
 }
 
 export async function finishPublish(db: D1Database, draftId: string, platform: string, status: string, url?: string, error?: string) {

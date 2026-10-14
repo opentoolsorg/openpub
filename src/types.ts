@@ -4,6 +4,7 @@ export interface Env {
   MEDIA: R2Bucket
   PUBLISH_QUEUE: Queue
   AI: Ai
+  ASSETS: Fetcher
   ADMIN_KEY: string
   BASE_URL: string
   DASHBOARD_URL?: string

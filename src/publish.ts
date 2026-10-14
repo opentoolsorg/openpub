@@ -33,23 +33,21 @@ async function refreshDraftStatus(db_: D1Database, draftId: string) {
     `SELECT platform, status FROM publish_log WHERE draft_id = ?`).bind(draftId).all<{ platform: string; status: string }>()
   const total = want.size
   const done = results.filter(r => r.status === 'success' && want.has(r.platform)).length
-  const failed = results.filter(r => r.status === 'failed' && want.has(r.platform)).length
+  const failed = results.filter(r => (r.status === 'failed' || r.status === 'retryable') && want.has(r.platform)).length
   if (done === total && total > 0) await db.setDraftStatus(db_, draftId, 'published')
   else if (done + failed === total && total > 0) await db.setDraftStatus(db_, draftId, 'partial')
 }
 
 // 4xx = permanent: retrying won't help (bad creds, bad request). 5xx/network = transient.
-export class HttpError extends Error {
-  constructor(public status: number, msg: string) { super(msg) }
-}
 const permanent = (e: unknown) =>
-  (e instanceof HttpError && e.status >= 400 && e.status < 500) ||
-  (e instanceof Error && /missing draft or creds|not in draft platforms/.test(e.message))
+  e instanceof Error && (/missing draft or creds|not in draft platforms/.test(e.message) || /\b4\d{2}\b/.test(e.message))
 
-const sanitize = (e: unknown) =>
-  (e instanceof Error ? e.message : String(e))
-    .replace(/[A-Za-z0-9_\-]{24,}/g, '***') // strip token-looking strings from upstream bodies
-    .slice(0, 300)
+// strip secrets: long tokens AND any configured credential values
+const sanitize = (e: unknown, creds?: Record<string, string> | null) => {
+  let s = (e instanceof Error ? e.message : String(e)).replace(/[A-Za-z0-9_\-]{24,}/g, '***')
+  if (creds) for (const v of Object.values(creds)) if (v && v.length >= 6) s = s.split(v).join('***')
+  return s.slice(0, 300)
+}
 
 export async function publishConsumer(batch: MessageBatch<{ draftId: string; platform: PlatformName }>, env: Env): Promise<void> {
   for (const msg of batch.messages) {
@@ -81,8 +79,10 @@ export async function publishConsumer(batch: MessageBatch<{ draftId: string; pla
       msg.ack()
     } catch (e) {
       const perm = permanent(e)
+      const creds = await db.getCreds(env.DB, platform).catch(() => null)
       try {
-        await db.finishPublish(env.DB, draftId, platform, 'failed', undefined, sanitize(e))
+        // transient -> 'retryable' so queue redelivery re-claims; permanent -> 'failed'
+        await db.finishPublish(env.DB, draftId, platform, perm ? 'failed' : 'retryable', undefined, sanitize(e, creds))
         await refreshDraftStatus(env.DB, draftId)
       } catch { /* ignore log failure */ }
       if (perm) msg.ack() // don't burn retries on a request that will never succeed

@@ -1,6 +1,6 @@
 # MCP Setup
 
-OpenPost exposes an MCP server over Streamable HTTP at `POST /mcp`. Stateless JSON mode: it answers `initialize`, `tools/list`, `tools/call`, `ping`, and ignores `notifications/*`. Auth is the same `ADMIN_KEY` as the REST API, sent as `Authorization: Bearer <key>` (or `?key=` query param for clients that cannot set headers).
+OpenPost exposes an MCP server over Streamable HTTP at `POST /mcp`. Stateless JSON mode: it answers `initialize`, `tools/list`, `tools/call`, `ping`, and ignores `notifications/*`. Auth is the same `ADMIN_KEY` as the REST API, sent as `Authorization: Bearer <ADMIN_KEY>`. Because `?key=` query authentication only works on GET requests, all MCP POST requests must use the `Authorization: Bearer` header.
 
 Prerequisite: a deployed worker (see [DEPLOY.md](DEPLOY.md)) and your `ADMIN_KEY`.
 
@@ -83,7 +83,7 @@ Cursor supports remote MCP servers natively. Edit `~/.cursor/mcp.json` (global) 
 }
 ```
 
-Then: Settings, Cursor Settings, MCP. Toggle `openpost` on if it is not auto-enabled; it should show a green status dot and list tools. If headers are not picked up by your Cursor version, put the key in the URL instead: `"url": "https://openpost.<subdomain>.workers.dev/mcp?key=<ADMIN_KEY>"`.
+Then: Settings, Cursor Settings, MCP. Toggle `openpost` on if it is not auto-enabled; it should show a green status dot and list tools. The `headers` block with `Authorization: Bearer <ADMIN_KEY>` is required because POST endpoints do not accept `?key=` query authentication.
 
 ## Windsurf
 

@@ -22,9 +22,20 @@ function fakeD1() {
           // claimPublish: (id, draft_id, platform)
           const k = `${args[1]}:${args[2]}`
           if (log.has(k)) return { meta: { changes: 0 } }
-          log.set(k, { id: args[0], draft_id: args[1], platform: args[2], status: 'publishing', attempts: 0, created_at: 0 })
+          log.set(k, { id: args[0], draft_id: args[1], platform: args[2], status: 'publishing', attempts: 0, created_at: Math.floor(Date.now() / 1000) })
           return { meta: { changes: 1 } }
         } else if (sql.startsWith('UPDATE publish_log')) {
+          if (sql.includes('unixepoch()')) {
+            // claimPublish reclaim: (draft_id, platform, staleCutoff)
+            const k = `${args[0]}:${args[1]}`
+            const cur = log.get(k)
+            const stale = (cur?.created_at as number ?? 0) < (args[2] as number)
+            if (cur && (cur.status === 'retryable' || (cur.status === 'publishing' && stale))) {
+              log.set(k, { ...cur, status: 'publishing', created_at: Math.floor(Date.now() / 1000) })
+              return { meta: { changes: 1 } }
+            }
+            return { meta: { changes: 0 } }
+          }
           // finishPublish: (status, url, error, draft_id, platform)
           const k = `${args[3]}:${args[4]}`
           const prev = log.get(k)
@@ -186,7 +197,7 @@ describe('publishConsumer', () => {
     const spy = vi.spyOn(adapters.devto, 'publish').mockRejectedValue(new Error('boom'))
     const b = batch({ draftId: 'd1', platform: 'devto' })
     await publishConsumer(b as never, env)
-    expect(d1.log.get('d1:devto')).toMatchObject({ status: 'failed', error: 'boom' })
+    expect(d1.log.get('d1:devto')).toMatchObject({ status: 'retryable', error: 'boom' })
     expect(b.messages[0].retry).toHaveBeenCalled()
     expect(b.messages[0].ack).not.toHaveBeenCalled()
     spy.mockRestore()

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
-    "deploy": "wrangler deploy"
+    "deploy": "npm --prefix dashboard run build && wrangler deploy"
   },
   "keywords": [],
   "author": "",

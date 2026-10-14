@@ -5,7 +5,7 @@ platforms: [devto, hashnode, github-pages]
 status: published
 ---
 
-This is a sample post for **openpost** — write once in markdown, publish
+This is a sample post for **openpost** - write once in markdown, publish
 everywhere with a canonical URL pointing back to your own site.
 
 ## How it works

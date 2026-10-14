@@ -2,7 +2,7 @@
 
 Write once in Markdown. Publish everywhere. Own the infrastructure.
 
-OpenPost is a self-hosted, Cloudflare-native cross-posting engine for technical blogs. Drop a Markdown file in, and OpenPost fans it out to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, and a GitHub Pages repo - with per-platform adapters, canonical URL wiring, automatic retries, and a publish log you actually control.
+OpenPost is a self-hosted, Cloudflare-native cross-posting engine for technical blogs. Drop a Markdown file in, and OpenPost fans it out to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, a GitHub Pages repo, and X Articles - with per-platform adapters, canonical URL wiring, automatic retries, and a publish log you actually control.
 
 It runs as a single Cloudflare Worker, so there is no server to babysit, no Docker container to keep alive, and no SaaS middleman holding your credentials. Your drafts, credentials, and publish history live in your own D1 database.
 
@@ -15,12 +15,12 @@ Cross-posting tools either want your platform tokens on their servers, charge pe
 ## Features
 
 - **One Markdown source of truth** - frontmatter for title, tags, platforms, canonical URL
-- **7 platform adapters** - devto, hashnode, wordpress, ghost, medium, substack, github-pages
-- **Canonical URL wiring** - first successful publish becomes the canonical URL for the rest
-- **Queue-backed publishes** - Cloudflare Queues with retries and per-platform status; failed platforms retry without touching succeeded ones (idempotent)
+- **8 platform adapters** - devto, hashnode, wordpress, ghost, medium, substack, github-pages, x
+- **Canonical URL wiring** - first successful publish becomes the canonical URL for the rest; atomic claim rows prevent duplicate publishes on concurrent triggers or queue redelivery
+- **Queue-backed publishes** - Cloudflare Queues with a retry classifier (4xx permanent, 5xx retry); failed platforms retry without touching succeeded ones (idempotent)
 - **MCP server** - Streamable HTTP, works with Claude Code, Cursor, and any MCP client
 - **CLI** - `openpost publish post.md --to devto,hashnode` from your terminal
-- **Cover images** - Workers AI (FLUX schnell) generates covers, stored in R2 and served by the worker
+- **Cover images** - Workers AI (FLUX schnell) generates covers via authenticated POST /api/images/generate, stored in R2 and served publicly at GET /covers/<uuid>.png (no auth)
 - **Dashboard** - TanStack Start web UI for drafts, platform status, and history
 
 ## Deploy
@@ -78,6 +78,7 @@ Credentials are stored per-platform in your own D1 database via `openpost setup 
 | `medium`      | `{"integration_token": "..."}`                                               | medium.com/me/settings → Security and apps → Integration tokens |
 | `substack`    | `{"publication_url": "...", "connect_sid": "..."}`                           | Log in to Substack, copy the `connect.sid` cookie from browser devtools. Creates drafts, not live posts. |
 | `github-pages`| `{"token": "...", "repo": "owner/name", "dir": "?", "branch": "?"}`          | GitHub fine-grained PAT with Contents: read/write on your site repo. `dir` defaults to `content/posts`, `branch` to `main`. Writes Markdown + frontmatter straight into your repo - Hugo/Jekyll/Astro pick it up on the next build. |
+| `x`           | `{"access_token": "..."}`                                                    | X Articles API (v2). OAuth2 user-context token with `tweet.write` scope. Requires X Premium on the publishing account. Creates a draft article, then publishes it. |
 
 Example:
 
@@ -158,7 +159,7 @@ That means prompts like *"save this as a draft and cross-publish to devto and ha
 
 ## REST API
 
-All endpoints require `Authorization: Bearer <ADMIN_KEY>` (or `?key=` query param).
+Endpoints require `Authorization: Bearer <ADMIN_KEY>`. The `?key=` query parameter is only accepted on GET requests; POST and DELETE requests must use the `Authorization: Bearer` header. Public endpoints without authentication include `/health`, `/docs`, and `GET /covers/:key`. CORS is restricted to `DASHBOARD_URL` (not `*`).
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -169,12 +170,14 @@ All endpoints require `Authorization: Bearer <ADMIN_KEY>` (or `?key=` query para
 | GET | `/api/drafts` | List drafts |
 | POST | `/api/drafts` | Create a draft `{title?, content, platforms[], cover_image?}` |
 | GET | `/api/drafts/:id` | Get one draft |
+| GET | `/api/drafts/:id/preview` | Rendered HTML preview |
 | DELETE | `/api/drafts/:id` | Delete a draft |
 | POST | `/api/publish` | `{draftId}` or `{content, platforms[]}` - enqueues platform jobs |
+| GET | `/api/posts` | Posts grouped by draft with per-platform status |
 | GET | `/api/history` | Publish log |
 | POST | `/api/history/:draftId/:platform/retry` | Requeue failed publishes for one platform |
-| POST | `/api/images/generate` | `{prompt, draftId?}` → `{url}` |
-| GET | `/api/images/covers/:key` | Serve a generated cover from R2 |
+| POST | `/api/images/generate` | Generate cover `{prompt, draftId?}` → `{url}` (authenticated) |
+| GET | `/covers/:key` | Serve a cover image publicly from R2 at `/covers/<uuid>.png` (no auth) |
 | POST | `/mcp` | MCP JSON-RPC endpoint |
 
 ## Architecture
@@ -184,7 +187,7 @@ All endpoints require `Authorization: Bearer <ADMIN_KEY>` (or `?key=` query para
   openpost-cli ──────────▶│                                             │
   MCP clients ───────────▶│   Cloudflare Worker (Hono)                  │
   (Claude Code, Cursor)   │                                             │
-  Dashboard ─────────────▶│   /api/*   REST    /mcp   JSON-RPC          │
+  Dashboard ─────────────▶│   /api/* REST   /mcp JSON-RPC   /covers/*   │
                           └──────┬──────────────────┬──────────────────┘
                                  │                  │
                     ┌────────────▼───┐      ┌───────▼────────┐
@@ -202,6 +205,7 @@ All endpoints require `Authorization: Bearer <ADMIN_KEY>` (or `?key=` query para
                                │          │                │──▶ Medium API
                                │          │                │──▶ Substack drafts
                                │          │                │──▶ GitHub Contents API
+                               │          │                │──▶ X Articles API
                                │          └───────┬────────┘
                                │                  │ canonical URL of first
                                └──────────────────┘ success feeds the rest
@@ -209,7 +213,7 @@ All endpoints require `Authorization: Bearer <ADMIN_KEY>` (or `?key=` query para
         KV: KEYS      R2: MEDIA (cover images)      Workers AI: FLUX schnell
 ```
 
-The publish flow is deliberately boring: `POST /api/publish` enqueues one message per platform, the queue consumer calls the adapter, and each outcome lands in `publish_log` with the platform URL or the error. The first successful URL becomes the draft's canonical URL, so every downstream platform points back at the original. Re-running a draft is a no-op for platforms that already succeeded - only failures get retried.
+The publish flow is deliberately boring: `POST /api/publish` enqueues one message per platform, and the queue consumer claims each job with an atomic claim row in D1 to prevent duplicate publishes on redelivery or concurrent triggers. The consumer invokes the platform adapter and records the result in `publish_log`. The retry classifier distinguishes failure types: 4xx errors are treated as permanent failures (such as invalid credentials or bad payloads) and acknowledged without burning retries, while 5xx server errors and network faults trigger automatic retries up to max_retries. The first successful publish URL becomes the draft's canonical URL, feeding downstream adapters so every cross-post points back at the original. Re-running a draft is a no-op for platforms that already succeeded; only failures get retried.
 
 ## Stack
 
