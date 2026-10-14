@@ -1,0 +1,9 @@
+name = "openpost-dashboard"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+main = ".output/server/index.mjs"
+
+[assets]
+directory = ".output/public"
+binding = "ASSETS"

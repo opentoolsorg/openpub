@@ -1,0 +1,28 @@
+CREATE TABLE IF NOT EXISTS platform_config (
+  platform TEXT PRIMARY KEY,
+  credentials TEXT NOT NULL,
+  enabled INTEGER DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS drafts (
+  id TEXT PRIMARY KEY,
+  title TEXT,
+  content TEXT NOT NULL,
+  platforms TEXT,
+  cover_image TEXT,
+  canonical_url TEXT,
+  status TEXT DEFAULT 'draft',
+  created_at INTEGER DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS publish_log (
+  id TEXT PRIMARY KEY,
+  draft_id TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  url TEXT,
+  error TEXT,
+  attempts INTEGER DEFAULT 0,
+  created_at INTEGER DEFAULT (unixepoch()),
+  UNIQUE(draft_id, platform)
+);

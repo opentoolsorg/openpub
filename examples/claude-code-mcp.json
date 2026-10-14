@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "openpost": {
+      "type": "http",
+      "url": "https://openpost.workers.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_ADMIN_KEY"
+      }
+    }
+  }
+}

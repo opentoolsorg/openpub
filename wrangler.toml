@@ -1,0 +1,32 @@
+name = "openpost"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+BASE_URL = "https://openpost.princslabs.workers.dev"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "openpost-db"
+database_id = "a046242c-c914-44a9-87bc-0fe48a881a3c"
+
+[[kv_namespaces]]
+binding = "KEYS"
+id = "78642abd78d640d6b9506dc8b12657bb"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "openpost-media"
+
+[[queues.producers]]
+binding = "PUBLISH_QUEUE"
+queue = "openpost-publish"
+
+[[queues.consumers]]
+queue = "openpost-publish"
+max_batch_size = 5
+max_retries = 3
+
+[ai]
+binding = "AI"
