@@ -23,18 +23,36 @@ const PLATFORMS = [
 
 const AGENTS = [
   { slug: 'claude', label: 'Claude Code' },
+  { slug: 'openai', label: 'Codex' },
   { slug: 'cursor', label: 'Cursor' },
   { slug: 'windsurf', label: 'Windsurf' },
   { slug: 'githubcopilot', label: 'Copilot' },
   { slug: 'zed', label: 'Zed' },
-  { slug: 'openai', label: 'Codex' },
+  { slug: 'hermes', label: 'Hermes', custom: true },
+  { slug: 'opencode', label: 'OpenCode', custom: true },
 ]
 
-const MCP_SNIPPET = `claude mcp add --transport http openpub \\
+// per-agent setup — the "works with these agents" proof
+const AGENT_SETUPS = [
+  {
+    name: 'Claude Code',
+    slug: 'claude',
+    code: `claude mcp add --transport http openpub \\
   https://openpub.your-sub.workers.dev/mcp \\
-  --header "Authorization: Bearer ADMIN_KEY"`
-
-const MCP_JSON = `// .cursor/mcp.json (any MCP client)
+  --header "Authorization: Bearer ADMIN_KEY"`,
+  },
+  {
+    name: 'Codex',
+    slug: 'openai',
+    code: `# ~/.codex/config.toml
+[mcp_servers.openpub]
+url = "https://openpub.your-sub.workers.dev/mcp"
+headers = { Authorization = "Bearer ADMIN_KEY" }`,
+  },
+  {
+    name: 'Cursor / Windsurf / Zed',
+    slug: 'cursor',
+    code: `// .cursor/mcp.json (any MCP client)
 {
   "mcpServers": {
     "openpub": {
@@ -42,7 +60,31 @@ const MCP_JSON = `// .cursor/mcp.json (any MCP client)
       "headers": { "Authorization": "Bearer ADMIN_KEY" }
     }
   }
-}`
+}`,
+  },
+  {
+    name: 'Hermes',
+    slug: 'hermes',
+    code: `hermes config set mcp_servers.openpub.type http
+hermes config set mcp_servers.openpub.url \\
+  https://openpub.your-sub.workers.dev/mcp
+# restart → tools show up as openpub_*`,
+  },
+  {
+    name: 'OpenCode',
+    slug: 'opencode',
+    code: `// ~/.config/opencode/opencode.json
+{
+  "mcp": {
+    "openpub": {
+      "type": "remote",
+      "url": "https://openpub.your-sub.workers.dev/mcp",
+      "headers": { "Authorization": "Bearer ADMIN_KEY" }
+    }
+  }
+}`,
+  },
+]
 
 const CLI_DEMO = `npm i -g openpub-cli
 openpub login --url https://openpub.your-sub.workers.dev
@@ -468,14 +510,20 @@ function Landing() {
                 key={a.slug}
                 className="group/item flex items-center gap-2 text-zinc-500 transition-all duration-200 hover:text-zinc-200"
               >
-                <img
-                  src={`https://cdn.simpleicons.org/${a.slug}/e9eaec`}
-                  alt={a.label}
-                  className="h-[18px] w-[18px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
-                  loading="lazy"
-                  width={18}
-                  height={18}
-                />
+                {a.custom ? (
+                  <span className="flex h-[18px] w-[18px] items-center justify-center rounded-sm bg-zinc-800 font-mono text-[9px] font-bold text-emerald-400">
+                    {a.slug === 'hermes' ? 'H' : 'OC'}
+                  </span>
+                ) : (
+                  <img
+                    src={`https://cdn.simpleicons.org/${a.slug}/e9eaec`}
+                    alt={a.label}
+                    className="h-[18px] w-[18px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
+                    loading="lazy"
+                    width={18}
+                    height={18}
+                  />
+                )}
                 <span className="text-xs tracking-tight">{a.label}</span>
               </span>
             ))}
@@ -485,9 +533,9 @@ function Landing() {
           </div>
         </Reveal>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          {[MCP_SNIPPET, MCP_JSON].map((code, idx) => (
-            <Reveal key={idx} delay={idx * 100}>
+        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {AGENT_SETUPS.map((a, idx) => (
+            <Reveal key={a.name} delay={idx * 80}>
               <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-950/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-zinc-700">
                 <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5">
                   <div className="flex items-center gap-1.5">
@@ -496,25 +544,25 @@ function Landing() {
                     <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
                   </div>
                   <div className="font-mono text-[11px] text-zinc-400">
-                    <span className="text-emerald-400/90">mcp</span>
+                    <span className="text-emerald-400/90">setup</span>
                     <span className="mx-1.5 text-zinc-600">/</span>
-                    <span>{idx === 0 ? 'claude-code' : 'mcp.json'}</span>
+                    <span>{a.name.toLowerCase().replace(/\s+/g, '-')}</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleCopy(code, 10 + idx)}
-                    aria-label="Copy snippet"
+                    onClick={() => handleCopy(a.code, 30 + idx)}
+                    aria-label="Copy setup"
                     className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-zinc-800 !bg-zinc-900/90 !px-2 !py-0 !text-[11px] !font-mono !text-zinc-400 !transition-colors hover:!border-zinc-700 hover:!bg-zinc-800 hover:!text-zinc-100 active:!scale-95"
                   >
-                    {copiedIndex === 10 + idx ? (
+                    {copiedIndex === 30 + idx ? (
                       <span className="text-emerald-400">copied</span>
                     ) : (
                       <span>copy</span>
                     )}
                   </button>
                 </div>
-                <pre className="flex-1 overflow-x-auto p-4 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre">
-                  {code}
+                <pre className="flex-1 overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-zinc-300 whitespace-pre">
+                  {a.code}
                 </pre>
               </div>
             </Reveal>

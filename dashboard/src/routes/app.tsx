@@ -119,7 +119,7 @@ function getStatusBadgeStyle(status: string) {
   ) {
     return "bg-red-500/10 text-red-400 border-red-500/20"
   }
-  return "bg-zinc-800/80 text-zinc-400 border-zinc-700/60"
+  return "bg-zinc-900 text-zinc-500 border-zinc-800"
 }
 
 function StatusBadge({
@@ -160,8 +160,8 @@ function EmptyState({
   icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/30 p-8 sm:p-10 text-center">
-      <div className="mx-auto w-10 h-10 rounded-full bg-zinc-800/80 border border-zinc-700/60 flex items-center justify-center text-zinc-400 mb-3">
+    <div className="rounded-lg border border-dashed border-zinc-800/80 p-10 text-center">
+      <div className="mx-auto w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-500 mb-3">
         {icon}
       </div>
       <h3 className="text-sm font-semibold text-zinc-200">{title}</h3>
@@ -253,38 +253,38 @@ function Main() {
             </div>
             <p className="text-xs text-zinc-500 mt-1">write once, publish everywhere</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <div className="flex flex-wrap items-center gap-4">
             <a
               href="/docs"
-              className="font-mono text-xs text-zinc-300 bg-zinc-900/80 hover:bg-zinc-800 hover:text-emerald-400 border border-zinc-800 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
+              className="font-mono text-xs text-zinc-500 hover:text-zinc-100 transition-colors"
             >
-              Docs
+              docs
             </a>
             <span
-              className="font-mono text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 rounded-lg truncate max-w-[150px] sm:max-w-xs"
+              className="font-mono text-[11px] text-zinc-600 truncate max-w-[150px] sm:max-w-xs"
               title={base}
             >
               {base.replace("https://", "")}
             </span>
             <button
               type="button"
-              className="bg-zinc-800/80 hover:bg-zinc-700 hover:text-zinc-100 text-zinc-300 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+              className="font-mono text-xs text-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer"
               onClick={() => {
                 const b = window.prompt("API base URL", base)
                 if (b) setBase(b)
               }}
             >
-              Config
+              config
             </button>
             <button
               type="button"
-              className="bg-zinc-800/80 hover:bg-zinc-700 hover:text-zinc-100 text-zinc-300 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+              className="font-mono text-xs text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
               onClick={() => {
                 localStorage.removeItem("op-key")
                 setKey("")
               }}
             >
-              Logout
+              logout
             </button>
           </div>
         </header>
@@ -316,7 +316,7 @@ function Main() {
         </main>
 
         {msg && (
-          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-2.5 rounded-lg text-xs sm:text-sm shadow-xl z-50 flex items-center gap-2 max-w-[90vw] text-center">
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-zinc-950/95 border border-zinc-800 text-zinc-200 px-4 py-2 rounded-md font-mono text-xs z-50 flex items-center gap-2 max-w-[90vw]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
             <span className="truncate">{msg}</span>
           </div>
@@ -337,7 +337,7 @@ function LoginForm({
 }) {
   const [k, setK] = React.useState("")
   return (
-    <div className="w-full p-5 sm:p-6 rounded-xl bg-zinc-900/90 border border-zinc-800 shadow-xl space-y-3.5 text-left">
+    <div className="w-full p-5 sm:p-6 rounded-lg bg-zinc-950 border border-zinc-800 space-y-3.5 text-left">
       <div className="space-y-1">
         <label className="text-xs font-medium text-zinc-400">Admin Key</label>
         <input
@@ -482,14 +482,14 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 sm:p-5 shadow-sm space-y-4">
+      <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 sm:p-5 space-y-4">
         <div className="space-y-1">
           <label className="text-xs font-medium text-zinc-300">Post content (Markdown)</label>
           <textarea
             placeholder={"# Title\n\nMarkdown content..."}
             value={md}
             onChange={(e) => setMd(e.target.value)}
-            className="w-full min-h-[10rem] bg-zinc-950/80 border border-zinc-800 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 text-zinc-100 placeholder-zinc-500 rounded-lg p-3.5 font-mono text-sm leading-relaxed transition-colors outline-none resize-y"
+            className="w-full min-h-[10rem] bg-[#0a0c0b] border border-zinc-800 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 text-zinc-100 placeholder-zinc-600 rounded-md p-3.5 font-mono text-sm leading-relaxed transition-colors outline-none resize-y"
           />
         </div>
 
@@ -507,10 +507,10 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
                 <button
                   key={p}
                   type="button"
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer select-none ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono border transition-all cursor-pointer select-none ${
                     selected
-                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-sm"
-                      : "bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                      : "border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
                   }`}
                   onClick={() => tog(p)}
                 >
@@ -537,7 +537,7 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
           </button>
           <button
             type="button"
-            className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-200 border border-zinc-700/60 font-medium px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="border border-zinc-800 hover:border-zinc-600 disabled:opacity-50 text-zinc-300 font-medium px-4 py-2 rounded-md text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
             onClick={save}
             disabled={busy}
           >
@@ -573,7 +573,7 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
         ) : (
           drafts.map((d) => (
             <div
-              className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 sm:p-5 hover:border-zinc-700/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 sm:p-5 hover:border-zinc-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               key={d.id}
             >
               <div className="space-y-2 min-w-0 flex-1">
@@ -599,27 +599,27 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-4 shrink-0 font-mono text-xs">
                 <button
                   type="button"
-                  className="bg-zinc-800/80 hover:bg-zinc-700 hover:text-zinc-100 text-zinc-300 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                  className="text-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer"
                   onClick={() => setMd(d.content)}
                 >
-                  Load
+                  load
                 </button>
                 <button
                   type="button"
-                  className="bg-zinc-800/80 hover:bg-zinc-700 hover:text-zinc-100 text-zinc-300 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                  className="text-zinc-500 hover:text-emerald-400 transition-colors cursor-pointer"
                   onClick={() => pub(d.id)}
                 >
-                  Publish
+                  publish
                 </button>
                 <button
                   type="button"
-                  className="bg-zinc-800/80 hover:bg-red-950/40 hover:text-red-300 hover:border-red-800/60 text-zinc-400 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                  className="text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
                   onClick={() => del(d.id)}
                 >
-                  Delete
+                  delete
                 </button>
               </div>
             </div>
@@ -728,7 +728,7 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
             const t = testing[p]
             return (
               <div
-                className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 sm:p-5 flex flex-col justify-between hover:border-zinc-700/80 transition-all space-y-3.5"
+                className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 sm:p-5 flex flex-col justify-between hover:border-zinc-700 transition-colors space-y-3.5"
                 key={p}
               >
                 <div className="space-y-2">
@@ -748,10 +748,10 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-800/60">
+                <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-zinc-800/60 font-mono text-xs">
                   <button
                     type="button"
-                    className="bg-zinc-800/80 hover:bg-zinc-700 hover:text-zinc-100 text-zinc-300 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                    className="text-zinc-500 hover:text-emerald-400 transition-colors cursor-pointer"
                     onClick={() => {
                       setSetup(p)
                       setJson(
@@ -759,15 +759,15 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
                       )
                     }}
                   >
-                    Setup
+                    setup
                   </button>
                   <button
                     type="button"
-                    className="bg-zinc-800/80 hover:bg-zinc-700 hover:text-zinc-100 text-zinc-300 border border-zinc-700/60 font-medium px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50"
+                    className="text-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer disabled:opacity-50"
                     onClick={() => test(p)}
                     disabled={t === "testing"}
                   >
-                    Test
+                    test
                   </button>
                 </div>
               </div>
@@ -778,11 +778,11 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
 
       {setup && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
           onClick={() => setSetup(null)}
         >
           <div
-            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-2xl space-y-4"
+            className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-lg p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-2">
@@ -835,7 +835,7 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
               </button>
               <button
                 type="button"
-                className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700/60 font-medium px-3.5 py-2 rounded-lg text-xs transition-colors cursor-pointer"
+                className="border border-zinc-800 hover:border-zinc-600 text-zinc-300 font-medium px-3.5 py-2 rounded-md text-xs transition-colors cursor-pointer"
                 onClick={() => setSetup(null)}
               >
                 Cancel
@@ -916,7 +916,7 @@ function History({ api, toast }: { api: Api; toast: (m: string) => void }) {
         <div className="space-y-3">
           {rows.map((r, i) => (
             <div
-              className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 sm:p-5 hover:border-zinc-700/80 transition-all space-y-2"
+              className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 sm:p-5 hover:border-zinc-700 transition-colors space-y-2"
               key={i}
             >
               <div className="flex flex-wrap items-center gap-2 justify-between">
