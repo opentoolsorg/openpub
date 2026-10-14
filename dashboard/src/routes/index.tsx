@@ -23,11 +23,11 @@ const PLATFORMS = [
 
 const AGENTS = [
   { slug: 'claude', label: 'Claude Code' },
-  { slug: 'openai', label: 'Codex' },
+  { slug: 'codex', label: 'Codex', custom: true },
   { slug: 'cursor', label: 'Cursor' },
   { slug: 'windsurf', label: 'Windsurf' },
   { slug: 'githubcopilot', label: 'Copilot' },
-  { slug: 'zed', label: 'Zed' },
+  { slug: 'zedindustries', label: 'Zed' },
   { slug: 'hermes', label: 'Hermes', custom: true },
   { slug: 'opencode', label: 'OpenCode', custom: true },
 ]
@@ -43,7 +43,7 @@ const AGENT_SETUPS = [
   },
   {
     name: 'Codex',
-    slug: 'openai',
+    slug: 'codex',
     code: `# ~/.codex/config.toml
 [mcp_servers.openpub]
 url = "https://openpub.your-sub.workers.dev/mcp"
@@ -346,6 +346,37 @@ function Landing() {
             Read the docs
           </a>
         </div>
+
+        {/* moat: agent strip in hero */}
+        <div className="mt-10">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-zinc-600">
+            works with the agent you already use
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+            {AGENTS.map((a) => (
+              <span
+                key={a.slug}
+                className="group/item flex items-center gap-2 text-zinc-500 transition-colors duration-200 hover:text-zinc-200"
+              >
+                {a.custom ? (
+                  <span className="flex h-[16px] w-[16px] items-center justify-center rounded-sm bg-zinc-800 font-mono text-[8px] font-bold text-emerald-400">
+                    {a.slug === 'hermes' ? 'H' : a.slug === 'codex' ? 'C' : 'OC'}
+                  </span>
+                ) : (
+                  <img
+                    src={`https://cdn.simpleicons.org/${a.slug}/e9eaec`}
+                    alt={a.label}
+                    className="h-[16px] w-[16px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
+                    loading="lazy"
+                    width={16}
+                    height={16}
+                  />
+                )}
+                <span className="text-[11px] tracking-tight">{a.label}</span>
+              </span>
+            ))}
+          </div>
+        </div>
       </header>
 
       <Reveal>
@@ -411,10 +442,10 @@ function Landing() {
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80 transition-opacity group-hover:opacity-100" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80 transition-opacity group-hover:opacity-100" />
                   </div>
-                  <div className="font-mono text-[11px] text-zinc-400">
+                  <div className="min-w-0 font-mono text-[11px] text-zinc-400">
                     <span className="text-emerald-400/90">{s.n}</span>
                     <span className="mx-1.5 text-zinc-600">/</span>
-                    <span>{s.title.toLowerCase().replace(/[\s,]+/g, '-')}</span>
+                    <span>{s.title.toLowerCase().replace(/[\\s,]+/g, ' ')}</span>
                   </div>
                   <button
                     type="button"
@@ -512,7 +543,7 @@ function Landing() {
               >
                 {a.custom ? (
                   <span className="flex h-[18px] w-[18px] items-center justify-center rounded-sm bg-zinc-800 font-mono text-[9px] font-bold text-emerald-400">
-                    {a.slug === 'hermes' ? 'H' : 'OC'}
+                    {a.slug === 'hermes' ? 'H' : a.slug === 'codex' ? 'C' : 'OC'}
                   </span>
                 ) : (
                   <img
@@ -543,10 +574,10 @@ function Landing() {
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
                   </div>
-                  <div className="font-mono text-[11px] text-zinc-400">
+                  <div className="min-w-0 font-mono text-[11px] text-zinc-400">
                     <span className="text-emerald-400/90">setup</span>
                     <span className="mx-1.5 text-zinc-600">/</span>
-                    <span>{a.name.toLowerCase().replace(/\s+/g, '-')}</span>
+                    <span>{a.name.toLowerCase()}</span>
                   </div>
                   <button
                     type="button"
@@ -561,7 +592,7 @@ function Landing() {
                     )}
                   </button>
                 </div>
-                <pre className="flex-1 overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-zinc-300 whitespace-pre">
+                <pre className="flex-1 overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
                   {a.code}
                 </pre>
               </div>
@@ -595,7 +626,7 @@ function Landing() {
                 )}
               </button>
             </div>
-            <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre">
+            <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
               {CLI_DEMO}
             </pre>
           </div>
