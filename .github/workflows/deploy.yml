@@ -3,21 +3,50 @@ name: deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # wrangler.toml pins D1, KV, R2, and queue IDs for one Cloudflare account,
+    # so only the upstream repo deploys. Forks get a green no-op.
+    if: github.repository == 'princepal9120/openpub'
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
-      - run: npm ci
+      # wrangler.toml serves dashboard/.output/public as static assets and that
+      # directory is gitignored, so it has to be built before deploying.
+      - name: Check Cloudflare credentials
+        id: creds
+        run: |
+          if [ -n "${{ secrets.CF_API_TOKEN }}" ] && [ -n "${{ secrets.CF_ACCOUNT_ID }}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Deploy skipped"
+              echo "CF_API_TOKEN and CF_ACCOUNT_ID are not set, so there is nothing to deploy."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      - run: npx wrangler deploy
+      - name: Install worker dependencies
+        if: steps.creds.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Build dashboard
+        if: steps.creds.outputs.configured == 'true'
+        run: |
+          npm --prefix dashboard ci
+          npm --prefix dashboard run build
+
+      - name: Deploy
+        if: steps.creds.outputs.configured == 'true'
+        run: npx wrangler deploy
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
