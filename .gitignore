@@ -1,13 +1,23 @@
+# Dependencies
 node_modules/
-.wrangler/
+
+# Build output and generated framework files
 dist/
-*.dev.vars
-.env
-apps/*/node_modules/
 apps/*/.output/
 apps/*/.tanstack/
-packages/*/node_modules/
-.omc/
-.omx/
+
+# Local runtime state and developer tooling
+.wrangler/
+**/.omc/
+**/.omx/
 .claude/
+
+# Local environment and secrets
+*.dev.vars
+.env
+
+# Generated graph cache
+graphify-out/cache/
+
+# Operating system files
 .DS_Store

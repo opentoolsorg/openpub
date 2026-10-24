@@ -8,12 +8,13 @@
     "test": "vitest run __tests__ --exclude '**/.claude/**'",
     "dev:site": "npm run dev --workspace @openpub/site",
     "dev:dashboard": "npm run dev --workspace openpub-dashboard",
-    "dev:worker": "npm run dev --workspace @openpub/worker",
-    "typecheck": "tsc --noEmit && npm run typecheck --workspace openpub-dashboard",
+    "dev:worker": "npm run dev --workspace @openpub/worker -- --port 8788 --local",
+    "typecheck": "tsc --noEmit && npm run typecheck --workspace openpub-dashboard && npm run typecheck --workspace @openpub/site",
     "build": "npm run build --workspaces --if-present",
     "deploy": "npm run build --workspace openpub-dashboard && npm run deploy --workspace @openpub/worker",
     "cli:build": "npm run build --workspace openpub-cli",
-    "mcp:build": "npm run build --workspace openpub-mcp"
+    "mcp:build": "npm run build --workspace openpub-mcp",
+    "dev": "npm run dev:site & npm run dev:dashboard & npm run dev:worker & wait"
   },
   "keywords": [
     "openpub",
@@ -44,7 +45,8 @@
   "license": "MIT",
   "files": [
     "packages/core",
-    "docs",
+    "apps/docs",
+    "apps/worker/docs",
     "examples",
     "migrations",
     "LICENSE",

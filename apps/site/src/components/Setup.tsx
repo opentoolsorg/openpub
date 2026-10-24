@@ -67,11 +67,11 @@ export function Setup() {
   }
   const client = clients[selected]
   const steps = client.id === 'cli' ? [
-    { title: 'Build the CLI', lead: 'Build from source. Run these commands from your terminal.', code: 'git clone https://github.com/princepal9120/openpub\ncd openpub\nnpm install\nnpm run build:cli' },
+    { title: 'Build the CLI', lead: 'Build from source. Run these commands from your terminal.', code: 'git clone https://github.com/princepal9120/openpub\ncd openpub\nnpm install\nnpm run cli:build' },
     { title: 'Store a platform key', lead: 'Keys stay in ~/.openpub/config.json. Status checks the connection.', code: 'node apps/cli/dist/index.js setup devto \'{"api_key":"YOUR_DEVTO_KEY"}\'\nnode apps/cli/dist/index.js status' },
     { title: 'Dry-run a post', lead: 'Nothing is sent. Replace --dry-run with --status draft to create a draft.', code: 'node apps/cli/dist/index.js publish post.md --to devto --dry-run' },
   ] : [
-    { title: 'Build the server', lead: 'Build from the repo once. No hosted service or account needed.', code: 'git clone https://github.com/princepal9120/openpub\ncd openpub\nnpm install\nnpm run build:mcp' },
+    { title: 'Build the server', lead: 'Build from the repo once. No hosted service or account needed.', code: 'git clone https://github.com/princepal9120/openpub\ncd openpub\nnpm install\nnpm run mcp:build' },
     { title: `Add it to ${client.name}`, lead: `Merge this into ${client.file}. Replace the absolute path with your own.${client.id === 'openclaw' ? ' Exact setup depends on your MCP integration.' : ''}`, code: client.code },
     { title: 'Restart and ask', lead: 'Restart your client. It can store a key, check links, dry-run and publish. Drafts stay the default.', code: 'Check the links in post.md, then do a dry run to dev.to and Hashnode.' },
   ]

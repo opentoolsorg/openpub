@@ -18,6 +18,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build --workspace openpub-dashboard
+      - run: npm run build --workspace @openpub/site
+      - run: npm test --workspace @openpub/site
       - run: npm run build --workspace @openpub/worker
       - run: npm run cli:build
       - run: npm run mcp:build

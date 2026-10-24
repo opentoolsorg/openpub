@@ -10,7 +10,7 @@ test('prerender includes accessible setup controls and safe source-build command
   assert.equal((html.match(/aria-controls="setup-panel"/g) || []).length, 9)
   assert.match(html, /role="tabpanel"[^>]*id="setup-panel"|id="setup-panel"[^>]*role="tabpanel"/)
   assert.equal((html.match(/aria-label="Copy /g) || []).length, 3)
-  assert.match(html, /npm run build:mcp/)
+  assert.match(html, /npm run mcp:build/)
   assert.match(html, /apps\/mcp\/dist\/index.js/)
   assert.doesNotMatch(html, /GitHub Action|uses: princepal9120|npx openpub-/)
 })
