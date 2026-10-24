@@ -657,6 +657,7 @@ function Landing() {
           >
             GitHub
           </a>
+          <a href="/app" className="transition-colors duration-200 hover:text-(--fg)">App</a>
           <ThemeToggle />
           <a
             href={DOCS}
@@ -1348,8 +1349,61 @@ function Landing() {
           </h2>
         </div>
 
-        {/* The six core features follow the editorial headline directly. */}
-        <div className="mt-10">
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          <div className="flex flex-col justify-between rounded-xl border border-(--border) bg-(--surface) p-6 transition-colors hover:border-(--surface4)">
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-(--fg)">MCP Server</h3>
+                <span className="rounded bg-(--accent-strong)/10 px-2 py-0.5 font-mono text-[10px] text-(--accent)">10 tools</span>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
+                The local stdio server gives your agent 10 tools to audit content,
+                check links, run dry runs, and cross-publish with per-platform results.
+              </p>
+              <p className="mt-4 rounded-lg border border-(--border) bg-(--surface2)/50 p-3 font-mono text-[11px] leading-relaxed text-(--fg3)">
+                publish · cross_publish · list_published · setup · status · test_platform · content_audit · check_links · frontmatter · x_article
+              </p>
+            </div>
+            <a href="#agents" className="mt-6 inline-flex items-center text-xs font-medium text-(--accent) underline-offset-4 hover:underline">Setup instructions for each agent &rarr;</a>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-xl border border-(--border) bg-(--surface) p-6 transition-colors hover:border-(--surface4)">
+            <div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-(--fg)">CLI</h3>
+                <span className="rounded bg-(--surface2) px-2 py-0.5 font-mono text-[10px] text-(--dim)">Node 20+</span>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
+                Built from the repo. Platform credentials stay local in
+                ~/.openpub/config.json. Scriptable for shell scripts and cron jobs.
+              </p>
+              <div className="mt-4 rounded-lg border border-(--border) bg-(--surface2)/50 p-3 font-mono text-[11px] leading-relaxed text-(--fg3) space-y-1 break-words">
+                <p className="text-(--dim2)"># Dry-run before publishing</p>
+                <p>node apps/cli/dist/index.js publish post.md --to devto --dry-run</p>
+                <p className="text-(--dim2) pt-1"># Create draft</p>
+                <p>node apps/cli/dist/index.js publish post.md --to devto --status draft</p>
+              </div>
+            </div>
+            <a href="/docs#cli" className="mt-6 inline-flex items-center text-xs font-medium text-(--accent) underline-offset-4 hover:underline">Full CLI setup &rarr;</a>
+          </div>
+
+          <div className="flex flex-col justify-between rounded-xl border border-(--border) bg-(--surface) p-6 transition-colors hover:border-(--surface4)">
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-(--fg)">GitHub Action</h3>
+                <span className="rounded-full border border-(--warn)/50 bg-(--warn)/10 px-2 py-0.5 font-mono text-[10px] font-medium text-(--warn)">Not released yet</span>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
+                Automated publishing on push is not available as a released Action.
+                The CLI npm package and a tagged Action release are not published yet.
+                Build the CLI from source for now.
+              </p>
+            </div>
+            <a href="/docs#github-action" className="mt-6 inline-flex items-center text-xs font-medium text-(--accent) underline-offset-4 hover:underline">Release status &rarr;</a>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-10 border-t border-(--border)">
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {CORE_PRINCIPLES.map((principle) => (

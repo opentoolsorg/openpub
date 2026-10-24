@@ -49,7 +49,13 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'deploy-guide', label: 'Self-host / Deploy' },
       { id: 'console-onboarding', label: 'Console Onboarding' },
       { id: 'prerequisites', label: 'Prerequisites' },
-      { id: 'step-2-resources', label: 'Cloudflare Resources' },
+      { id: 'step-1-install', label: '1. Clone & Install' },
+      { id: 'step-2-resources', label: '2. Cloudflare Resources' },
+      { id: 'step-3-schema', label: '3. Database Schema' },
+      { id: 'step-4-secret', label: '4. Admin Secret' },
+      { id: 'step-5-url', label: '5. Set BASE_URL' },
+      { id: 'step-6-deploy', label: '6. Deploy Worker' },
+      { id: 'step-7-verify', label: '7. Verify Deployment' },
       { id: 'custom-domain', label: 'Custom Domain' },
       { id: 'free-tier', label: 'Free Tier Limits' },
       { id: 'updating', label: 'Updating' },
@@ -67,10 +73,21 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'cli-frontmatter', label: 'Markdown Frontmatter' },
       { id: 'mcp', label: 'MCP Server' },
       { id: 'mcp-overview', label: 'Local stdio & Streamable HTTP' },
+      { id: 'mcp-build', label: 'Build Server from Repo' },
       { id: 'mcp-tools', label: 'Available MCP Tools' },
       { id: 'mcp-claude-code', label: 'Claude Code Setup' },
       { id: 'mcp-cursor', label: 'Cursor & VS Code' },
+      { id: 'mcp-windsurf', label: 'Windsurf & Codex' },
+      { id: 'mcp-curl', label: 'Generic HTTP / curl' },
+      { id: 'mcp-first-session', label: 'Typical First Session' },
       { id: 'mcp-troubleshooting', label: 'Troubleshooting' },
+    ],
+  },
+  {
+    id: 'github-action',
+    title: 'GitHub Action',
+    items: [
+      { id: 'action-setup', label: 'Release Status' },
     ],
   },
   {
@@ -80,6 +97,14 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'platforms', label: '8 Supported Platforms' },
       { id: 'platforms-overview', label: 'Storing & Testing' },
       { id: 'platforms-matrix', label: 'Credentials Matrix' },
+      { id: 'platform-devto', label: 'dev.to' },
+      { id: 'platform-hashnode', label: 'Hashnode' },
+      { id: 'platform-wordpress', label: 'WordPress' },
+      { id: 'platform-ghost', label: 'Ghost' },
+      { id: 'platform-medium', label: 'Medium' },
+      { id: 'platform-substack', label: 'Substack' },
+      { id: 'platform-github-pages', label: 'GitHub Pages' },
+      { id: 'platform-x', label: 'X Articles' },
       { id: 'architecture', label: 'Architecture & Storage' },
       { id: 'arch-diagram', label: 'System Diagram' },
       { id: 'arch-components', label: 'Core Components' },
@@ -1059,7 +1084,7 @@ function DocsPage() {
                 Build the local stdio MCP server from a clone of this repository (Node 20+):
               </p>
               <CodeBlock
-                code={`git clone https://github.com/princepal9120/openpub.git\ncd openpub/mcp\nnpm install && npm run build`}
+                code={`git clone https://github.com/princepal9120/openpub.git\ncd openpub/apps/mcp\nnpm install && npm run build`}
                 title="terminal"
               />
 
@@ -1069,7 +1094,7 @@ function DocsPage() {
               </p>
 
               <h4 className="mt-6 font-['IBM_Plex_Sans',sans-serif] text-sm font-semibold uppercase tracking-wider text-(--accent)">
-                Local stdio MCP Tools (10 Tools · mcp/handlers.ts)
+                Local stdio MCP Tools (10 Tools · apps/mcp/handlers.ts)
               </h4>
               <p className="text-xs text-(--dim) mt-1">
                 Transport: <code className="docs-code text-xs">stdio</code>. Operates directly on local markdown files, <code className="docs-code text-xs">~/.openpub/config.json</code>, and <code className="docs-code text-xs">~/.openpub/state.json</code>.
@@ -1228,7 +1253,7 @@ function DocsPage() {
                 For local stdio mode, add to <code className="docs-code text-xs">.mcp.json</code> in your project:
               </p>
               <CodeBlock
-                code={`{\n  "mcpServers": {\n    "openpub": {\n      "command": "node",\n      "args": ["/absolute/path/to/openpub/mcp/dist/index.js"]\n    }\n  }\n}`}
+                code={`{\n  "mcpServers": {\n    "openpub": {\n      "command": "node",\n      "args": ["/absolute/path/to/openpub/apps/mcp/dist/index.js"]\n    }\n  }\n}`}
                 title=".mcp.json (local stdio)"
               />
               <p className="docs-prose text-(--dim)">
@@ -1244,7 +1269,7 @@ function DocsPage() {
                 Add to <code className="docs-code text-xs">.cursor/mcp.json</code>:
               </p>
               <CodeBlock
-                code={`{\n  "mcpServers": {\n    "openpub": {\n      "command": "node",\n      "args": ["/absolute/path/to/openpub/mcp/dist/index.js"]\n    }\n  }\n}`}
+                code={`{\n  "mcpServers": {\n    "openpub": {\n      "command": "node",\n      "args": ["/absolute/path/to/openpub/apps/mcp/dist/index.js"]\n    }\n  }\n}`}
                 title=".cursor/mcp.json (local stdio)"
               />
               <p className="text-xs text-(--dim2)">
@@ -1256,11 +1281,11 @@ function DocsPage() {
                 Add to <code className="docs-code text-xs">mcp_config.json</code> in Windsurf:
               </p>
               <CodeBlock
-                code={`{\n  "mcpServers": {\n    "openpub": {\n      "command": "node",\n      "args": ["/absolute/path/to/openpub/mcp/dist/index.js"]\n    }\n  }\n}`}
+                code={`{\n  "mcpServers": {\n    "openpub": {\n      "command": "node",\n      "args": ["/absolute/path/to/openpub/apps/mcp/dist/index.js"]\n    }\n  }\n}`}
                 title="mcp_config.json"
               />
               <p className="text-xs text-(--dim2)">
-                For Codex CLI, add <code className="docs-code text-xs">[mcp_servers.openpub]</code> with <code className="docs-code text-xs">command = &quot;node&quot;</code> and <code className="docs-code text-xs">args = [&quot;/absolute/path/to/openpub/mcp/dist/index.js&quot;]</code> in <code className="docs-code text-xs">~/.codex/config.toml</code>.
+                For Codex CLI, add <code className="docs-code text-xs">[mcp_servers.openpub]</code> with <code className="docs-code text-xs">command = &quot;node&quot;</code> and <code className="docs-code text-xs">args = [&quot;/absolute/path/to/openpub/apps/mcp/dist/index.js&quot;]</code> in <code className="docs-code text-xs">~/.codex/config.toml</code>.
               </p>
 
               <SubHeading id="mcp-curl" title="Generic HTTP / curl Verification" />
@@ -1301,6 +1326,27 @@ function DocsPage() {
                   </tbody>
                 </table>
               </div>
+            </section>
+
+            <section className="space-y-6 pt-14">
+              <SectionHeading
+                id="github-action"
+                badge="CI / CD Automation"
+                title="GitHub Action"
+                subtitle="Release status for automated publishing on push."
+              />
+              <SubHeading id="action-setup" title="Not released yet" />
+              <Callout type="warning">
+                The CLI npm package and a tagged GitHub Action release are not published yet.
+                This repository does not currently include an Action entry point. Do not use
+                <code className="docs-code"> princepal9120/openpub@main </code>
+                or an unreleased tag as a runnable publishing Action.
+              </Callout>
+              <p className="docs-prose text-(--dim)">
+                For now, <a href="#cli-install" className="text-(--accent) hover:underline">build the CLI from source</a>
+                {' '}and run a dry run before publishing. Keep credentials in repository secrets
+                if you invoke the CLI from your own CI workflow.
+              </p>
             </section>
 
             {/* REFERENCE GROUP ANCHOR */}

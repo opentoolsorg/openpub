@@ -435,9 +435,21 @@ function MainApp() {
               }
             />
             <NavItem
+              active={tab === "editor"}
+              onClick={() => setTab("editor")}
+              label="Editor"
+              icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              }
+            />
+            <NavItem
               active={tab === "log"}
               onClick={() => setTab("log")}
               label="Publish log"
+              badge={recentFailure ? "alert" : undefined}
               icon={
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 6h16M4 12h16M4 18h10" />
@@ -448,6 +460,7 @@ function MainApp() {
               active={tab === "platforms"}
               onClick={() => setTab("platforms")}
               label="Platforms"
+              count={`${configuredPlatforms.length}/${PLATFORMS.length}`}
               icon={
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="6" cy="12" r="2" />
