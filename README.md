@@ -161,7 +161,7 @@ openpub/
                                                                X Articles API
 ```
 
-Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `packages/core/src/adapters/`, register it in `packages/core/src/adapters/index.ts`, and it appears in the CLI, MCP server, and Worker with no further wiring. Architecture and contracts: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `packages/core/src/adapters/`, register it in `packages/core/src/adapters/index.ts`, and it appears in the CLI, MCP server, and Worker with no further wiring. Architecture and contracts: [apps/docs/ARCHITECTURE.md](apps/docs/ARCHITECTURE.md).
 
 ## Self-hosting
 

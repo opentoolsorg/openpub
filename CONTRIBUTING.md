@@ -48,12 +48,12 @@ If you find a credential leak, report it privately per [SECURITY.md](SECURITY.md
 
 ## Docs
 
-If a change is user-visible, update `README.md`. Deeper detail belongs in `docs/`:
+If a change is user-visible, update `README.md`. Deeper detail belongs in `apps/docs/` and `apps/worker/docs/`:
 
-- `docs/ARCHITECTURE.md` for the engine, its contracts, and the publish lifecycle
-- `apps/worker/docs/DEPLOY.md` for the self-hosted worker
-- `apps/worker/docs/MCP-SETUP.md` for MCP client wiring
-- `docs/PLATFORMS.md` for per-platform adapter behaviour and limits
+- [apps/docs/ARCHITECTURE.md](apps/docs/ARCHITECTURE.md) for the engine, its contracts, and the publish lifecycle
+- [apps/worker/docs/DEPLOY.md](apps/worker/docs/DEPLOY.md) for the self-hosted worker
+- [apps/worker/docs/MCP-SETUP.md](apps/worker/docs/MCP-SETUP.md) for MCP client wiring
+- [apps/docs/PLATFORMS.md](apps/docs/PLATFORMS.md) for per-platform adapter behaviour and limits
 
 ## Style
 

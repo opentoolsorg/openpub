@@ -146,7 +146,7 @@ curl https://openpub.<subdomain>.workers.dev/mcp
 # {"name":"openpub","transport":"streamable-http", ...}
 ```
 
-If all three respond, the deployment is live. Next: configure platform credentials (see [PLATFORMS.md](../../../docs/PLATFORMS.md)) and wire up an MCP client (see [MCP-SETUP.md](MCP-SETUP.md)).
+If all three respond, the deployment is live. Next: configure platform credentials (see [PLATFORMS.md](../../docs/PLATFORMS.md)) and wire up an MCP client (see [MCP-SETUP.md](MCP-SETUP.md)).
 
 ## Custom domain (optional)
 

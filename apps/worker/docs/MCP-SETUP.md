@@ -167,7 +167,7 @@ curl -X POST $BASE/mcp -H "Authorization: Bearer $KEY" -H "Content-Type: applica
 
 Once connected, ask the agent (or call):
 
-1. `setup` with `{platform: "devto", credentials: {api_key: "..."}}` for each platform (see [PLATFORMS.md](../../../docs/PLATFORMS.md) for exact keys).
+1. `setup` with `{platform: "devto", credentials: {api_key: "..."}}` for each platform (see [PLATFORMS.md](../../docs/PLATFORMS.md) for exact keys).
 2. `test_platform` per platform, expect `{ok: true}`.
 3. `save_draft` with markdown content and platform list.
 4. `cross_publish` with the returned `draftId`, or `publish` for a single platform.
