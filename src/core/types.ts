@@ -15,6 +15,11 @@ export interface PublishInput {
   canonicalUrl?: string
   coverImage?: string
   status: 'draft' | 'published'
+  // Set when this file was already published. Adapters update that remote
+  // object instead of creating another one.
+  remoteId?: string
+  remoteStatus?: 'draft' | 'published'
+  slug?: string
 }
 
 export interface PublishResult {
@@ -59,6 +64,7 @@ export interface PublishOutcome {
   url?: string
   error?: string
   skipped?: boolean
+  warning?: string
 }
 
 export interface PublishReport {
@@ -67,12 +73,15 @@ export interface PublishReport {
   canonical?: string
   dryRun: boolean
   outcomes: PublishOutcome[]
+  warnings?: string[]
 }
 
 export interface StateEntry {
   hash: string
   url: string
   at: number
+  id?: string
+  remoteStatus?: 'draft' | 'published'
 }
 
 export interface State {

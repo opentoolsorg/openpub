@@ -59,8 +59,8 @@ describe('devto tag normalization', () => {
     return calls[0].body.article.tags as string[]
   }
 
-  it('lowercases and strips non-alphanumeric', async () => {
-    expect(await tagsSent(['Hello World!', 'TS', 'C++'])).toEqual(['helloworld', 'ts', 'c'])
+  it('lowercases, maps symbols, and keeps letters', async () => {
+    expect(await tagsSent(['Hello World!', 'TS', 'C++'])).toEqual(['helloworld', 'ts', 'cpp'])
   })
 
   it('caps at 4 tags (slice before normalize)', async () => {
@@ -85,6 +85,8 @@ describe('hashnode', () => {
     expect(vars.publicationId).toBe('pub1')
     expect(vars.contentMarkdown).toBe(input().markdown)
     expect(vars.originalArticleURL).toBe('https://canon.example/post')
+    expect(vars.publishAs).toBeUndefined()
+    expect(calls[0].body.query).toContain('publishPost')
     expect(r).toEqual({ url: 'https://hn.dev/p1', id: 'p1' })
   })
 })

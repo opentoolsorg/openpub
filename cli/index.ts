@@ -3,14 +3,15 @@
 // Local-first CLI. Credentials live in ~/.openpub/config.json (0600).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, basename } from 'node:path'
-import { marked } from 'marked'
 import { publishFile, testPlatform } from '../src/core/publish'
 import { parseFrontmatter, buildFrontmatter, type FmFormat } from '../src/core/frontmatter'
 import {
-  loadConfig, saveConfig, setCreds, removeCreds, getCreds,
-  configuredPlatforms, CONFIG_PATH, HOME,
+  loadConfig, removeCreds, storeCreds,
+  configuredPlatforms, configPath, openpubHome,
 } from '../src/core/config'
 import { PLATFORMS, type PlatformName } from '../src/core/types'
+import { extractFlags } from '../src/core/argv'
+import { renderPreviewPage } from '../src/core/preview'
 
 const VERSION = '0.1.0'
 const CYAN = (s: string) => `[36m${s}[0m`
@@ -22,21 +23,6 @@ const YELLOW = (s: string) => `[33m${s}[0m`
 
 const args = process.argv.slice(2)
 const cmd = args.shift()
-
-function flag(name: string): string | undefined {
-  const i = args.indexOf(`--${name}`)
-  if (i < 0) return undefined
-  const v = args[i + 1]
-  if (v === undefined || v.startsWith('--')) return ''
-  args.splice(i, 2)
-  return v
-}
-
-function listFlag(name: string): string[] {
-  const v = flag(name)
-  if (!v) return []
-  return v.split(',').map(s => s.trim()).filter(Boolean)
-}
 
 function die(msg: string, code = 1): never {
   console.error(RED('error:'), msg)
@@ -62,7 +48,7 @@ ${BOLD('setup')}
 ${BOLD('publishing')}
   publish <file.md>               fan out to all selected platforms
     --to a,b,c                    target platforms (overrides frontmatter)
-    --status draft|published      publish state
+    --status draft|published      publish state (default: draft)
     --canonical <url>             explicit canonical URL
     --dry-run                     validate without publishing
     --force                       republish unchanged files
@@ -80,11 +66,12 @@ ${BOLD('platforms')}
 try {
   switch (cmd) {
     case 'init': {
-      mkdirSync(HOME, { recursive: true })
+      const home = openpubHome()
+      mkdirSync(home, { recursive: true })
       const cfg = loadConfig()
       const creds = Object.keys(cfg.platforms).length
-      console.log(`OpenPub home: ${CYAN(HOME)}`)
-      console.log(`config: ${CYAN(CONFIG_PATH)} (${creds} platform${creds === 1 ? '' : 's'} configured)`)
+      console.log(`OpenPub home: ${CYAN(home)}`)
+      console.log(`config: ${CYAN(configPath())} (${creds} platform${creds === 1 ? '' : 's'} configured)`)
       console.log(DIM('\nNext: openpub setup devto \'{"api_key": "..."}\''))
       console.log(DIM('Then:  openpub publish post.md --to devto,hashnode --dry-run'))
       break
@@ -94,13 +81,13 @@ try {
       const [platform, credsArg] = args
       if (!platform || !credsArg) die('usage: openpub setup <platform> <json|file>')
       if (!isPlatform(platform)) die(`unknown platform "${platform}". available: ${PLATFORMS.join(', ')}`)
-      let creds: Record<string, string>
+      let parsed: unknown
       try {
-        creds = existsSync(credsArg) ? JSON.parse(readFileSync(credsArg, 'utf8')) : JSON.parse(credsArg)
+        parsed = existsSync(credsArg) ? JSON.parse(readFileSync(credsArg, 'utf8')) : JSON.parse(credsArg)
       } catch (e) {
         die(`invalid json: ${e instanceof Error ? e.message : e}`)
       }
-      setCreds(platform, creds)
+      storeCreds(platform, parsed)
       const ok = await testPlatform(platform)
       console.log(ok
         ? GREEN('+') + ` ${platform}: credentials stored and verified`
@@ -142,28 +129,37 @@ try {
     }
 
     case 'publish': {
-      const file = args[0]
-      if (!file) die('usage: openpub publish <file.md>')
-      const to = listFlag('to') as PlatformName[]
-      for (const t of to) if (!isPlatform(t)) die(`unknown platform "${t}"`)
-      const canonical = flag('canonical')
-      const status = flag('status')
-      if (status && status !== 'draft' && status !== 'published') die('--status must be draft or published')
+      const { flags, rest } = extractFlags(args, [
+        { name: 'to' },
+        { name: 'status' },
+        { name: 'canonical' },
+        { name: 'dry-run', boolean: true },
+        { name: 'force', boolean: true },
+      ])
+      const file = rest[0]
+      if (!file || rest.length !== 1) die('usage: openpub publish <file.md>')
+      const to = flags.to?.split(',').map(s => s.trim()).filter(Boolean) as PlatformName[] | undefined
+      if (flags.to !== undefined && !to?.length) die('--to requires a platform list')
+      for (const t of to ?? []) if (!isPlatform(t)) die(`unknown platform "${t}"`)
+      const status = flags.status
+      if (status !== undefined && status !== 'draft' && status !== 'published') die('--status must be draft or published')
 
       console.log(BOLD(`publishing ${basename(file)}...`))
       const report = await publishFile(file, {
         to,
-        canonical,
+        canonical: flags.canonical,
         status: status as 'draft' | 'published' | undefined,
-        dryRun: flag('dry-run') !== undefined || flag('dry-run') === '',
-        force: flag('force') !== undefined || flag('force') === '',
+        dryRun: flags['dry-run'] === 'true',
+        force: flags.force === 'true',
         onProgress: m => console.log('  ' + m),
       })
       console.log('')
       console.log(BOLD(report.title))
       if (report.canonical) console.log(`${DIM('canonical:')} ${report.canonical}`)
+      for (const w of report.warnings ?? []) console.log(`  ${YELLOW('~')} ${w}`)
       for (const o of report.outcomes) {
-        if (o.ok) console.log(`  ${GREEN('+')} ${o.platform}${o.skipped ? ' ' + DIM('(skipped)') : ''}${o.url ? ' ' + DIM(o.url) : ''}`)
+        if (o.warning) console.log(`  ${YELLOW('~')} ${o.platform} ${YELLOW(o.warning)}`)
+        else if (o.ok) console.log(`  ${GREEN('+')} ${o.platform}${o.skipped ? ' ' + DIM('(skipped)') : ''}${o.url ? ' ' + DIM(o.url) : ''}`)
         else console.log(`  ${RED('x')} ${o.platform} ${DIM(o.error ?? '')}`)
       }
       const failed = report.outcomes.filter(o => !o.ok && !o.skipped).length
@@ -176,21 +172,20 @@ try {
       if (!file) die('usage: openpub preview <file.md>')
       const raw = readFileSync(file, 'utf8')
       const { data, body } = parseFrontmatter(raw)
-      const html = await marked.parse(body)
       const title = data.title ?? basename(file)
-      mkdirSync(join(HOME, 'preview'), { recursive: true })
-      const out = join(HOME, 'preview', 'index.html')
-      writeFileSync(out, `<!doctype html><html><head><meta charset="utf8"><title>${title}</title>
-<style>body{max-width:42rem;margin:4rem auto;font-family:system-ui;line-height:1.7;padding:0 1rem}
-pre{background:#f5f5f5;padding:1rem;overflow:auto}img{max-width:100%}</style></head><body>${html}</body></html>`)
+      const home = openpubHome()
+      mkdirSync(join(home, 'preview'), { recursive: true })
+      const out = join(home, 'preview', 'index.html')
+      writeFileSync(out, await renderPreviewPage(title, body))
       console.log(CYAN(out))
       break
     }
 
     case 'frontmatter': {
-      const file = args[0]
-      if (!file) die('usage: openpub frontmatter <file.md> [--format hugo|jekyll|astro|nextjs|devto|hashnode|ghost]')
-      const format = (flag('format') ?? 'openpub') as FmFormat
+      const { flags, rest } = extractFlags(args, [{ name: 'format' }])
+      const file = rest[0]
+      if (!file || rest.length !== 1) die('usage: openpub frontmatter <file.md> [--format hugo|jekyll|astro|nextjs|devto|hashnode|ghost]')
+      const format = (flags.format ?? 'openpub') as FmFormat
       const known: FmFormat[] = ['openpub', 'hugo', 'jekyll', 'astro', 'nextjs', 'devto', 'hashnode', 'ghost']
       if (!known.includes(format)) die(`unknown format "${format}". known: ${known.join(', ')}`)
       const { data, body } = parseFrontmatter(readFileSync(file, 'utf8'))
@@ -200,6 +195,9 @@ pre{background:#f5f5f5;padding:1rem;overflow:auto}img{max-width:100%}</style></h
         description: data.description ?? '',
         canonical: data.canonical_url,
         slug: data.slug,
+        platforms: data.platforms,
+        status: data.status,
+        primary: data.primary,
       })
       writeFileSync(file, fm + body)
       console.log(`${file}: frontmatter rewritten (${format})`)

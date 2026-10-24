@@ -2,6 +2,7 @@ import { marked } from 'marked'
 import { adapters } from './platforms'
 import * as db from './db'
 import type { Env, PlatformName, PublishInput } from './types'
+import { isPublicCanonicalUrl } from './core/url'
 
 function rid(): string {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 16)
@@ -61,19 +62,22 @@ export async function publishConsumer(batch: MessageBatch<{ draftId: string; pla
       const creds = await db.getCreds(env.DB, platform)
       if (!draft || !creds) throw new Error(`missing draft or creds for ${platform}`)
 
+      const canonicalUrl = draft.canonical_url && isPublicCanonicalUrl(draft.canonical_url)
+        ? draft.canonical_url
+        : undefined
       const input: PublishInput = {
         title: draft.title ?? 'Untitled',
         markdown: draft.content,
         html: marked.parse(draft.content) as string,
         tags: extractTags(draft.content),
-        canonicalUrl: draft.canonical_url ?? undefined,
+        canonicalUrl,
         coverImage: draft.cover_image ?? undefined,
         status: 'published',
       }
       const result = await adapters[platform].publish(input, creds)
       try {
         await db.finishPublish(env.DB, draftId, platform, 'success', result.url)
-        if (!draft.canonical_url) await db.setCanonical(env.DB, draftId, result.url)
+        if (!draft.canonical_url && isPublicCanonicalUrl(result.url)) await db.setCanonical(env.DB, draftId, result.url)
         await refreshDraftStatus(env.DB, draftId)
       } catch { /* post is live; log write failed — leave 'publishing' so a retry reports honestly */ }
       msg.ack()

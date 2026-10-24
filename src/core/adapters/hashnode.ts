@@ -1,4 +1,6 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
+import { assertPublishable } from '../limits'
+import { tagSlug } from '../slug'
 
 const GQL = 'https://gql.hashnode.com'
 
@@ -22,25 +24,85 @@ async function publicationId(creds: Record<string, string>): Promise<string> {
   return id
 }
 
+function tags(input: PublishInput): { name: string; slug: string }[] {
+  return input.tags.slice(0, 5).flatMap(name => {
+    const slug = tagSlug(name)
+    return slug ? [{ name, slug }] : []
+  })
+}
+
+function fields(input: PublishInput, publicationId?: string): Record<string, unknown> {
+  const list = tags(input)
+  return {
+    ...(publicationId ? { publicationId } : {}),
+    title: input.title,
+    contentMarkdown: input.markdown,
+    ...(list.length ? { tags: list } : {}),
+    ...(input.coverImage ? { coverImageOptions: { coverImageURL: input.coverImage } } : {}),
+    ...(input.canonicalUrl ? { originalArticleURL: input.canonicalUrl } : {}),
+  }
+}
+
+function draftUrl(id: string): string {
+  return `https://hashnode.com/draft/${id}`
+}
+
 export const hashnode: PlatformAdapter = {
   name: 'hashnode',
   async publish(input: PublishInput, creds): Promise<PublishResult> {
+    assertPublishable('hashnode', input)
+    const remoteId = input.remoteId
+    if (remoteId && !/^[A-Za-z0-9]+$/.test(remoteId)) throw new Error('hashnode: stored post id is not usable')
+
+    // publishPost always goes live. Drafts use createDraft / updateDraft and
+    // never fall back to publishPost. Hashnode gates those mutations on Pro;
+    // a rejection is returned as an error instead of a live post.
+    if (remoteId && (input.remoteStatus ?? 'published') === 'published') {
+      if (input.status === 'draft') {
+        throw new Error('hashnode: this post is already live and the API cannot turn it back into a draft')
+      }
+      const data = await gql(creds, `mutation UpdatePost($input: UpdatePostInput!) {
+        updatePost(input: $input) { post { id url } }
+      }`, { input: { id: remoteId, ...fields(input) } })
+      const post = data?.updatePost?.post
+      if (!post?.url || !post?.id) throw new Error('hashnode: update returned no post')
+      return { url: post.url, id: post.id }
+    }
+
+    if (remoteId && input.remoteStatus === 'draft') {
+      const updated = await gql(creds, `mutation UpdateDraft($input: UpdateDraftInput!) {
+        updateDraft(input: $input) { draft { id } }
+      }`, { input: { draftId: remoteId, ...fields(input) } })
+      if (!updated?.updateDraft?.draft?.id) throw new Error('hashnode: draft update returned no draft')
+      if (input.status === 'draft') return { url: draftUrl(remoteId), id: remoteId }
+      const data = await gql(creds, `mutation PublishDraft($input: PublishDraftInput!) {
+        publishDraft(input: $input) { post { id url } }
+      }`, { input: { draftId: remoteId } })
+      const post = data?.publishDraft?.post
+      if (!post?.url || !post?.id) throw new Error('hashnode: publishing the draft returned no post')
+      return { url: post.url, id: post.id }
+    }
+
     const pubId = await publicationId(creds)
+    if (input.status === 'draft') {
+      try {
+        const data = await gql(creds, `mutation CreateDraft($input: CreateDraftInput!) {
+          createDraft(input: $input) { draft { id } }
+        }`, { input: fields(input, pubId) })
+        const id = data?.createDraft?.draft?.id
+        if (!id) throw new Error('hashnode: draft was not created')
+        return { url: draftUrl(id), id }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        throw new Error(`${msg}. Hashnode draft was not created, and the post was not published live.`)
+      }
+    }
+
     const data = await gql(creds, `mutation PublishPost($input: PublishPostInput!) {
       publishPost(input: $input) { post { id url } }
-    }`, {
-      input: {
-        publicationId: pubId,
-        title: input.title,
-        contentMarkdown: input.markdown,
-        tags: input.tags.slice(0, 5).map(t => ({ name: t })),
-        coverImageOptions: input.coverImage ? { coverImageURL: input.coverImage } : undefined,
-        originalArticleURL: input.canonicalUrl,
-        publishAs: 'LIVE',
-      },
-    })
+    }`, { input: fields(input, pubId) })
     const post = data?.publishPost?.post
-    if (!post) throw new Error('hashnode: publish returned no post')
+    if (!post?.url || !post?.id) throw new Error('hashnode: publish returned no post')
     return { url: post.url, id: post.id }
   },
   async test(creds) {

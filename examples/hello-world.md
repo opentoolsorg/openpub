@@ -27,5 +27,5 @@ export function greet(name: string): string {
 ```
 
 > Frontmatter `platforms` picks the targets. Omit it to publish everywhere
-> configured. `status: draft` keeps posts unpublished on platforms that
-> support drafts.
+> configured. Omitting `status` publishes a draft. `status: published` sends
+> the post live on platforms that support it.

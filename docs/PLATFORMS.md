@@ -47,7 +47,7 @@ curl -X POST -H "Authorization: Bearer $ADMIN_KEY" -H "Content-Type: application
   -d '{"api_key":"..."}' https://<worker>/api/platforms/devto
 ```
 
-Notes: publishes to dev.to via `POST /api/articles`. Max 4 tags; canonical URL and cover image supported.
+Notes: publishes to dev.to via `POST /api/articles`, or `PUT /api/articles/{id}` when OpenPub already has the article id. Title maximum is 128 characters. Max 4 tags. `c++` and `c#` become `cpp` and `csharp`; letters outside the Latin alphabet are kept. Canonical URL and cover image supported.
 
 ![devto API key settings](screenshots/devto-api-key.png)
 
@@ -73,7 +73,7 @@ Hashnode Personal Access Token (PAT).
 
 Find your publication id in the publication dashboard URL or via `query { me { publications(first: 5) { edges { node { id title } } } } }` at gql.hashnode.com with the same token.
 
-Notes: publishes through the `publishPost` mutation at `https://gql.hashnode.com`. Max 5 tags; canonical URL (`originalArticleURL`) and cover image supported. Posts go live (`publishAs: LIVE`).
+Notes: live posts use the `publishPost` mutation at `https://gql.hashnode.com`. `status: draft` uses `createDraft` and never falls back to a live post. Draft mutations require Hashnode Pro; a rejection is reported and nothing is published live. A later edit of a live post uses `updatePost`. A later edit of a draft uses `updateDraft`. A live post cannot be reverted to a draft. Max 5 tags; canonical URL (`originalArticleURL`) and cover image supported.
 
 ![hashnode developer settings](screenshots/hashnode-pat.png)
 
@@ -97,7 +97,7 @@ On WordPress.com: Settings, Security, Application Passwords. Requires 2FA enable
 }
 ```
 
-Notes: publishes HTML to `/wp-json/wp/v2/posts`. `site_url` must be an HTTPS public host at the site root (not plaintext HTTP, not localhost or internal IPs, not `/wp-admin`, not a post URL). Canonical URL is sent as `meta.canonical_url` (only surfaces if your theme/SEO plugin reads that meta key; Yoast/RankMath use their own). The user needs `publish_posts` capability for live posts; authors can only create drafts.
+Notes: publishes HTML to `POST /wp-json/wp/v2/posts`, or to `POST /wp-json/wp/v2/posts/{id}` when OpenPub already has the post id. `site_url` must be an HTTPS public host at the site root (not plaintext HTTP, not localhost or internal IPs, not `/wp-admin`, not a post URL). Canonical URL is sent as `meta.canonical_url` (only surfaces if your theme/SEO plugin reads that meta key; Yoast/RankMath use their own). The user needs `publish_posts` capability for live posts; authors can only create drafts.
 
 Self-hosted gotchas: Application Passwords require HTTPS. Some hosts (e.g. certain Apache/cPanel setups) strip the `Authorization` header; if `test` fails with 401, add `SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1` to `.htaccess` or use a plugin like "Application Passwords" fix.
 
@@ -120,7 +120,7 @@ Ghost Admin API key (JWT-signed requests). Works on Ghost(Pro) and self-hosted G
 }
 ```
 
-Notes: the key is `id:secret`; the adapter splits on `:` and signs a 5-minute HS256 JWT per request. Publishes HTML via `POST /ghost/api/admin/posts/?source=html` (the `source=html` param is required or content comes out empty). Max 10 tags; canonical URL and feature image supported. `site_url` must be an HTTPS public host with no trailing path (not plaintext HTTP, not internal or private hostnames).
+Notes: the key is `id:secret`; the adapter splits on `:` and signs a 5-minute HS256 JWT per request. Publishes HTML via `POST /ghost/api/admin/posts/?source=html` (the `source=html` param is required or content comes out empty). A later edit PUTs `/ghost/api/admin/posts/{id}/?source=html` and sends the post's current `updated_at`. Max 10 tags; canonical URL and feature image supported. `site_url` must be an HTTPS public host with no trailing path (not plaintext HTTP, not internal or private hostnames).
 
 ![ghost integrations](screenshots/ghost-admin-key.png)
 
@@ -140,7 +140,7 @@ Medium Integration Token.
 { "integration_token": "2a1b3c4d5e6f..." }
 ```
 
-Notes: Medium's API only creates **unlisted/draft/public** posts and cannot update them. OpenPub sends `publishStatus: public` or `draft`. Max 5 tags; canonical URL supported (use it, Medium respects it for SEO). No cover image support in the API. Medium API is officially in maintenance mode but functional.
+Notes: Medium's API only creates **unlisted/draft/public** posts and cannot update them. A later edit is skipped with a warning instead of creating a second post. OpenPub sends `publishStatus: public` or `draft`. Max 5 tags; canonical URL supported (use it, Medium respects it for SEO). No cover image support in the API. Medium API is officially in maintenance mode but functional.
 
 ![medium integration tokens](screenshots/medium-integration-token.png)
 
@@ -167,7 +167,7 @@ Firefox: Storage tab instead of Application. Safari: Develop menu, Show Web Insp
 }
 ```
 
-Notes: the cookie expires (rotate when `test_platform` starts failing; re-extract the same way). `publication_url` must be an HTTPS public host (e.g. `https://yourpub.substack.com`; plaintext HTTP, localhost, and internal hosts are rejected). Drafts land at `https://<pub>.substack.com/publish/post/<id>`. Markdown is converted to a minimal ProseMirror doc: headings, paragraphs. Rich embeds/tweets in markdown are not carried over. Keep the cookie secret; it is full account access.
+Notes: the cookie expires (rotate when `test_platform` starts failing; re-extract the same way). `publication_url` must be an HTTPS public host (e.g. `https://yourpub.substack.com`; plaintext HTTP, localhost, and internal hosts are rejected). Drafts land at `https://<pub>.substack.com/publish/post/<id>`. That editor URL is never used as the canonical URL on other platforms. A later edit is skipped with a warning so OpenPub does not create a second draft. Markdown is converted to a minimal ProseMirror doc: headings, paragraphs. Rich embeds/tweets in markdown are not carried over. Keep the cookie secret; it is full account access.
 
 ![substack connect.sid cookie](screenshots/substack-connect-sid.png)
 
@@ -196,7 +196,7 @@ Fine-grained tokens also work: grant `Contents: Read and write` on the single ta
 - `dir` (optional, default `content/posts`): where files land, relative to repo root
 - `branch` (optional, default `main`)
 
-Notes: files are written as `<dir>/<slugified-title>.md` with YAML frontmatter (`title`, `date`, `tags`, `canonical`). Re-publishing the same title updates the file in place (sha-aware PUT). The `test` call checks repo access only. Pair with the `frontmatter` MCP tool if your static site generator wants extra fields.
+Notes: files are written as `<dir>/<slug>.md` with YAML frontmatter (`title`, `date`, `tags`, `canonical`, `draft`). The slug keeps Unicode letters and numbers. An empty slug falls back to `post-` plus a hash, and the filename is capped at 80 characters. Re-publishing updates the stored path in place (sha-aware PUT), including after a title change. The `test` call checks repo access only. Pair with the `frontmatter` MCP tool if your static site generator wants extra fields.
 
 ![github token scopes](screenshots/github-pat-repo.png)
 
@@ -216,7 +216,7 @@ X Articles API (v2). Long-form articles on X, not tweets. Publishing is two-step
 { "access_token": "xxxxxxxxxxxxxxxxxxxxxxxx" }
 ```
 
-Notes: Markdown is converted to X's DraftJS-style `content_state` (headings, lists, quotes, bold/italic/code/links). Code fences are flattened to plain lines; images and embeds are not carried over. Access tokens expire (default 2h) - refresh tokens are not yet stored, so rotate `access_token` via `setup` when `test_platform` fails. `test` calls `GET /2/users/me`.
+Notes: Markdown is converted to X's DraftJS-style `content_state` (headings, lists, quotes, bold/italic/code/links). Text inside fenced code blocks stays literal, including lines that start with `#` or `-`. Images and embeds are not carried over. Titles are limited to 250 characters. A later edit is skipped with a warning because the API has no edit endpoint. Draft compose URLs (`x.com/compose/...`) are never used as a canonical URL. Access tokens expire (default 2h) - refresh tokens are not yet stored, so rotate `access_token` via `setup` when `test_platform` fails. `test` calls `GET /2/users/me`.
 
 ![x oauth2 token](screenshots/x-oauth2-token.png)
 

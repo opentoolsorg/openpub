@@ -1,4 +1,6 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
+import { assertPublishable } from '../limits'
+import { UpdateUnsupportedError } from '../errors'
 
 // X Articles API (v2). Two-step: create draft then publish.
 // Auth: OAuth2 user-context Bearer token with tweet.write scope.
@@ -40,7 +42,18 @@ function toContentState(md: string) {
     return { text: out, styles, ranges }
   }
 
+  let inFence = false
   for (const line of md.split('\n')) {
+    // Fence contents are literal. A leading `#` or `-` inside a code block
+    // must not become a heading or a list item.
+    if (/^```/.test(line.trim())) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) {
+      blocks.push({ key: `b${k++}`, text: line, type: 'code-block' })
+      continue
+    }
     if (!line.trim()) continue
     let type = 'unstyled'
     let text = line
@@ -50,7 +63,6 @@ function toContentState(md: string) {
     else if (/^[-*] /.test(line)) { type = 'unordered-list-item'; text = line.slice(2) }
     else if (/^\d+\. /.test(line)) { type = 'ordered-list-item'; text = line.replace(/^\d+\. /, '') }
     else if (/^> /.test(line)) { type = 'blockquote'; text = line.slice(2) }
-    else if (/^```/.test(line)) continue // fence markers dropped; code lines stay unstyled
     const { text: t, styles, ranges } = inline(text)
     const blk: Block = { key: `b${k++}`, text: t, type }
     if (styles.length) blk.inline_style_ranges = styles
@@ -63,13 +75,17 @@ function toContentState(md: string) {
 export const x: PlatformAdapter = {
   name: 'x',
   async publish(input: PublishInput, creds): Promise<PublishResult> {
+    assertPublishable('x', input)
     const token = creds.access_token
     if (!token) throw new Error('x: access_token required')
+    if (input.remoteId) {
+      throw new UpdateUnsupportedError('x: the Articles API has no edit endpoint; skipped to avoid creating another draft or post')
+    }
     const content_state = toContentState(input.markdown)
     const dr = await fetch('https://api.x.com/2/articles/draft', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: input.title.slice(0, 250), content_state }),
+      body: JSON.stringify({ title: input.title, content_state }),
     })
     if (!dr.ok) throw new Error(`x draft ${dr.status}: ${(await dr.text()).slice(0, 300)}`)
     const dj = (await dr.json()) as { data?: { id?: string } }

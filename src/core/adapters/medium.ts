@@ -1,4 +1,6 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
+import { assertPublishable } from '../limits'
+import { UpdateUnsupportedError } from '../errors'
 
 async function userId(token: string): Promise<string> {
   const r = await fetch('https://api.medium.com/v1/me', { headers: { Authorization: `Bearer ${token}` } })
@@ -11,6 +13,10 @@ async function userId(token: string): Promise<string> {
 export const medium: PlatformAdapter = {
   name: 'medium',
   async publish(input: PublishInput, creds): Promise<PublishResult> {
+    assertPublishable('medium', input)
+    if (input.remoteId) {
+      throw new UpdateUnsupportedError('medium: the Medium API cannot edit an existing post; skipped to avoid publishing a duplicate')
+    }
     const uid = await userId(creds.integration_token)
     const r = await fetch(`https://api.medium.com/v1/users/${uid}/posts`, {
       method: 'POST',

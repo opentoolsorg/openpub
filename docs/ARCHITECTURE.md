@@ -67,14 +67,17 @@ Credentials live in `~/.openpub/config.json`:
 
 - **Selection**: `--to` beats frontmatter `platforms:` beats `defaults.platforms`
   beats every configured platform.
-- **Idempotency**: `~/.openpub/state.json` maps `file::platform` to the content
-  hash last published there. Unchanged content is skipped unless `--force`.
-- **Canonical wiring**: the first successful platform's URL becomes the canonical
+- **Idempotency**: `~/.openpub/state.json` maps `file::platform` to a hash of
+  the title, body, tags, status, slug, cover, and canonical URL, and to the
+  remote id. Unchanged content is skipped unless `--force`. dev.to, Ghost,
+  WordPress, Hashnode, and GitHub Pages update that remote id. Medium, Substack,
+  and X skip the edit and warn, because those APIs cannot update a post.
+- **Canonical wiring**: the first successful public URL becomes the canonical
   URL for every later platform, unless frontmatter `canonical_url:` or
-  `--canonical` sets one explicitly. Set frontmatter `primary:` to choose which
-  platform publishes first.
+  `--canonical` sets a public one explicitly. Draft and editor URLs are ignored.
+  Set frontmatter `primary:` to choose which platform publishes first.
 - **Status**: `draft` or `published`, resolved as `--status` > frontmatter >
-  `defaults.status` > `published`.
+  `defaults.status` > `draft`.
 - **Failure isolation**: one platform failing never aborts the others. Every
   outcome is reported per platform.
 

@@ -1,5 +1,7 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
 import { siteBase } from './guard'
+import { assertPublishable } from '../limits'
+import { UpdateUnsupportedError } from '../errors'
 
 function base(creds: Record<string, string>): string {
   return siteBase(creds.publication_url)
@@ -27,6 +29,12 @@ async function cookieUserId(creds: Record<string, string>): Promise<string> {
 export const substack: PlatformAdapter = {
   name: 'substack',
   async publish(input: PublishInput, creds): Promise<PublishResult> {
+    assertPublishable('substack', input)
+    // Substack has no public API. Creating another draft on edit would fork
+    // the post, and there is no documented update call to aim at the old id.
+    if (input.remoteId) {
+      throw new UpdateUnsupportedError('substack: drafts cannot be edited through the API; skipped to avoid creating another draft. Update the draft in the Substack dashboard.')
+    }
     const uid = await cookieUserId(creds)
     const r = await fetch(`${base(creds)}/api/v1/drafts`, {
       method: 'POST',

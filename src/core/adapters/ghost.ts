@@ -1,5 +1,6 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
 import { siteBase } from './guard'
+import { assertPublishable } from '../limits'
 
 function base64url(input: ArrayBuffer | string): string {
   const s = typeof input === 'string' ? btoa(input) : btoa(String.fromCharCode(...new Uint8Array(input)))
@@ -23,24 +24,43 @@ function base(creds: Record<string, string>): string {
   return siteBase(creds.site_url)
 }
 
+function postBody(input: PublishInput, updatedAt?: string) {
+  return {
+    ...(updatedAt ? { updated_at: updatedAt } : {}),
+    title: input.title,
+    html: input.html,
+    status: input.status === 'published' ? 'published' : 'draft',
+    tags: input.tags.slice(0, 10).map(t => ({ name: t })),
+    feature_image: input.coverImage,
+    canonical_url: input.canonicalUrl,
+  }
+}
+
 export const ghost: PlatformAdapter = {
   name: 'ghost',
   async publish(input: PublishInput, creds): Promise<PublishResult> {
+    assertPublishable('ghost', input)
+    const id = input.remoteId
+    if (id && !/^[A-Za-z0-9]+$/.test(id)) throw new Error('ghost: stored post id is not usable')
     const jwt = await ghostJwt(creds.admin_key)
-    // source=html is critical — without it Ghost parses html as mobiledoc and content is empty
-    const r = await fetch(`${base(creds)}/ghost/api/admin/posts/?source=html`, {
-      method: 'POST',
-      headers: { Authorization: `Ghost ${jwt}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        posts: [{
-          title: input.title,
-          html: input.html,
-          status: input.status === 'published' ? 'published' : 'draft',
-          tags: input.tags.slice(0, 10).map(t => ({ name: t })),
-          feature_image: input.coverImage,
-          canonical_url: input.canonicalUrl,
-        }],
-      }),
+    const headers = { Authorization: `Ghost ${jwt}`, 'Content-Type': 'application/json' }
+    // Ghost rejects a PUT that omits the post's current updated_at.
+    let updatedAt: string | undefined
+    if (id) {
+      const cur = await fetch(`${base(creds)}/ghost/api/admin/posts/${id}/`, { headers })
+      if (!cur.ok) throw new Error(`ghost ${cur.status}: ${(await cur.text()).slice(0, 300)}`)
+      const current = (await cur.json()) as { posts?: { updated_at?: string }[] }
+      updatedAt = current.posts?.[0]?.updated_at
+      if (!updatedAt) throw new Error('ghost: cannot update post without updated_at')
+    }
+    // source=html is required. Without it Ghost parses html as mobiledoc and content is empty.
+    const path = id
+      ? `/ghost/api/admin/posts/${id}/?source=html`
+      : '/ghost/api/admin/posts/?source=html'
+    const r = await fetch(`${base(creds)}${path}`, {
+      method: id ? 'PUT' : 'POST',
+      headers,
+      body: JSON.stringify({ posts: [postBody(input, updatedAt)] }),
     })
     if (!r.ok) throw new Error(`ghost ${r.status}: ${(await r.text()).slice(0, 300)}`)
     const j = (await r.json()) as { posts?: { url?: string; id?: string }[] }

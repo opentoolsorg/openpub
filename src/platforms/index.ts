@@ -1,22 +1,5 @@
-import type { PlatformAdapter, PlatformName } from '../types'
-import { devto } from './devto'
-import { hashnode } from './hashnode'
-import { wordpress } from './wordpress'
-import { ghost } from './ghost'
-import { medium } from './medium'
-import { substack } from './substack'
-import { githubPages } from './github-pages'
-import { x } from './x'
-
-export const adapters: Record<PlatformName, PlatformAdapter> = {
-  devto,
-  hashnode,
-  wordpress,
-  ghost,
-  medium,
-  substack,
-  'github-pages': githubPages,
-  x,
-}
+export { adapters, getAdapter } from '../core/adapters'
+import { adapters } from '../core/adapters'
+import type { PlatformName } from '../types'
 
 export const platformNames = Object.keys(adapters) as PlatformName[]

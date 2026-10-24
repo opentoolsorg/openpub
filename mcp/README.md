@@ -33,7 +33,7 @@ After a global install, use command openpub-mcp with an empty args array. User-l
 
 ## Tools
 
-Each tool returns JSON. Failures come back as an error object rather than crashing the server.
+Each tool returns JSON. Unknown arguments are rejected, so `dry_run` does not silently publish. A publish report with any failed platform is returned with `isError: true`. Other failures come back as an error object rather than crashing the server.
 
 ### publish
 
@@ -43,7 +43,7 @@ Arguments:
 
 - file (string, required)
 - platforms (string array, optional)
-- status (draft or published, optional)
+- status (draft or published, optional; omitted means draft)
 - canonical (string, optional)
 - dryRun (boolean, optional)
 - force (boolean, optional)
@@ -61,7 +61,7 @@ Arguments:
 - title (string, required)
 - content (string, required)
 - platforms (string array, optional)
-- status (draft or published, optional)
+- status (draft or published, optional; omitted means draft)
 
 Returns a PublishReport.
 
@@ -114,7 +114,7 @@ Publish to the x platform only.
 Arguments:
 
 - file (string, required)
-- status (draft or published, optional)
+- status (draft or published, optional; omitted means draft)
 
 Returns a PublishReport.
 

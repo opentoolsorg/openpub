@@ -24,8 +24,8 @@ OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machi
 |---|---|---|
 | Publish to dev.to | Open a browser, paste, fix formatting, add tags, submit | `openpub publish post.md --to devto` |
 | Cross-post to five platforms | Repeat the above five times | `openpub publish post.md` |
-| Canonical URLs | Set them by hand on every platform afterwards | Wired automatically from the first successful publish |
-| Re-publishing an edit | Find the old post, edit it again, hope you picked the right one | Skipped when unchanged, updated when it changed |
+| Canonical URLs | Set them by hand on every platform afterwards | Wired from the first public published URL |
+| Re-publishing an edit | Find the old post, edit it again, hope you picked the right one | Skipped when unchanged; updated in place when the platform allows it |
 | Publishing from CI | A bespoke script per platform | `uses: princepal9120/openpub@v1` |
 | Letting your agent publish | Paste the file into chat, then paste the result back | OpenPub is an MCP server |
 
@@ -44,6 +44,8 @@ npx openpub-cli publish post.md --to devto,hashnode,github-pages
 
 That is the whole flow. No account, no signup, no hosted service to trust.
 
+**The default status is `draft`.** A post goes live only when you pass `--status published`, set `status: published` in frontmatter, or set `defaults.status` to `published` in `~/.openpub/config.json`. `--status` and `--to` require a value, and flags may come before the filename (`openpub publish --dry-run post.md`).
+
 ## Platforms
 
 | Platform | Credentials | Where to get them |
@@ -59,8 +61,11 @@ That is the whole flow. No account, no signup, no hosted service to trust.
 
 Two upstream limits worth knowing, documented rather than hidden:
 
-- **Substack creates drafts, not live posts.** Substack has no public API, so the adapter uses the same authenticated endpoint the web editor uses. You publish from the Substack dashboard.
-- **Medium's publishing API is deprecated.** Medium stopped issuing new integration tokens and marked the API unsupported. The adapter still works for existing tokens and may stop working without warning.
+- **Substack creates drafts, not live posts.** Substack has no public API, so the adapter uses the same authenticated endpoint the web editor uses. You publish from the Substack dashboard. Editing a draft that OpenPub already created is skipped, with a warning, so a second draft is not created.
+- **Medium's publishing API is deprecated.** Medium stopped issuing new integration tokens and marked the API unsupported. The adapter still works for existing tokens and may stop working without warning. Medium cannot edit an existing post, so a later edit is skipped with a warning.
+- **X Articles cannot be edited.** The API creates a draft and, when status is `published`, publishes it. A later edit is skipped with a warning instead of creating a second article.
+- **Hashnode drafts use `createDraft`.** They are not sent through `publishPost`. Updating a live Hashnode post uses `updatePost`. Hashnode's draft mutations require a Pro publication; if Hashnode rejects the draft, OpenPub returns that error and does not publish the post live. A live Hashnode post cannot be turned back into a draft.
+- **dev.to, Ghost, WordPress, and GitHub Pages update the existing post** when OpenPub has stored the remote id (or, for GitHub Pages, the file path).
 
 `github-pages` writes Markdown plus frontmatter straight into your site repo, so Hugo, Jekyll, Astro, or Next.js pick the post up on the next build. That is the personal website destination.
 
@@ -123,8 +128,8 @@ The action publishes only the files the push actually changed, and reports `publ
 ## How publishing works
 
 1. **Selection.** `--to` beats the file's `platforms:` frontmatter, which beats your configured defaults, which beats every platform you hold credentials for.
-2. **Idempotency.** `~/.openpub/state.json` maps `file::platform` to the content hash it last published there. Unchanged content is skipped. `--force` overrides.
-3. **Canonical wiring.** The first successful platform's URL becomes the canonical URL for every platform after it. Set frontmatter `primary:` to choose which goes first, or `canonical_url:` to pin it yourself.
+2. **Idempotency.** `~/.openpub/state.json` maps `file::platform` to a hash of the title, body, tags, status, slug, cover, and canonical URL, plus the remote id. Unchanged content is skipped. `--force` overrides. Posts saved before remote ids existed are left in place when the body changes, with a warning, unless you pass `--force`.
+3. **Canonical wiring.** The first successful **public** URL becomes the canonical URL for every platform after it. Drafts, X compose links, Substack editor links, and Hashnode draft links are not copied across. Set frontmatter `primary:` to choose which goes first, or `canonical_url:` to pin a public URL yourself.
 4. **Failure isolation.** One platform failing never aborts the others. Every run reports a per-platform outcome.
 
 ```markdown

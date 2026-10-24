@@ -20,7 +20,7 @@ inputs:
     required: false
     default: ""
   status:
-    description: Publish state passed to each platform - draft or published.
+    description: Publish state passed to each platform - draft or published. When omitted, the CLI default is draft.
     required: false
     default: ""
   canonical:
