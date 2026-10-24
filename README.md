@@ -9,6 +9,14 @@ OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machi
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
+[![CI](https://github.com/princepal9120/openpub/actions/workflows/ci.yml/badge.svg)](https://github.com/princepal9120/openpub/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/demo-openpub.princslabs.workers.dev-blue)](https://openpub.princslabs.workers.dev)
+
+| | |
+|---|---|
+| **CLI** | `npx openpub-cli publish post.md --to devto,substack` |
+| **MCP server** | Works with Claude Code, Cursor, and any MCP client |
+| **GitHub Action** | Publish on push, no CI script to maintain |
 
 ## Why
 
@@ -34,34 +42,7 @@ npx openpub-cli status
 npx openpub-cli publish post.md --to devto,hashnode,github-pages
 ```
 
-Or let an agent do it. Add OpenPub to your MCP client:
-
-```json
-{
-  "mcpServers": {
-    "openpub": { "command": "npx", "args": ["-y", "openpub-mcp"] }
-  }
-}
-```
-
-Then ask Claude Code or Cursor: *publish posts/why-i-left-kubernetes.md to dev.to and Substack.*
-
-## Commands
-
-| Command | What it does |
-|---|---|
-| `openpub init` | Create `~/.openpub` and show the next step |
-| `openpub setup <platform> <json\|file>` | Store and verify credentials |
-| `openpub test <platform>` | Check stored credentials against the live API |
-| `openpub status` | List configured platforms and their reachability |
-| `openpub publish <file.md>` | Fan out to every selected platform |
-| `openpub preview <file.md>` | Render to HTML in `~/.openpub/preview/` |
-| `openpub frontmatter <file.md> --format <f>` | Emit frontmatter for Hugo, Jekyll, Astro, Next.js, dev.to, Hashnode, or Ghost |
-| `openpub audit <file.md>` | Score the post and list what is missing |
-| `openpub check-links <file.md>` | Validate every URL in the post |
-| `openpub forget <platform>` | Remove stored credentials |
-
-`publish` flags: `--to a,b,c`, `--status draft|published`, `--canonical <url>`, `--dry-run`, `--force`.
+That is the whole flow. No account, no signup, no hosted service to trust.
 
 ## Platforms
 
@@ -83,15 +64,40 @@ Two upstream limits worth knowing, documented rather than hidden:
 
 `github-pages` writes Markdown plus frontmatter straight into your site repo, so Hugo, Jekyll, Astro, or Next.js pick the post up on the next build. That is the personal website destination.
 
-## Three surfaces, one engine
+## Commands
 
-OpenPub is one publishing engine with three ways in.
+| Command | What it does |
+|---|---|
+| `openpub init` | Create `~/.openpub` and show the next step |
+| `openpub setup <platform> <json\|file>` | Store and verify credentials |
+| `openpub test <platform>` | Check stored credentials against the live API |
+| `openpub status` | List configured platforms and their reachability |
+| `openpub publish <file.md>` | Fan out to every selected platform |
+| `openpub preview <file.md>` | Render to HTML in `~/.openpub/preview/` |
+| `openpub frontmatter <file.md> --format <f>` | Emit frontmatter for Hugo, Jekyll, Astro, Next.js, dev.to, Hashnode, or Ghost |
+| `openpub audit <file.md>` | Score the post and list what is missing |
+| `openpub check-links <file.md>` | Validate every URL in the post |
+| `openpub forget <platform>` | Remove stored credentials |
 
-**CLI** for a terminal, a Makefile, or a cron job.
+`publish` flags: `--to a,b,c`, `--status draft|published`, `--canonical <url>`, `--dry-run`, `--force`.
 
-**MCP server** (`openpub-mcp`) over stdio, for Claude Code, Cursor, and any MCP client. Tools: `publish`, `cross_publish`, `list_published`, `setup`, `status`, `test_platform`, `content_audit`, `check_links`, `frontmatter`, `x_article`.
+## MCP server
 
-**GitHub Action** for publishing from a repo:
+Add OpenPub to any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "openpub": { "command": "npx", "args": ["-y", "openpub-mcp"] }
+  }
+}
+```
+
+Then ask Claude Code or Cursor: *publish posts/why-i-left-kubernetes.md to dev.to and Substack.*
+
+Tools: `publish`, `cross_publish`, `list_published`, `setup`, `status`, `test_platform`, `content_audit`, `check_links`, `frontmatter`, `x_article`. See [docs/MCP-SETUP.md](docs/MCP-SETUP.md).
+
+## GitHub Action
 
 ```yaml
 name: Publish
@@ -153,6 +159,8 @@ openpub/
 │   └── adapters/        one file per platform: (input, creds) => fetch
 ├── cli/                 npm: openpub-cli, bin: openpub
 ├── mcp/                 npm: openpub-mcp, stdio MCP server
+├── src/                 worker entrypoint (API, MCP over HTTP, queue consumer)
+├── dashboard/           TanStack Start console
 ├── site/                landing page
 ├── action.yml           composite GitHub Action
 ├── scripts/publish.sh   action entrypoint: git pathspec to changed files to CLI
@@ -171,13 +179,15 @@ openpub/
                                                                X Articles API
 ```
 
-Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `src/core/adapters/`, register it in `src/core/adapters/index.ts`, and it appears in the CLI, the MCP server, and the action with no further wiring.
+Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `src/core/adapters/`, register it in `src/core/adapters/index.ts`, and it appears in the CLI, the MCP server, and the action with no further wiring. Architecture and contracts: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Self-hosting
 
-`src/` outside `src/core`, plus `dashboard/`, are an optional self-host mode: a Cloudflare Worker with D1, KV, R2, Queues, and Workers AI cover images, and a TanStack Start dashboard, for running OpenPub as a shared service. None of the three surfaces above require it.
+The CLI, MCP server, and action need no server at all. `src/` outside `src/core`, plus `dashboard/`, are an optional self-host mode: a Cloudflare Worker with D1, KV, R2, Queues, and Workers AI cover images, and a TanStack Start dashboard, for running OpenPub as a shared service.
 
 ```bash
+npm install
+openssl rand -hex 32
 wrangler d1 create openpub-db
 wrangler kv namespace create KEYS
 wrangler r2 bucket create openpub-media
@@ -195,12 +205,14 @@ The worker REST surface, its queue-backed retry classifier, and the dashboard ar
 git clone https://github.com/princepal9120/openpub
 cd openpub
 
+npm install                    # core deps
 npm --prefix cli install && npm --prefix cli run build   # build the CLI
-bash test/publish.test.sh                                # action tests
-npm test                                                 # core tests
+bash test/publish.test.sh       # action tests
+npm test                       # core tests
+npm run typecheck              # types
 ```
 
-Architecture and contracts: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Pull requests are welcome. Open an issue first for anything large. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

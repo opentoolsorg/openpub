@@ -2,7 +2,6 @@
   "name": "openpub",
   "version": "0.1.0",
   "description": "Write once, publish everywhere. Self-hosted, agent-native cross-posting engine for technical blogs.",
-  "main": "index.js",
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
@@ -28,8 +27,24 @@
     "x-articles",
     "cloudflare-workers"
   ],
-  "author": "",
+  "author": "princepal9120",
+  "homepage": "https://openpub.princslabs.workers.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/princepal9120/openpub.git"
+  },
+  "bugs": {
+    "url": "https://github.com/princepal9120/openpub/issues"
+  },
   "license": "MIT",
+  "files": [
+    "src/core",
+    "docs",
+    "examples",
+    "migrations",
+    "LICENSE",
+    "README.md"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
     "hono": "^4.13.13",

@@ -41,6 +41,7 @@ function listFlag(name: string): string[] {
 function die(msg: string, code = 1): never {
   console.error(RED('error:'), msg)
   process.exit(code)
+  throw new Error(`unreachable: ${msg}`)
 }
 
 function isPlatform(p: string): p is PlatformName {
