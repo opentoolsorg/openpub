@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { Logo, Mark } from '~/components/Logo'
+import { ThemeToggle } from '~/components/ThemeToggle'
 
 export const Route = createFileRoute('/')({
   component: Landing,
@@ -222,29 +223,47 @@ const FAQ = [
   },
 ]
 
-function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
+function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = React.useState(false)
   return (
-    <div className="border-b border-zinc-900">
+    <div
+      className={`overflow-hidden rounded-xl border transition-colors duration-200 ${
+        open
+          ? 'border-(--accent-strong)/40 bg-(--surface)'
+          : 'border-(--border)/80 bg-(--surface)/70 hover:border-(--surface4)'
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="group flex w-full items-center justify-between gap-4 py-4 text-left"
+        className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left focus-visible:outline-2 focus-visible:outline-(--accent)"
       >
-        <span className="text-sm font-medium text-zinc-200 transition-colors group-hover:text-zinc-50">
+        <span
+          className={`text-sm font-medium transition-colors ${
+            open ? 'text-(--fg)' : 'text-(--fg3) group-hover:text-(--fg)'
+          }`}
+        >
           {q}
         </span>
-        <svg
-          className={`h-4 w-4 shrink-0 text-zinc-600 transition-transform duration-200 ${open ? 'rotate-45 text-emerald-400' : ''}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
+        <span
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-all duration-200 ${
+            open
+              ? 'rotate-45 border-(--accent-strong)/40 bg-(--accent-strong)/10 text-(--accent)'
+              : 'border-(--border) bg-(--surface2)/60 text-(--dim3) group-hover:text-(--dim)'
+          }`}
         >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+          <svg
+            className="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </span>
       </button>
       <div
         className={`grid transition-all duration-200 ease-out ${
@@ -252,7 +271,9 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
         }`}
       >
         <div className="overflow-hidden">
-          <p className="pb-5 pr-8 text-sm leading-relaxed text-zinc-400">{a}</p>
+          <p className="border-t border-(--border)/60 px-5 pt-3.5 pb-5 text-sm leading-relaxed text-(--dim)">
+            {a}
+          </p>
         </div>
       </div>
     </div>
@@ -324,7 +345,7 @@ function Landing() {
   }
 
   return (
-    <div className="landing relative min-h-screen bg-[#0a0c0b] font-sans text-zinc-200 antialiased selection:bg-emerald-500/30 overflow-x-hidden">
+    <div className="landing relative min-h-screen bg-(--bg) font-sans text-(--fg3) antialiased selection:bg-(--accent-strong)/30 overflow-x-hidden">
       {/* Subtle radial emerald gradient backdrop */}
       <div
         className="pointer-events-none absolute top-0 left-1/2 -z-10 h-[500px] w-full max-w-5xl -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.07),transparent_70%)]"
@@ -335,22 +356,23 @@ function Landing() {
         <a href="/" className="transition-opacity hover:opacity-90">
           <Logo />
         </a>
-        <div className="flex items-center gap-6 font-mono text-xs text-zinc-400">
+        <div className="flex items-center gap-6 font-mono text-xs text-(--dim)">
           <a
             href="/docs"
-            className="transition-colors duration-200 hover:text-zinc-100"
+            className="transition-colors duration-200 hover:text-(--fg2)"
           >
             Docs
           </a>
           <a
             href={GITHUB}
-            className="transition-colors duration-200 hover:text-zinc-100"
+            className="transition-colors duration-200 hover:text-(--fg2)"
           >
             GitHub
           </a>
+          <ThemeToggle />
           <a
             href="/app"
-            className="rounded-md border border-zinc-800 bg-zinc-900/30 px-3 py-1.5 text-zinc-200 transition-all duration-200 hover:border-emerald-500/50 hover:bg-emerald-950/20 hover:text-emerald-300 active:scale-[0.98]"
+            className="rounded-md border border-(--border) bg-(--surface2)/30 px-3 py-1.5 text-(--fg3) transition-all duration-200 hover:border-(--accent-strong)/60 hover:bg-(--accent-strong)/10 hover:text-(--accent) active:scale-[0.98]"
           >
             App
           </a>
@@ -358,17 +380,17 @@ function Landing() {
       </nav>
 
       <header className="mx-auto max-w-5xl px-6 pt-20 pb-16 md:pt-28">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-950/30 px-3 py-1 font-mono text-[11px] font-medium text-emerald-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="inline-flex items-center gap-2 rounded-full border border-(--accent-strong)/30 bg-(--accent-strong)/10 px-3 py-1 font-mono text-[11px] font-medium text-(--accent)">
+          <span className="h-1.5 w-1.5 rounded-full bg-(--accent) animate-pulse" />
           // Self-hosted on Cloudflare free tier
         </div>
 
-        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-zinc-50 sm:text-5xl md:text-6xl md:leading-[1.1]">
+        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-(--fg) sm:text-5xl md:text-6xl md:leading-[1.1]">
           Write once. Your agent ships it{' '}
-          <span className="text-emerald-400">everywhere</span>.
+          <span className="text-(--accent)">everywhere</span>.
         </h1>
 
-        <p className="mt-6 max-w-xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+        <p className="mt-6 max-w-xl text-base leading-relaxed text-(--dim) sm:text-lg">
           One markdown file to dev.to, Hashnode, WordPress, Ghost, Medium,
           Substack, X Articles, and your own site. No subscription.
         </p>
@@ -376,13 +398,13 @@ function Landing() {
         <div className="mt-9 flex flex-wrap items-center gap-3">
           <a
             href={DEPLOY}
-            className="inline-flex items-center justify-center rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-medium text-emerald-950 shadow-[0_0_20px_-5px_rgba(16,185,129,0.35)] transition-all duration-200 hover:bg-emerald-400 hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.5)] active:scale-[0.98]"
+            className="inline-flex items-center justify-center rounded-md bg-(--accent-strong) px-5 py-2.5 text-sm font-medium text-(--on-accent) shadow-[0_0_20px_-5px_rgba(16,185,129,0.35)] transition-all duration-200 hover:bg-(--accent) hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.5)] active:scale-[0.98]"
           >
             Deploy to Cloudflare
           </a>
           <a
             href="/docs"
-            className="inline-flex items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/40 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-50 active:scale-[0.98]"
+            className="inline-flex items-center justify-center rounded-md border border-(--border) bg-(--surface2)/40 px-5 py-2.5 text-sm font-medium text-(--fg4) transition-all duration-200 hover:border-(--surface4) hover:bg-(--surface2) hover:text-(--fg) active:scale-[0.98]"
           >
             Read the docs
           </a>
@@ -390,24 +412,24 @@ function Landing() {
 
         {/* moat: agent strip in hero */}
         <div className="mt-10">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-zinc-600">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-(--dim3)">
             works with the agent you already use
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-3">
             {AGENTS.map((a) => (
               <span
                 key={a.slug}
-                className="group/item flex items-center gap-2 text-zinc-500 transition-colors duration-200 hover:text-zinc-200"
+                className="group/item flex items-center gap-2 text-(--dim2) transition-colors duration-200 hover:text-(--fg3)"
               >
                 {a.custom ? (
-                  <span className="flex h-[16px] w-[16px] items-center justify-center rounded-sm bg-zinc-800 font-mono text-[8px] font-bold text-emerald-400">
+                  <span className="flex h-[16px] w-[16px] items-center justify-center rounded-sm bg-(--surface3) font-mono text-[8px] font-bold text-(--accent)">
                     {a.slug === 'hermes' ? 'H' : a.slug === 'codex' ? 'C' : 'OC'}
                   </span>
                 ) : (
                   <img
                     src={`https://cdn.simpleicons.org/${a.slug}/e9eaec`}
                     alt={a.label}
-                    className="h-[16px] w-[16px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
+                    className="brand-icon h-[16px] w-[16px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
                     loading="lazy"
                     width={16}
                     height={16}
@@ -421,21 +443,21 @@ function Landing() {
       </header>
 
       <Reveal>
-        <section className="border-y border-zinc-900 bg-zinc-950/40">
+        <section className="border-y border-(--surface2) bg-(--surface)/40">
           <div className="group/strip mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-4 px-6 py-6">
-            <span className="font-mono text-xs uppercase tracking-wider text-zinc-600">
+            <span className="font-mono text-xs uppercase tracking-wider text-(--dim3)">
               publishes to
             </span>
             <div className="flex flex-wrap items-center gap-x-7 gap-y-3">
               {PLATFORMS.map((p) => (
                 <span
                   key={p.slug}
-                  className="group/item flex items-center gap-2 text-zinc-500 transition-all duration-200 hover:text-zinc-200 group-hover/strip:opacity-40 hover:!opacity-100"
+                  className="group/item flex items-center gap-2 text-(--dim2) transition-all duration-200 hover:text-(--fg3) group-hover/strip:opacity-40 hover:!opacity-100"
                 >
                   <img
                     src={`https://cdn.simpleicons.org/${p.slug}/e9eaec`}
                     alt={p.label}
-                    className="h-[20px] w-[20px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100 group-hover/item:scale-105"
+                    className="brand-icon h-[20px] w-[20px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100 group-hover/item:scale-105"
                     loading="lazy"
                     width={20}
                     height={20}
@@ -452,19 +474,17 @@ function Landing() {
 
       <section className="mx-auto max-w-5xl px-6 py-20">
         <Reveal>
-          <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
-            setup
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-            Live in three steps.
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <span className="text-(--fg)">Live</span>{' '}
+            <span className="text-(--dim2)">in three steps.</span>
           </h2>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-(--dim)">
             Everything runs in your Cloudflare account. Provision, migrate,
             deploy. Then wire each platform with your keys and publish. Full
             detail in{' '}
             <a
               href="/docs"
-              className="text-emerald-400 underline-offset-4 hover:underline"
+              className="text-(--accent) underline-offset-4 hover:underline"
             >
               the docs
             </a>
@@ -475,29 +495,29 @@ function Landing() {
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           {STEPS.map((s, idx) => (
             <Reveal key={s.n} delay={idx * 100}>
-              <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-950/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-zinc-700 hover:shadow-emerald-950/20">
+              <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-(--border)/80 bg-(--surface)/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-(--surface4) hover:shadow-emerald-950/20">
                 {/* Terminal Window Header */}
-                <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5">
+                <div className="flex items-center justify-between border-b border-(--border)/80 bg-(--surface2)/60 px-3.5 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80 transition-opacity group-hover:opacity-100" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80 transition-opacity group-hover:opacity-100" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80 transition-opacity group-hover:opacity-100" />
                   </div>
-                  <div className="min-w-0 font-mono text-[11px] text-zinc-400">
-                    <span className="text-emerald-400/90">{s.n}</span>
-                    <span className="mx-1.5 text-zinc-600">/</span>
+                  <div className="min-w-0 font-mono text-[11px] text-(--dim)">
+                    <span className="text-(--accent)">{s.n}</span>
+                    <span className="mx-1.5 text-(--dim3)">/</span>
                     <span>{s.title.toLowerCase().replace(/[\\s,]+/g, ' ')}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(s.code, idx)}
                     aria-label="Copy snippet"
-                    className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-zinc-800 !bg-zinc-900/90 !px-2 !py-0 !text-[11px] !font-mono !text-zinc-400 !transition-colors hover:!border-zinc-700 hover:!bg-zinc-800 hover:!text-zinc-100 active:!scale-95"
+                    className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-(--border) !bg-(--surface2)/90 !px-2 !py-0 !text-[11px] !font-mono !text-(--dim) !transition-colors hover:!border-(--surface4) hover:!bg-(--surface3) hover:!text-(--fg2) active:!scale-95"
                   >
                     {copiedIndex === idx ? (
                       <>
                         <svg
-                          className="h-3 w-3 text-emerald-400"
+                          className="h-3 w-3 text-(--accent)"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -507,12 +527,12 @@ function Landing() {
                         >
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
-                        <span className="text-emerald-400">copied</span>
+                        <span className="text-(--accent)">copied</span>
                       </>
                     ) : (
                       <>
                         <svg
-                          className="h-3 w-3 text-zinc-400"
+                          className="h-3 w-3 text-(--dim)"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -538,13 +558,13 @@ function Landing() {
 
                 {/* Terminal Body */}
                 <div className="flex-1 p-4 font-mono text-xs">
-                  <div className="mb-2 text-[11px] text-zinc-500">
+                  <div className="mb-2 text-[11px] text-(--dim2)">
                     # {s.title}
                   </div>
                   <div className="space-y-1.5">
                     {s.code.split('\n').map((line, lIdx) => (
-                      <div key={lIdx} className="flex items-start text-zinc-300">
-                        <span className="mr-2 select-none font-mono text-emerald-400/70">
+                      <div key={lIdx} className="flex items-start text-(--fg4)">
+                        <span className="mr-2 select-none font-mono text-(--accent)/70">
                           $
                         </span>
                         <span className="break-all font-mono leading-relaxed">
@@ -562,13 +582,11 @@ function Landing() {
 
       <section className="mx-auto max-w-5xl px-6 pb-20">
         <Reveal>
-          <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
-            agent-native
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-            Drive it from any agent.
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <span className="text-(--fg)">Drive it</span>{' '}
+            <span className="text-(--dim2)">from any agent.</span>
           </h2>
-          <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-(--dim)">
             One remote MCP server over streamable HTTP. Point your agent at it,
             paste the key, publish. 13 tools: drafts, platforms, publish,
             covers, link checks.
@@ -580,17 +598,17 @@ function Landing() {
             {AGENTS.map((a) => (
               <span
                 key={a.slug}
-                className="group/item flex items-center gap-2 text-zinc-500 transition-all duration-200 hover:text-zinc-200"
+                className="group/item flex items-center gap-2 text-(--dim2) transition-all duration-200 hover:text-(--fg3)"
               >
                 {a.custom ? (
-                  <span className="flex h-[18px] w-[18px] items-center justify-center rounded-sm bg-zinc-800 font-mono text-[9px] font-bold text-emerald-400">
+                  <span className="flex h-[18px] w-[18px] items-center justify-center rounded-sm bg-(--surface3) font-mono text-[9px] font-bold text-(--accent)">
                     {a.slug === 'hermes' ? 'H' : a.slug === 'codex' ? 'C' : 'OC'}
                   </span>
                 ) : (
                   <img
                     src={`https://cdn.simpleicons.org/${a.slug}/e9eaec`}
                     alt={a.label}
-                    className="h-[18px] w-[18px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
+                    className="brand-icon h-[18px] w-[18px] object-contain opacity-50 transition-all duration-200 group-hover/item:opacity-100"
                     loading="lazy"
                     width={18}
                     height={18}
@@ -599,7 +617,7 @@ function Landing() {
                 <span className="text-xs tracking-tight">{a.label}</span>
               </span>
             ))}
-            <span className="font-mono text-xs text-zinc-600">
+            <span className="font-mono text-xs text-(--dim3)">
               + any MCP client
             </span>
           </div>
@@ -608,32 +626,32 @@ function Landing() {
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {AGENT_SETUPS.map((a, idx) => (
             <Reveal key={a.name} delay={idx * 80}>
-              <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-950/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-zinc-700">
-                <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5">
+              <div className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-(--border)/80 bg-(--surface)/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-(--surface4)">
+                <div className="flex items-center justify-between border-b border-(--border)/80 bg-(--surface2)/60 px-3.5 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
                     <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
                   </div>
-                  <div className="min-w-0 font-mono text-[11px] text-zinc-400">
-                    <span className="text-emerald-400/90">setup</span>
-                    <span className="mx-1.5 text-zinc-600">/</span>
+                  <div className="min-w-0 font-mono text-[11px] text-(--dim)">
+                    <span className="text-(--accent)">setup</span>
+                    <span className="mx-1.5 text-(--dim3)">/</span>
                     <span>{a.name.toLowerCase()}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopy(a.code, 30 + idx)}
                     aria-label="Copy setup"
-                    className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-zinc-800 !bg-zinc-900/90 !px-2 !py-0 !text-[11px] !font-mono !text-zinc-400 !transition-colors hover:!border-zinc-700 hover:!bg-zinc-800 hover:!text-zinc-100 active:!scale-95"
+                    className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-(--border) !bg-(--surface2)/90 !px-2 !py-0 !text-[11px] !font-mono !text-(--dim) !transition-colors hover:!border-(--surface4) hover:!bg-(--surface3) hover:!text-(--fg2) active:!scale-95"
                   >
                     {copiedIndex === 30 + idx ? (
-                      <span className="text-emerald-400">copied</span>
+                      <span className="text-(--accent)">copied</span>
                     ) : (
                       <span>copy</span>
                     )}
                   </button>
                 </div>
-                <pre className="flex-1 overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
+                <pre className="flex-1 overflow-x-auto p-4 font-mono text-[11px] leading-relaxed text-(--fg4) whitespace-pre-wrap break-words">
                   {a.code}
                 </pre>
               </div>
@@ -642,32 +660,32 @@ function Landing() {
         </div>
 
         <Reveal delay={150}>
-          <div className="group relative mt-5 overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-950/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-zinc-700">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5">
+          <div className="group relative mt-5 overflow-hidden rounded-lg border border-(--border)/80 bg-(--surface)/70 shadow-lg shadow-black/40 transition-all duration-200 hover:border-(--surface4)">
+            <div className="flex items-center justify-between border-b border-(--border)/80 bg-(--surface2)/60 px-3.5 py-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
               </div>
-              <div className="font-mono text-[11px] text-zinc-400">
-                <span className="text-emerald-400/90">cli</span>
-                <span className="mx-1.5 text-zinc-600">/</span>
+              <div className="font-mono text-[11px] text-(--dim)">
+                <span className="text-(--accent)">cli</span>
+                <span className="mx-1.5 text-(--dim3)">/</span>
                 <span>openpub-cli</span>
               </div>
               <button
                 type="button"
                 onClick={() => handleCopy(CLI_DEMO, 20)}
                 aria-label="Copy snippet"
-                className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-zinc-800 !bg-zinc-900/90 !px-2 !py-0 !text-[11px] !font-mono !text-zinc-400 !transition-colors hover:!border-zinc-700 hover:!bg-zinc-800 hover:!text-zinc-100 active:!scale-95"
+                className="!m-0 !inline-flex !h-6 !items-center !gap-1 !rounded !border !border-(--border) !bg-(--surface2)/90 !px-2 !py-0 !text-[11px] !font-mono !text-(--dim) !transition-colors hover:!border-(--surface4) hover:!bg-(--surface3) hover:!text-(--fg2) active:!scale-95"
               >
                 {copiedIndex === 20 ? (
-                  <span className="text-emerald-400">copied</span>
+                  <span className="text-(--accent)">copied</span>
                 ) : (
                   <span>copy</span>
                 )}
               </button>
             </div>
-            <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
+            <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-(--fg4) whitespace-pre-wrap break-words">
               {CLI_DEMO}
             </pre>
           </div>
@@ -676,47 +694,48 @@ function Landing() {
         {/* agent transcript — pipepost-style "one prompt, full pipeline" */}
         <Reveal delay={100}>
           <div className="mt-10">
-            <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
-              one prompt. full pipeline.
-            </p>
-            <h3 className="mt-2 text-xl font-semibold tracking-tight text-zinc-50">
-              Tell your agent what to ship. OpenPub does the rest.
+            <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              <span className="text-(--fg)">One prompt.</span>{' '}
+              <span className="text-(--dim2)">Full pipeline.</span>
             </h3>
+            <p className="mt-2 text-sm text-(--dim)">
+              Tell your agent what to ship. OpenPub does the rest.
+            </p>
           </div>
-          <div className="mt-5 overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-950/70 shadow-lg shadow-black/40">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5">
+          <div className="mt-5 overflow-hidden rounded-lg border border-(--border)/80 bg-(--surface)/70 shadow-lg shadow-black/40">
+            <div className="flex items-center justify-between border-b border-(--border)/80 bg-(--surface2)/60 px-3.5 py-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56]/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]/80" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f]/80" />
               </div>
-              <div className="font-mono text-[11px] text-zinc-400">
-                <span className="text-emerald-400/90">mcp</span>
-                <span className="mx-1.5 text-zinc-600">/</span>
+              <div className="font-mono text-[11px] text-(--dim)">
+                <span className="text-(--accent)">mcp</span>
+                <span className="mx-1.5 text-(--dim3)">/</span>
                 <span>agent transcript</span>
               </div>
             </div>
             <div className="space-y-2.5 p-5 font-mono text-xs leading-relaxed">
               {TRANSCRIPT.map((l, i) =>
                 l.t === 'user' ? (
-                  <p key={i} className="text-zinc-100">
-                    <span className="mr-2 text-zinc-600">you:</span>
+                  <p key={i} className="text-(--fg2)">
+                    <span className="mr-2 text-(--dim3)">you:</span>
                     {l.x}
                   </p>
                 ) : l.t === 'tool' ? (
-                  <p key={i} className="text-zinc-500">
-                    <span className="mr-2 rounded border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                  <p key={i} className="text-(--dim2)">
+                    <span className="mr-2 rounded border border-(--border) bg-(--surface2) px-1.5 py-0.5 text-[10px] text-(--dim)">
                       tool
                     </span>
                     {l.x}
                   </p>
                 ) : l.t === 'ok' ? (
-                  <p key={i} className="text-emerald-400">
+                  <p key={i} className="text-(--accent)">
                     <span className="mr-1.5">✓</span>
                     {l.x}
                   </p>
                 ) : (
-                  <p key={i} className="pl-3 text-zinc-500">
+                  <p key={i} className="pl-3 text-(--dim2)">
                     {l.x}
                   </p>
                 )
@@ -727,33 +746,31 @@ function Landing() {
       </section>
 
       {/* tool groups — numbered like pipepost */}
-      <section className="border-t border-zinc-900 bg-zinc-950/30">
+      <section className="border-t border-(--surface2) bg-(--surface)/30">
         <div className="mx-auto max-w-5xl px-6 py-20">
           <Reveal>
-            <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
-              13 tools
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-              One pipeline. Every tool does one thing.
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              <span className="text-(--fg)">13 tools.</span>{' '}
+              <span className="text-(--dim2)">One pipeline.</span>
             </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-(--dim)">
               Chain them in natural language or call them direct. Same surface
               over MCP, REST, and the CLI.
             </p>
           </Reveal>
 
-          <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-800/60 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-(--border)/80 bg-(--surface3)/60 sm:grid-cols-2 lg:grid-cols-3">
             {TOOL_GROUPS.map((g, idx) => (
               <Reveal key={g.n} delay={idx * 60}>
-                <div className="group h-full bg-[#0a0c0b] p-6 transition-colors duration-200 hover:bg-zinc-900/40">
-                  <p className="font-mono text-xs text-emerald-500/80">{g.n}</p>
-                  <h3 className="mt-2 text-sm font-semibold tracking-tight text-zinc-100">
+                <div className="group h-full bg-(--bg) p-6 transition-colors duration-200 hover:bg-(--surface2)/40">
+                  <p className="font-mono text-xs text-(--accent)/80">{g.n}</p>
+                  <h3 className="mt-2 text-sm font-semibold tracking-tight text-(--fg2)">
                     {g.t}
                   </h3>
-                  <p className="mt-1.5 font-mono text-[11px] text-zinc-500">
+                  <p className="mt-1.5 font-mono text-[11px] text-(--dim2)">
                     {g.code}
                   </p>
-                  <p className="mt-2.5 text-sm leading-relaxed text-zinc-400">
+                  <p className="mt-2.5 text-sm leading-relaxed text-(--dim)">
                     {g.d}
                   </p>
                 </div>
@@ -765,28 +782,26 @@ function Landing() {
 
       <section className="mx-auto max-w-5xl px-6 pb-20">
         <Reveal>
-          <p className="font-mono text-xs uppercase tracking-wider text-emerald-500/80">
-            features
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-            Write once. Publish everywhere.
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <span className="text-(--fg)">Write once.</span>{' '}
+            <span className="text-(--dim2)">Publish everywhere.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={150}>
-          <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-800/60 sm:grid-cols-2">
+          <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-(--border)/80 bg-(--surface3)/60 sm:grid-cols-2">
             {FEATURES.map((f) => (
               <div
                 key={f.t}
-                className="group relative bg-[#0a0c0b] p-6 transition-all duration-200 hover:bg-zinc-900/40"
+                className="group relative bg-(--bg) p-6 transition-all duration-200 hover:bg-(--surface2)/40"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 transition-all duration-200 group-hover:scale-125 group-hover:bg-emerald-300 group-hover:shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                  <h3 className="text-sm font-semibold tracking-tight text-zinc-100 transition-colors duration-200 group-hover:text-zinc-50">
+                  <span className="h-1.5 w-1.5 rounded-full bg-(--accent) transition-all duration-200 group-hover:scale-125 group-hover:bg-(--accent) group-hover:shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  <h3 className="text-sm font-semibold tracking-tight text-(--fg2) transition-colors duration-200 group-hover:text-(--fg)">
                     {f.t}
                   </h3>
                 </div>
-                <p className="mt-2.5 text-sm leading-relaxed text-zinc-400 transition-colors duration-200 group-hover:text-zinc-300">
+                <p className="mt-2.5 text-sm leading-relaxed text-(--dim) transition-colors duration-200 group-hover:text-(--fg4)">
                   {f.d}
                 </p>
               </div>
@@ -796,43 +811,44 @@ function Landing() {
       </section>
 
       {/* faq */}
-      <section className="border-t border-zinc-900">
+      <section className="border-t border-(--surface2)">
         <div className="mx-auto max-w-3xl px-6 py-20">
           <Reveal>
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-50">
-              Questions.
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              <span className="text-(--fg)">Any questions?</span>{' '}
+              <span className="text-(--dim2)">Got answers.</span>
             </h2>
           </Reveal>
-          <div className="mt-8 border-t border-zinc-900">
+          <div className="mt-8 space-y-3">
             {FAQ.map((f, idx) => (
               <Reveal key={f.q} delay={idx * 40}>
-                <FaqItem q={f.q} a={f.a} index={idx} />
+                <FaqItem q={f.q} a={f.a} />
               </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-zinc-900">
+      <footer className="border-t border-(--surface2)">
         <Reveal>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-8">
             <Logo className="opacity-70" />
-            <div className="flex items-center gap-6 font-mono text-xs text-zinc-500">
+            <div className="flex items-center gap-6 font-mono text-xs text-(--dim2)">
               <a
                 href="/docs"
-                className="transition-colors duration-200 hover:text-zinc-200"
+                className="transition-colors duration-200 hover:text-(--fg3)"
               >
                 Docs
               </a>
               <a
                 href={GITHUB}
-                className="transition-colors duration-200 hover:text-zinc-200"
+                className="transition-colors duration-200 hover:text-(--fg3)"
               >
                 GitHub
               </a>
               <a
                 href="/app"
-                className="transition-colors duration-200 hover:text-zinc-200"
+                className="transition-colors duration-200 hover:text-(--fg3)"
               >
                 App
               </a>

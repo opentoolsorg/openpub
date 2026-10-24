@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
+import { ThemeToggle } from "~/components/ThemeToggle"
 import { Logo } from "~/components/Logo"
 
 export const Route = createFileRoute("/app")({
@@ -109,7 +110,7 @@ function getStatusBadgeStyle(status: string) {
     s === "configured" ||
     s === "test ok"
   ) {
-    return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+    return "bg-(--accent-strong)/10 text-(--accent) border-(--accent-strong)/30"
   }
   if (
     s === "failed" ||
@@ -117,9 +118,9 @@ function getStatusBadgeStyle(status: string) {
     s === "error" ||
     s === "test failed"
   ) {
-    return "bg-red-500/10 text-red-400 border-red-500/20"
+    return "bg-(--danger)/10 text-(--danger) border-(--danger)/25"
   }
-  return "bg-zinc-900 text-zinc-500 border-zinc-800"
+  return "bg-(--surface2) text-(--dim2) border-(--border)"
 }
 
 function StatusBadge({
@@ -138,11 +139,11 @@ function StatusBadge({
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${
-          badgeStyle.includes("text-emerald-400")
-            ? "bg-emerald-400"
-            : badgeStyle.includes("text-red-400")
+          badgeStyle.includes("text-(--accent)")
+            ? "bg-(--accent)"
+            : badgeStyle.includes("text-(--danger)")
               ? "bg-red-400"
-              : "bg-zinc-500"
+              : "bg-(--dim2)"
         }`}
       />
       {label || status}
@@ -160,12 +161,12 @@ function EmptyState({
   icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-zinc-800/80 p-10 text-center">
-      <div className="mx-auto w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-500 mb-3">
+    <div className="rounded-lg border border-dashed border-(--border)/80 p-10 text-center">
+      <div className="mx-auto w-10 h-10 rounded-full border border-(--border) flex items-center justify-center text-(--dim2) mb-3">
         {icon}
       </div>
-      <h3 className="text-sm font-semibold text-zinc-200">{title}</h3>
-      <p className="text-xs text-zinc-400 max-w-sm mx-auto mt-1 leading-relaxed">
+      <h3 className="text-sm font-semibold text-(--fg3)">{title}</h3>
+      <p className="text-xs text-(--dim) max-w-sm mx-auto mt-1 leading-relaxed">
         {description}
       </p>
     </div>
@@ -178,21 +179,21 @@ function App() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#0a0c0b] text-zinc-200 font-sans antialiased selection:bg-emerald-500/30">
+      <div className="min-h-screen bg-(--bg) text-(--fg3) font-sans antialiased selection:bg-(--accent-strong)/30">
         <div className="max-w-5xl mx-auto px-4 py-5 sm:px-6 sm:py-8 w-full animate-pulse">
           <div className="flex justify-between items-center pb-6">
             <div className="space-y-1">
-              <div className="h-6 w-32 bg-zinc-800 rounded" />
-              <div className="h-3.5 w-48 bg-zinc-800/60 rounded" />
+              <div className="h-6 w-32 bg-(--surface3) rounded" />
+              <div className="h-3.5 w-48 bg-(--surface3)/60 rounded" />
             </div>
-            <div className="h-8 w-24 bg-zinc-800/60 rounded-lg" />
+            <div className="h-8 w-24 bg-(--surface3)/60 rounded-lg" />
           </div>
-          <div className="flex gap-2 border-b border-zinc-800 pb-2 mb-6">
-            <div className="h-8 w-20 bg-zinc-800 rounded-lg" />
-            <div className="h-8 w-24 bg-zinc-800/60 rounded-lg" />
-            <div className="h-8 w-20 bg-zinc-800/60 rounded-lg" />
+          <div className="flex gap-2 border-b border-(--border) pb-2 mb-6">
+            <div className="h-8 w-20 bg-(--surface3) rounded-lg" />
+            <div className="h-8 w-24 bg-(--surface3)/60 rounded-lg" />
+            <div className="h-8 w-20 bg-(--surface3)/60 rounded-lg" />
           </div>
-          <div className="h-48 bg-zinc-900/50 rounded-xl border border-zinc-800" />
+          <div className="h-48 bg-(--surface2)/50 rounded-xl border border-(--border)" />
         </div>
       </div>
     )
@@ -208,28 +209,28 @@ function Main() {
 
   if (!key) {
     return (
-      <div className="min-h-screen bg-[#0a0c0b] text-zinc-200 font-sans antialiased selection:bg-emerald-500/30 flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen bg-(--bg) text-(--fg3) font-sans antialiased selection:bg-(--accent-strong)/30 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
           <div className="mb-6">
             <a href="/" className="inline-flex items-center hover:opacity-90 transition-opacity">
               <Logo />
             </a>
-            <p className="text-xs text-zinc-400 mt-1.5">
+            <p className="text-xs text-(--dim) mt-1.5">
               enter admin key to continue
             </p>
           </div>
           <LoginForm base={base} setBase={setBase} onKey={setKey} />
-          <div className="mt-5 flex items-center justify-center gap-4 text-xs font-mono text-zinc-500">
-            <a href="/docs" className="hover:text-zinc-300 transition-colors">
+          <div className="mt-5 flex items-center justify-center gap-4 text-xs font-mono text-(--dim2)">
+            <a href="/docs" className="hover:text-(--fg4) transition-colors">
               Docs
             </a>
             <span>·</span>
-            <a href="/" className="hover:text-zinc-300 transition-colors">
+            <a href="/" className="hover:text-(--fg4) transition-colors">
               Home
             </a>
           </div>
           {msg && (
-            <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-2 rounded-lg text-xs shadow-xl z-50">
+            <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-(--surface3) border border-(--surface4) text-(--fg2) px-4 py-2 rounded-lg text-xs shadow-xl z-50">
               {msg}
             </div>
           )}
@@ -239,7 +240,7 @@ function Main() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0c0b] text-zinc-200 font-sans antialiased selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-(--bg) text-(--fg3) font-sans antialiased selection:bg-(--accent-strong)/30">
       <div className="max-w-5xl mx-auto px-4 py-5 sm:px-6 sm:py-8 w-full">
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6">
           <div>
@@ -247,28 +248,29 @@ function Main() {
               <a href="/" className="hover:opacity-90 transition-opacity">
                 <Logo />
               </a>
-              <span className="font-sans text-[11px] px-2 py-0.5 rounded-md border border-zinc-800 bg-zinc-900/90 text-zinc-400">
+              <span className="font-sans text-[11px] px-2 py-0.5 rounded-md border border-(--border) bg-(--surface2)/90 text-(--dim)">
                 console
               </span>
             </div>
-            <p className="text-xs text-zinc-500 mt-1">write once, publish everywhere</p>
+            <p className="text-xs text-(--dim2) mt-1">write once, publish everywhere</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
+            <ThemeToggle />
             <a
               href="/docs"
-              className="font-mono text-xs text-zinc-500 hover:text-zinc-100 transition-colors"
+              className="font-mono text-xs text-(--dim2) hover:text-(--fg2) transition-colors"
             >
               docs
             </a>
             <span
-              className="font-mono text-[11px] text-zinc-600 truncate max-w-[150px] sm:max-w-xs"
+              className="font-mono text-[11px] text-(--dim3) truncate max-w-[150px] sm:max-w-xs"
               title={base}
             >
               {base.replace("https://", "")}
             </span>
             <button
               type="button"
-              className="font-mono text-xs text-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer"
+              className="font-mono text-xs text-(--dim2) hover:text-(--fg2) transition-colors cursor-pointer"
               onClick={() => {
                 const b = window.prompt("API base URL", base)
                 if (b) setBase(b)
@@ -278,7 +280,7 @@ function Main() {
             </button>
             <button
               type="button"
-              className="font-mono text-xs text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
+              className="font-mono text-xs text-(--dim2) hover:text-(--danger) transition-colors cursor-pointer"
               onClick={() => {
                 localStorage.removeItem("op-key")
                 setKey("")
@@ -289,7 +291,7 @@ function Main() {
           </div>
         </header>
 
-        <nav className="flex items-center gap-1 border-b border-zinc-800 mb-6 overflow-x-auto pb-px">
+        <nav className="flex items-center gap-1 border-b border-(--border) mb-6 overflow-x-auto pb-px">
           {(["drafts", "platforms", "history"] as Tab[]).map((t) => {
             const active = tab === t
             return (
@@ -298,8 +300,8 @@ function Main() {
                 type="button"
                 className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                   active
-                    ? "border-emerald-400 text-emerald-400"
-                    : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                    ? "border-emerald-400 text-(--accent)"
+                    : "border-transparent text-(--dim) hover:text-(--fg3) hover:border-(--surface4)"
                 }`}
                 onClick={() => setTab(t)}
               >
@@ -316,8 +318,8 @@ function Main() {
         </main>
 
         {msg && (
-          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-zinc-950/95 border border-zinc-800 text-zinc-200 px-4 py-2 rounded-md font-mono text-xs z-50 flex items-center gap-2 max-w-[90vw]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-(--surface)/95 border border-(--border) text-(--fg3) px-4 py-2 rounded-md font-mono text-xs z-50 flex items-center gap-2 max-w-[90vw]">
+            <span className="w-1.5 h-1.5 rounded-full bg-(--accent) shrink-0" />
             <span className="truncate">{msg}</span>
           </div>
         )}
@@ -337,31 +339,31 @@ function LoginForm({
 }) {
   const [k, setK] = React.useState("")
   return (
-    <div className="w-full p-5 sm:p-6 rounded-lg bg-zinc-950 border border-zinc-800 space-y-3.5 text-left">
+    <div className="w-full p-5 sm:p-6 rounded-lg bg-(--surface) border border-(--border) space-y-3.5 text-left">
       <div className="space-y-1">
-        <label className="text-xs font-medium text-zinc-400">Admin Key</label>
+        <label className="text-xs font-medium text-(--dim)">Admin Key</label>
         <input
           type="password"
           placeholder="Admin key"
           value={k}
           onChange={(e) => setK(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && k && onKey(k)}
-          className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-lg px-3.5 py-2.5 text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-colors"
+          className="w-full bg-(--surface) border border-(--border) text-(--fg2) placeholder-(--dim2) rounded-lg px-3.5 py-2.5 text-sm focus:border-(--accent-strong)/60 focus:ring-1 focus:ring-(--accent-strong)/25 outline-none transition-colors"
         />
       </div>
       <div className="space-y-1">
-        <label className="text-xs font-medium text-zinc-400">API Base URL</label>
+        <label className="text-xs font-medium text-(--dim)">API Base URL</label>
         <input
           placeholder="API base URL"
           defaultValue={base}
           onBlur={(e) => setBase(e.target.value)}
-          className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-lg px-3.5 py-2.5 text-sm focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-colors"
+          className="w-full bg-(--surface) border border-(--border) text-(--fg2) placeholder-(--dim2) rounded-lg px-3.5 py-2.5 text-sm focus:border-(--accent-strong)/60 focus:ring-1 focus:ring-(--accent-strong)/25 outline-none transition-colors"
         />
       </div>
       <button
         type="button"
         onClick={() => k && onKey(k)}
-        className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-medium py-2.5 rounded-lg text-sm transition-colors cursor-pointer disabled:opacity-50"
+        className="w-full bg-(--accent-strong) hover:bg-(--accent) text-(--on-accent) font-medium py-2.5 rounded-lg text-sm transition-colors cursor-pointer disabled:opacity-50"
         disabled={!k}
       >
         Continue
@@ -376,17 +378,17 @@ function DraftsSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 animate-pulse space-y-3"
+          className="rounded-xl border border-(--border)/80 bg-(--surface2)/40 p-4 sm:p-5 animate-pulse space-y-3"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-2 flex-1">
-              <div className="h-4 bg-zinc-800 rounded w-1/3 min-w-[120px]" />
-              <div className="h-3 bg-zinc-800/60 rounded w-1/2 min-w-[180px]" />
+              <div className="h-4 bg-(--surface3) rounded w-1/3 min-w-[120px]" />
+              <div className="h-3 bg-(--surface3)/60 rounded w-1/2 min-w-[180px]" />
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-7 w-14 bg-zinc-800/60 rounded-lg" />
-              <div className="h-7 w-16 bg-zinc-800/60 rounded-lg" />
-              <div className="h-7 w-14 bg-zinc-800/60 rounded-lg" />
+              <div className="h-7 w-14 bg-(--surface3)/60 rounded-lg" />
+              <div className="h-7 w-16 bg-(--surface3)/60 rounded-lg" />
+              <div className="h-7 w-14 bg-(--surface3)/60 rounded-lg" />
             </div>
           </div>
         </div>
@@ -482,21 +484,21 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 sm:p-5 space-y-4">
+      <div className="rounded-lg border border-(--border) bg-(--surface) p-4 sm:p-5 space-y-4">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-zinc-300">Post content (Markdown)</label>
+          <label className="text-xs font-medium text-(--fg4)">Post content (Markdown)</label>
           <textarea
             placeholder={"# Title\n\nMarkdown content..."}
             value={md}
             onChange={(e) => setMd(e.target.value)}
-            className="w-full min-h-[10rem] bg-[#0a0c0b] border border-zinc-800 focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 text-zinc-100 placeholder-zinc-600 rounded-md p-3.5 font-mono text-sm leading-relaxed transition-colors outline-none resize-y"
+            className="w-full min-h-[10rem] bg-(--bg) border border-(--border) focus:border-(--accent-strong)/60 focus:ring-1 focus:ring-(--accent-strong)/25 text-(--fg2) placeholder-(--dim3) rounded-md p-3.5 font-mono text-sm leading-relaxed transition-colors outline-none resize-y"
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-300">Target platforms</span>
-            <span className="text-[11px] text-zinc-500">
+            <span className="text-xs font-medium text-(--fg4)">Target platforms</span>
+            <span className="text-[11px] text-(--dim2)">
               {sel.size} selected
             </span>
           </div>
@@ -509,14 +511,14 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
                   type="button"
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono border transition-all cursor-pointer select-none ${
                     selected
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-                      : "border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                      ? "border-(--accent-strong)/50 bg-(--accent-strong)/10 text-(--accent)"
+                      : "border-(--border) text-(--dim2) hover:border-(--surface4) hover:text-(--fg4)"
                   }`}
                   onClick={() => tog(p)}
                 >
                   <span
                     className={`inline-block w-1.5 h-1.5 rounded-full ${
-                      selected ? "bg-emerald-400" : "bg-zinc-600"
+                      selected ? "bg-(--accent)" : "bg-(--dim3)"
                     }`}
                   />
                   {p}
@@ -531,13 +533,13 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
             type="button"
             onClick={publish}
             disabled={busy}
-            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-medium px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="bg-(--accent-strong) hover:bg-(--accent) disabled:opacity-50 text-(--on-accent) font-medium px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
           >
             Publish
           </button>
           <button
             type="button"
-            className="border border-zinc-800 hover:border-zinc-600 disabled:opacity-50 text-zinc-300 font-medium px-4 py-2 rounded-md text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
+            className="border border-(--border) hover:border-(--dim3) disabled:opacity-50 text-(--fg4) font-medium px-4 py-2 rounded-md text-sm transition-colors cursor-pointer disabled:cursor-not-allowed"
             onClick={save}
             disabled={busy}
           >
@@ -548,11 +550,11 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider text-[11px]">
+          <h2 className="text-sm font-semibold text-(--fg4) uppercase tracking-wider text-[11px]">
             Saved Drafts
           </h2>
           {!loading && (
-            <span className="text-xs text-zinc-500 font-mono">
+            <span className="text-xs text-(--dim2) font-mono">
               {drafts.length} total
             </span>
           )}
@@ -573,28 +575,28 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
         ) : (
           drafts.map((d) => (
             <div
-              className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 sm:p-5 hover:border-zinc-700 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              className="rounded-lg border border-(--border) bg-(--surface)/60 p-4 sm:p-5 hover:border-(--surface4) transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               key={d.id}
             >
               <div className="space-y-2 min-w-0 flex-1">
-                <h3 className="text-sm sm:text-base font-semibold text-zinc-100 break-words">
+                <h3 className="text-sm sm:text-base font-semibold text-(--fg2) break-words">
                   {d.title || "Untitled"}
                 </h3>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-(--dim)">
                   <StatusBadge status={d.status} />
                   {d.platforms.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {d.platforms.map((plat) => (
                         <span
                           key={plat}
-                          className="px-2 py-0.5 rounded-md font-mono text-[11px] bg-zinc-950 border border-zinc-800 text-zinc-300"
+                          className="px-2 py-0.5 rounded-md font-mono text-[11px] bg-(--surface) border border-(--border) text-(--fg4)"
                         >
                           {plat}
                         </span>
                       ))}
                     </div>
                   )}
-                  <span className="text-zinc-500 font-mono">
+                  <span className="text-(--dim2) font-mono">
                     {new Date(d.created_at).toLocaleDateString()}
                   </span>
                 </div>
@@ -602,21 +604,21 @@ function Drafts({ api, toast }: { api: Api; toast: (m: string) => void }) {
               <div className="flex flex-wrap items-center gap-4 shrink-0 font-mono text-xs">
                 <button
                   type="button"
-                  className="text-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer"
+                  className="text-(--dim2) hover:text-(--fg2) transition-colors cursor-pointer"
                   onClick={() => setMd(d.content)}
                 >
                   load
                 </button>
                 <button
                   type="button"
-                  className="text-zinc-500 hover:text-emerald-400 transition-colors cursor-pointer"
+                  className="text-(--dim2) hover:text-(--accent) transition-colors cursor-pointer"
                   onClick={() => pub(d.id)}
                 >
                   publish
                 </button>
                 <button
                   type="button"
-                  className="text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
+                  className="text-(--dim3) hover:text-(--danger) transition-colors cursor-pointer"
                   onClick={() => del(d.id)}
                 >
                   delete
@@ -636,15 +638,15 @@ function PlatformsSkeleton() {
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 animate-pulse space-y-3"
+          className="rounded-xl border border-(--border)/80 bg-(--surface2)/40 p-4 sm:p-5 animate-pulse space-y-3"
         >
           <div className="flex items-center justify-between">
-            <div className="h-4 w-20 bg-zinc-800 rounded" />
-            <div className="h-5 w-24 bg-zinc-800/60 rounded-full" />
+            <div className="h-4 w-20 bg-(--surface3) rounded" />
+            <div className="h-5 w-24 bg-(--surface3)/60 rounded-full" />
           </div>
           <div className="flex items-center gap-2 pt-1">
-            <div className="h-7 w-16 bg-zinc-800/60 rounded-lg" />
-            <div className="h-7 w-14 bg-zinc-800/60 rounded-lg" />
+            <div className="h-7 w-16 bg-(--surface3)/60 rounded-lg" />
+            <div className="h-7 w-14 bg-(--surface3)/60 rounded-lg" />
           </div>
         </div>
       ))}
@@ -714,7 +716,7 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between pb-1">
-        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider text-[11px]">
+        <h2 className="text-sm font-semibold text-(--fg4) uppercase tracking-wider text-[11px]">
           Platforms ({configured.length}/{PLATFORMS.length} configured)
         </h2>
       </div>
@@ -728,12 +730,12 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
             const t = testing[p]
             return (
               <div
-                className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 sm:p-5 flex flex-col justify-between hover:border-zinc-700 transition-colors space-y-3.5"
+                className="rounded-lg border border-(--border) bg-(--surface)/60 p-4 sm:p-5 flex flex-col justify-between hover:border-(--surface4) transition-colors space-y-3.5"
                 key={p}
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-semibold text-zinc-100 text-sm font-mono">{p}</h3>
+                    <h3 className="font-semibold text-(--fg2) text-sm font-mono">{p}</h3>
                     <StatusBadge
                       status={ok ? "configured" : "not configured"}
                       label={ok ? "configured" : "not configured"}
@@ -748,10 +750,10 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-zinc-800/60 font-mono text-xs">
+                <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-(--border)/60 font-mono text-xs">
                   <button
                     type="button"
-                    className="text-zinc-500 hover:text-emerald-400 transition-colors cursor-pointer"
+                    className="text-(--dim2) hover:text-(--accent) transition-colors cursor-pointer"
                     onClick={() => {
                       setSetup(p)
                       setJson(
@@ -763,7 +765,7 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
                   </button>
                   <button
                     type="button"
-                    className="text-zinc-500 hover:text-zinc-100 transition-colors cursor-pointer disabled:opacity-50"
+                    className="text-(--dim2) hover:text-(--fg2) transition-colors cursor-pointer disabled:opacity-50"
                     onClick={() => test(p)}
                     disabled={t === "testing"}
                   >
@@ -782,33 +784,33 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
           onClick={() => setSetup(null)}
         >
           <div
-            className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-lg p-5 space-y-4"
+            className="w-full max-w-md bg-(--surface) border border-(--border) rounded-lg p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-zinc-100">Setup credentials</h3>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <h3 className="text-base font-semibold text-(--fg2)">Setup credentials</h3>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-(--accent-strong)/10 text-(--accent) border border-(--accent-strong)/30 font-mono">
+                  <span className="w-1.5 h-1.5 rounded-full bg-(--accent)" />
                   {setup}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setSetup(null)}
-                className="text-zinc-400 hover:text-zinc-200 p-1 text-sm rounded-md transition-colors cursor-pointer"
+                className="text-(--dim) hover:text-(--fg3) p-1 text-sm rounded-md transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-zinc-400">Required credential keys:</label>
+              <label className="text-xs font-medium text-(--dim)">Required credential keys:</label>
               <div className="flex flex-wrap gap-1.5">
                 {CRED_KEYS[setup].map((k) => (
                   <span
                     key={k}
-                    className="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] bg-zinc-950 border border-zinc-800 text-zinc-300"
+                    className="inline-flex items-center px-2 py-0.5 rounded-md font-mono text-[11px] bg-(--surface) border border-(--border) text-(--fg4)"
                   >
                     {k}
                   </span>
@@ -817,9 +819,9 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-zinc-400">Credentials JSON</label>
+              <label className="text-xs font-medium text-(--dim)">Credentials JSON</label>
               <textarea
-                className="w-full min-h-[7.5rem] bg-zinc-950 text-zinc-100 font-mono text-xs p-3 rounded-lg border border-zinc-800 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none resize-y"
+                className="w-full min-h-[7.5rem] bg-(--surface) text-(--fg2) font-mono text-xs p-3 rounded-lg border border-(--border) focus:border-(--accent-strong)/60 focus:ring-1 focus:ring-(--accent-strong)/25 outline-none resize-y"
                 value={json}
                 onChange={(e) => setJson(e.target.value)}
               />
@@ -829,13 +831,13 @@ function Platforms({ api, toast }: { api: Api; toast: (m: string) => void }) {
               <button
                 type="button"
                 onClick={saveSetup}
-                className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-medium px-4 py-2 rounded-lg text-xs transition-colors cursor-pointer"
+                className="bg-(--accent-strong) hover:bg-(--accent) text-(--on-accent) font-medium px-4 py-2 rounded-lg text-xs transition-colors cursor-pointer"
               >
                 Save
               </button>
               <button
                 type="button"
-                className="border border-zinc-800 hover:border-zinc-600 text-zinc-300 font-medium px-3.5 py-2 rounded-md text-xs transition-colors cursor-pointer"
+                className="border border-(--border) hover:border-(--dim3) text-(--fg4) font-medium px-3.5 py-2 rounded-md text-xs transition-colors cursor-pointer"
                 onClick={() => setSetup(null)}
               >
                 Cancel
@@ -854,14 +856,14 @@ function HistorySkeleton() {
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 animate-pulse space-y-2.5"
+          className="rounded-xl border border-(--border)/80 bg-(--surface2)/40 p-4 sm:p-5 animate-pulse space-y-2.5"
         >
           <div className="flex items-center gap-2.5">
-            <div className="h-4 w-20 bg-zinc-800 rounded" />
-            <div className="h-5 w-16 bg-zinc-800/60 rounded-full" />
-            <div className="h-4 w-10 bg-zinc-800/40 rounded ml-auto" />
+            <div className="h-4 w-20 bg-(--surface3) rounded" />
+            <div className="h-5 w-16 bg-(--surface3)/60 rounded-full" />
+            <div className="h-4 w-10 bg-(--surface3)/40 rounded ml-auto" />
           </div>
-          <div className="h-3 bg-zinc-800/40 rounded w-2/3 max-w-sm" />
+          <div className="h-3 bg-(--surface3)/40 rounded w-2/3 max-w-sm" />
         </div>
       ))}
     </div>
@@ -890,11 +892,11 @@ function History({ api, toast }: { api: Api; toast: (m: string) => void }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between pb-1">
-        <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider text-[11px]">
+        <h2 className="text-sm font-semibold text-(--fg4) uppercase tracking-wider text-[11px]">
           Publish History
         </h2>
         {!loading && (
-          <span className="text-xs text-zinc-500 font-mono">
+          <span className="text-xs text-(--dim2) font-mono">
             {rows.length} total
           </span>
         )}
@@ -916,12 +918,12 @@ function History({ api, toast }: { api: Api; toast: (m: string) => void }) {
         <div className="space-y-3">
           {rows.map((r, i) => (
             <div
-              className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 sm:p-5 hover:border-zinc-700 transition-colors space-y-2"
+              className="rounded-lg border border-(--border) bg-(--surface)/60 p-4 sm:p-5 hover:border-(--surface4) transition-colors space-y-2"
               key={i}
             >
               <div className="flex flex-wrap items-center gap-2 justify-between">
                 <div className="flex items-center gap-2">
-                  <strong className="text-sm font-semibold text-zinc-100 font-mono">
+                  <strong className="text-sm font-semibold text-(--fg2) font-mono">
                     {r.platform}
                   </strong>
                   <StatusBadge status={r.status} />
@@ -931,20 +933,20 @@ function History({ api, toast }: { api: Api; toast: (m: string) => void }) {
                     href={r.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-emerald-400 hover:text-emerald-300 hover:underline inline-flex items-center gap-1 font-mono"
+                    className="text-xs text-(--accent) hover:text-(--accent) hover:underline inline-flex items-center gap-1 font-mono"
                   >
                     view link ↗
                   </a>
                 )}
               </div>
-              <div className="text-xs text-zinc-400 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono">
+              <div className="text-xs text-(--dim) flex flex-wrap items-center gap-x-2 gap-y-1 font-mono">
                 <span>draft {r.draft_id.slice(0, 8)}</span>
-                <span className="text-zinc-600">·</span>
+                <span className="text-(--dim3)">·</span>
                 <span>{new Date(r.created_at).toLocaleString()}</span>
                 {r.error && (
                   <>
-                    <span className="text-zinc-600">·</span>
-                    <span className="text-red-400 font-sans break-all">{r.error}</span>
+                    <span className="text-(--dim3)">·</span>
+                    <span className="text-(--danger) font-sans break-all">{r.error}</span>
                   </>
                 )}
               </div>

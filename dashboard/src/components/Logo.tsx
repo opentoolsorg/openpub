@@ -25,8 +25,8 @@ export function Mark({ className = 'h-6 w-6' }: { className?: string }) {
 export function Logo({ className = '' }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <Mark className="h-5 w-5 text-emerald-400" />
-      <span className="font-mono text-base font-medium tracking-tight text-zinc-50">
+      <Mark className="h-5 w-5 text-(--accent)" />
+      <span className="font-mono text-base font-medium tracking-tight text-(--fg)">
         openpub
       </span>
     </span>

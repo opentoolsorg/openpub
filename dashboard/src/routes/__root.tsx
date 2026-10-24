@@ -39,6 +39,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('op-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.classList.toggle('light',t==='light')}catch(e){}`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
