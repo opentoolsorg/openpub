@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../src/core/publish', () => ({
+vi.mock('@openpub/core/publish', () => ({
   publishFile: vi.fn(),
   testPlatform: vi.fn(async () => true),
 }))
 
-import { publishFile } from '../src/core/publish'
-import { callTool, toolResult } from '../mcp/handlers'
+import { publishFile } from '@openpub/core/publish'
+import { callTool, toolResult } from '../apps/mcp/handlers'
 
 const report = {
   file: '/tmp/post.md',

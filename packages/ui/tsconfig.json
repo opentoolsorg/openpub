@@ -1,0 +1,14 @@
+{
+  "include": ["src/**/*.tsx"],
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2024",
+    "lib": ["DOM", "ES2024"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noEmit": true
+  }
+}

@@ -19,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      # wrangler.toml serves dashboard/.output/public as static assets and that
+      # apps/worker/wrangler.toml serves apps/dashboard/.output/public and that
       # directory is gitignored, so it has to be built before deploying.
       - name: Check Cloudflare credentials
         id: creds
@@ -40,13 +40,11 @@ jobs:
 
       - name: Build dashboard
         if: steps.creds.outputs.configured == 'true'
-        run: |
-          npm --prefix dashboard ci
-          npm --prefix dashboard run build
+        run: npm run build --workspace openpub-dashboard
 
       - name: Deploy
         if: steps.creds.outputs.configured == 'true'
-        run: npx wrangler deploy
+        run: npm run deploy --workspace @openpub/worker
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

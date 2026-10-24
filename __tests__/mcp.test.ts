@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Hono } from 'hono'
-import { mcpHandler } from '../src/mcp'
-import type { Env } from '../src/types'
+import { mcpHandler } from '../apps/worker/src/mcp'
+import type { Env } from '../apps/worker/src/types'
 
 // In-memory D1 stub: stores drafts rows keyed by id.
 function mockDB() {

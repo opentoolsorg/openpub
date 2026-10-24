@@ -2,7 +2,7 @@
 """Drive the OpenPub MCP server over stdio and assert real behaviour."""
 import json, os, subprocess, sys, tempfile, time
 
-SERVER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mcp", "dist", "index.js")
+SERVER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "apps", "mcp", "dist", "index.js")
 HOME = os.path.join(tempfile.mkdtemp(prefix="openpub-mcp-"), "home")
 POST = os.path.join(os.path.dirname(HOME), "post.md")
 

@@ -17,7 +17,7 @@ the exact command you ran
 
 **Environment**
 
-- OpenPub surface: CLI / MCP server / GitHub Action / self-hosted worker
+- OpenPub surface: CLI / MCP server / website / dashboard / self-hosted worker
 - Version:
 - Node version:
 - Platform involved, if any (devto, hashnode, wordpress, ghost, medium, substack, github-pages, x):

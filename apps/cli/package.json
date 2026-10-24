@@ -1,0 +1,48 @@
+{
+  "name": "openpub-cli",
+  "version": "0.1.0",
+  "description": "Write once, publish everywhere. Publish one Markdown file to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, GitHub Pages, and X Articles from your terminal.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "openpub": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "esbuild index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js",
+    "prepack": "npm run build",
+    "dev": "node --experimental-strip-types index.ts",
+    "postbuild": "chmod +x dist/index.js"
+  },
+  "dependencies": {
+    "marked": "^18.1.1"
+  },
+  "devDependencies": {
+    "@openpub/core": "*",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "@types/node": "^26.6.5"
+  },
+  "keywords": [
+    "openpub",
+    "markdown",
+    "blog",
+    "publish",
+    "crosspost",
+    "devto",
+    "hashnode",
+    "medium",
+    "ghost",
+    "wordpress",
+    "substack",
+    "x-articles",
+    "github-pages",
+    "mcp"
+  ]
+}

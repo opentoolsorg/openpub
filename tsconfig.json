@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "cli/**/*.ts", "mcp/**/*.ts", "__tests__/**/*.ts"]
+  "include": ["apps/worker/src/**/*.ts", "apps/cli/*.ts", "apps/mcp/*.ts", "packages/core/src/**/*.ts", "__tests__/**/*.ts"]
 }

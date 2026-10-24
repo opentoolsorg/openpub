@@ -14,9 +14,8 @@ OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machi
 
 | | |
 |---|---|
-| **CLI** | `npx openpub-cli publish post.md --to devto,substack` |
-| **MCP server** | Works with Claude Code, Cursor, and any MCP client |
-| **GitHub Action** | Publish on push, no CI script to maintain |
+| **CLI** | Build from this repository, then run `node apps/cli/dist/index.js publish post.md --to devto,substack` |
+| **MCP server** | Build from this repository; works with Claude Code, Cursor, and any MCP client |
 
 ## Why
 
@@ -26,20 +25,23 @@ OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machi
 | Cross-post to five platforms | Repeat the above five times | `openpub publish post.md` |
 | Canonical URLs | Set them by hand on every platform afterwards | Wired from the first public published URL |
 | Re-publishing an edit | Find the old post, edit it again, hope you picked the right one | Skipped when unchanged; updated in place when the platform allows it |
-| Publishing from CI | A bespoke script per platform | `uses: princepal9120/openpub@v1` |
 | Letting your agent publish | Paste the file into chat, then paste the result back | OpenPub is an MCP server |
 
 ## Quick start
 
 ```bash
-# Store credentials for a platform. They never leave your machine.
-npx openpub-cli setup devto '{"api_key": "dv1_..."}'
+# Build the CLI from the repository root.
+npm install
+npm run cli:build
+
+# Store credentials for a platform.
+node apps/cli/dist/index.js setup devto '{"api_key": "dv1_..."}'
 
 # See what is configured and reachable.
-npx openpub-cli status
+node apps/cli/dist/index.js status
 
 # Publish. Platforms come from --to, or from the file's frontmatter.
-npx openpub-cli publish post.md --to devto,hashnode,github-pages
+node apps/cli/dist/index.js publish post.md --to devto,hashnode,github-pages
 ```
 
 That is the whole flow. No account, no signup, no hosted service to trust.
@@ -88,42 +90,18 @@ Two upstream limits worth knowing, documented rather than hidden:
 
 ## MCP server
 
-Add OpenPub to any MCP client:
+Build the server from the repository root:
 
-```json
-{
-  "mcpServers": {
-    "openpub": { "command": "npx", "args": ["-y", "openpub-mcp"] }
-  }
-}
+```bash
+npm install
+npm run mcp:build
 ```
+
+Configure any MCP client to run `node /path/to/openpub/apps/mcp/dist/index.js` using its local stdio server settings.
 
 Then ask Claude Code or Cursor: *publish posts/why-i-left-kubernetes.md to dev.to and Substack.*
 
-Tools: `publish`, `cross_publish`, `list_published`, `setup`, `status`, `test_platform`, `content_audit`, `check_links`, `frontmatter`, `x_article`. See [docs/MCP-SETUP.md](docs/MCP-SETUP.md).
-
-## GitHub Action
-
-```yaml
-name: Publish
-on:
-  push:
-    branches: [main]
-    paths: ["posts/**/*.md"]
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: princepal9120/openpub@v1
-        with:
-          config: ${{ secrets.OPENPUB_CONFIG }}
-```
-
-The action publishes only the files the push actually changed, and reports `published-count`.
+Tools: `publish`, `cross_publish`, `list_published`, `setup`, `status`, `test_platform`, `content_audit`, `check_links`, `frontmatter`, `x_article`. See [apps/worker/docs/MCP-SETUP.md](apps/worker/docs/MCP-SETUP.md).
 
 ## How publishing works
 
@@ -155,27 +133,26 @@ It is also local-first by default: no account, no credits, no hosted relay. Your
 
 ```
 openpub/
-├── src/core/            the engine (no cloud dependencies)
-│   ├── types.ts         PlatformName, PublishInput, Config, PublishReport
-│   ├── config.ts        ~/.openpub/config.json (0600) + state.json
-│   ├── frontmatter.ts   dependency-free parse and emit, 8 formats
-│   ├── state.ts         content-hash idempotency ledger
-│   ├── publish.ts       fan-out, canonical wiring, dry-run
-│   └── adapters/        one file per platform: (input, creds) => fetch
-├── cli/                 npm: openpub-cli, bin: openpub
-├── mcp/                 npm: openpub-mcp, stdio MCP server
-├── src/                 worker entrypoint (API, MCP over HTTP, queue consumer)
-├── dashboard/           TanStack Start console
-├── site/                landing page
-├── action.yml           composite GitHub Action
-├── scripts/publish.sh   action entrypoint: git pathspec to changed files to CLI
-└── test/                action tests (real git fixture, fake npx)
+├── apps/
+│   ├── cli/             npm: openpub-cli, bin: openpub
+│   ├── mcp/             npm: openpub-mcp, stdio MCP server
+│   ├── worker/          Cloudflare API, HTTP MCP and queue consumer
+│   ├── dashboard/       TanStack Start console
+│   └── site/            public website
+├── packages/core/       shared adapters, types and publish pipeline
+│   └── src/
+│       ├── pipeline.ts  runtime-neutral preparation and publishing
+│       ├── publish.ts   Node file fan-out and idempotency
+│       ├── config.ts    Node credential storage
+│       └── adapters/    one implementation per platform
+├── migrations/          Worker database schema
+└── __tests__/           shared core and Worker tests
 ```
 
 ```
   openpub CLI ──┐
-  MCP client ───┼──▶  src/core  ──▶  adapter per platform  ──▶  dev.to API
-  GitHub Action ┘        │                                     Hashnode GraphQL
+  MCP client ───┼──▶ packages/core ──▶ adapter per platform ──▶ dev.to API
+  Worker queue ─┘        │                                    Hashnode GraphQL
                          │                                     WordPress REST
                     ~/.openpub/                                Ghost Admin API
                     config.json  (credentials, 0600)           Medium API
@@ -184,25 +161,27 @@ openpub/
                                                                X Articles API
 ```
 
-Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `src/core/adapters/`, register it in `src/core/adapters/index.ts`, and it appears in the CLI, the MCP server, and the action with no further wiring. Architecture and contracts: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Adding a platform is one file. Implement `PlatformAdapter` (`publish` and `test`) in `packages/core/src/adapters/`, register it in `packages/core/src/adapters/index.ts`, and it appears in the CLI, MCP server, and Worker with no further wiring. Architecture and contracts: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Self-hosting
 
-The CLI, MCP server, and action need no server at all. `src/` outside `src/core`, plus `dashboard/`, are an optional self-host mode: a Cloudflare Worker with D1, KV, R2, Queues, and Workers AI cover images, and a TanStack Start dashboard, for running OpenPub as a shared service.
+CLI and stdio MCP need no server. `apps/worker/` plus `apps/dashboard/` provide optional self-host mode: a Cloudflare Worker with D1, KV, R2, Queues, and Workers AI cover images, and a TanStack Start dashboard, for running OpenPub as a shared service.
 
 ```bash
-npm install
+npm ci
+npx wrangler login
+npx wrangler d1 create openpub-db
+npx wrangler kv namespace create KEYS
+npx wrangler r2 bucket create openpub-media
+npx wrangler queues create openpub-publish
+# Replace upstream resource IDs and URLs in apps/worker/wrangler.toml with your own first.
+npx wrangler d1 execute openpub-db --config apps/worker/wrangler.toml --remote --file=migrations/init.sql
 openssl rand -hex 32
-wrangler d1 create openpub-db
-wrangler kv namespace create KEYS
-wrangler r2 bucket create openpub-media
-wrangler queues create openpub-publish
-wrangler d1 execute openpub-db --file=migrations/init.sql
-wrangler secret put ADMIN_KEY
-wrangler deploy
+npx wrangler secret put ADMIN_KEY --config apps/worker/wrangler.toml
+npm run deploy
 ```
 
-The worker REST surface, its queue-backed retry classifier, and the dashboard are documented in [docs/DEPLOY.md](docs/DEPLOY.md).
+The dashboard Docs page covers the worker REST API and queue-backed retries; [apps/worker/docs/DEPLOY.md](apps/worker/docs/DEPLOY.md) covers deployment.
 
 ## Development
 
@@ -210,10 +189,12 @@ The worker REST surface, its queue-backed retry classifier, and the dashboard ar
 git clone https://github.com/princepal9120/openpub
 cd openpub
 
-npm install                    # core deps
-npm --prefix cli install && npm --prefix cli run build   # build the CLI
-bash test/publish.test.sh       # action tests
-npm test                       # core tests
+npm install                    # all workspace dependencies
+npm run cli:build              # standalone CLI
+npm run mcp:build              # standalone stdio MCP
+npm run dev:site               # public TanStack website
+npm run dev:dashboard          # self-host console
+npm test                       # shared core and Worker tests
 npm run typecheck              # types
 ```
 

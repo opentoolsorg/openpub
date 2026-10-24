@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
-import { adapters } from '../src/platforms'
-import { siteBase } from '../src/platforms/guard'
-import { claimPublish, createDraft } from '../src/db'
-import { publishConsumer } from '../src/publish'
-import type { Env, PlatformName, PublishInput } from '../src/types'
+import { adapters } from '../apps/worker/src/platforms'
+import { siteBase } from '@openpub/core/adapters/guard'
+import { claimPublish, createDraft } from '../apps/worker/src/db'
+import { publishConsumer } from '../apps/worker/src/publish'
+import type { Env, PlatformName, PublishInput } from '../apps/worker/src/types'
 
 type Row = Record<string, unknown>
 

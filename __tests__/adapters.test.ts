@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { adapters } from '../src/platforms'
-import type { PublishInput } from '../src/types'
+import { adapters } from '../apps/worker/src/platforms'
+import type { PublishInput } from '../apps/worker/src/types'
 
 const input = (over: Partial<PublishInput> = {}): PublishInput => ({
   title: 'Hello World',

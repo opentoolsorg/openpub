@@ -15,13 +15,15 @@ npm run typecheck              # types
 
 ## Before you open a PR
 
-CI runs four jobs. Reproduce them locally and keep them green:
+CI checks all workspace surfaces. Reproduce checks locally:
 
 ```bash
 npm ci && npx tsc --noEmit && npm test   # core
-npm --prefix cli install && npm --prefix cli run build   # cli
-npm --prefix mcp install && npm --prefix mcp run build   # mcp
-bash test/publish.test.sh                # action
+npm run cli:build                      # CLI
+npm run mcp:build                      # stdio MCP
+npm run build --workspace openpub-dashboard
+npm run build --workspace @openpub/worker
+python3 test/mcp-handshake.py
 ```
 
 Keep changes small and focused. One logical change per PR. If you are planning something large, open an issue first so we can agree on the shape before you write it.
@@ -30,13 +32,13 @@ Keep changes small and focused. One logical change per PR. If you are planning s
 
 Adding a platform is one file plus one registration:
 
-1. Copy `src/core/adapters/template.ts`.
+1. Copy `packages/core/src/adapters/template.ts`.
 2. Implement `publish` and `test`.
-3. Register it in `src/core/adapters/index.ts`.
-4. Add it to `PLATFORMS` in `src/core/types.ts`, and to the credentials table in `README.md`.
+3. Register it in `packages/core/src/adapters/index.ts`.
+4. Add it to `PLATFORMS` in `packages/core/src/types.ts`, and to the credentials table in `README.md`.
 5. Add tests in `__tests__/`.
 
-It then appears in the CLI, the MCP server, the GitHub Action, and the self-hosted worker with no further wiring. `src/platforms/` holds thin re-export shims for the worker, so nothing there needs editing.
+It then appears in CLI, MCP and Worker. All surfaces share the same adapters. Keep Node filesystem/config helpers outside the Worker-safe core entrypoint.
 
 ## Hard rule: never leak a credential
 
@@ -49,8 +51,8 @@ If you find a credential leak, report it privately per [SECURITY.md](SECURITY.md
 If a change is user-visible, update `README.md`. Deeper detail belongs in `docs/`:
 
 - `docs/ARCHITECTURE.md` for the engine, its contracts, and the publish lifecycle
-- `docs/DEPLOY.md` for the self-hosted worker
-- `docs/MCP-SETUP.md` for MCP client wiring
+- `apps/worker/docs/DEPLOY.md` for the self-hosted worker
+- `apps/worker/docs/MCP-SETUP.md` for MCP client wiring
 - `docs/PLATFORMS.md` for per-platform adapter behaviour and limits
 
 ## Style

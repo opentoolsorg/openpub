@@ -3,10 +3,11 @@ node_modules/
 dist/
 *.dev.vars
 .env
-dashboard/node_modules/
-dashboard/.output/
-dashboard/.tanstack/
+apps/*/node_modules/
+apps/*/.output/
+apps/*/.tanstack/
+packages/*/node_modules/
 .omc/
 .omx/
 .claude/
-site/.DS_Store
+.DS_Store
