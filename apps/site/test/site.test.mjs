@@ -3,6 +3,20 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 const html = readFileSync(new URL('../.output/public/index.html', import.meta.url), 'utf8')
+const docsHtml = readFileSync(new URL('../.output/public/docs/index.html', import.meta.url), 'utf8')
+
+test('prerender serves documentation at /docs with Worker console links', () => {
+  assert.match(docsHtml, /Documentation - OpenPub/)
+  assert.match(docsHtml, /id="main"/)
+  assert.match(docsHtml, /Getting Started/)
+  assert.match(docsHtml, /CLI Reference/)
+  for (const id of ['overview', 'two-modes', 'quickstart', 'cli', 'mcp-tools', 'platforms']) {
+    assert.match(docsHtml, new RegExp(`href="#${id}"`), id)
+  }
+  assert.match(docsHtml, /https:\/\/openpub\.princslabs\.workers\.dev\/app/)
+  assert.doesNotMatch(docsHtml, /href="\/app"/)
+  assert.match(html, /href="\/docs"/)
+})
 
 test('prerender includes accessible setup controls and safe source-build commands', () => {
   assert.equal((html.match(/role="tab"/g) || []).length, 9)

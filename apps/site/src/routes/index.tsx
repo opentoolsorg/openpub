@@ -5,7 +5,7 @@ import { Setup, agents } from '../components/Setup'
 import { BrandIcon, Tile, platforms } from '../components/Brand'
 
 export const Route = createFileRoute('/')({ component: Home })
-const docs = 'https://openpub.princslabs.workers.dev/docs'
+const docs = '/docs'
 const github = 'https://github.com/princepal9120/openpub'
 // Grok Bot setup is unverified, so it stays out of the headline; 8 slots keep both rotators in sync.
 const sources = [...agents.filter(a => a.id !== 'grok'), { name: 'your terminal', logo: 'terminal' }]

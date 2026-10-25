@@ -6,6 +6,7 @@
   "exports": {
     "./logo": "./src/logo.tsx",
     "./theme-toggle": "./src/theme-toggle.tsx",
+    "./docs-page": "./src/docs-page.tsx",
     "./not-found": "./src/not-found.tsx",
     "./default-catch-boundary": "./src/default-catch-boundary.tsx"
   },

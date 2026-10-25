@@ -1,0 +1,113 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "../../../../packages/ui/src/docs-page.tsx";
+@source "../../../../packages/ui/src/logo.tsx";
+@source "../../../../packages/ui/src/theme-toggle.tsx";
+
+@theme {
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+}
+
+@custom-variant light (&:where(.light, .light *));
+
+@layer base {
+  .docs-page,
+  .docs-page * {
+    box-sizing: border-box;
+  }
+
+  .docs-page {
+    --bg: #0a0c0b;
+    --surface: #09090b;
+    --surface-soft: #111113;
+    --surface2: var(--card);
+    --surface3: #27272a;
+    --surface4: #3f3f46;
+    --card: #18181b;
+    --border: #27272a;
+    --line: #1f1f23;
+    --fg: #fafafa;
+    --fg2: #e4e4e7;
+    --fg3: #d4d4d8;
+    --dim: #a1a1aa;
+    --dim2: #71717a;
+    --dim3: #52525b;
+    --fg4: #d4d4d8;
+    --accent: #34d399;
+    --accent-strong: #34d399;
+    --accent-hover: #6ee7b7;
+    --on-accent: #022c22;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --chip-bg: #27272a;
+    --mark-foreground: #022c22;
+    --accent-rgb: 52, 211, 153;
+    color: var(--fg2);
+    background: var(--bg);
+    font: 400 15px/1.55 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  .light .docs-page {
+    --bg: #fafaf9;
+    --surface: #fff;
+    --surface-soft: #f4f4f5;
+    --surface2: #f4f4f5;
+    --surface3: #e4e4e7;
+    --surface4: #d4d4d8;
+    --card: #f4f4f5;
+    --border: #e4e4e7;
+    --line: #ececee;
+    --fg: #09090b;
+    --fg2: #27272a;
+    --fg3: #3f3f46;
+    --dim: #52525b;
+    --dim2: #71717a;
+    --dim3: #a1a1aa;
+    --fg4: #3f3f46;
+    --accent: #047857;
+    --accent-strong: #047857;
+    --accent-hover: #065f46;
+    --on-accent: #fff;
+    --danger: #dc2626;
+    --warn: #d97706;
+    --chip-bg: #e4e4e7;
+    --mark-foreground: #fff;
+    --accent-rgb: 4, 120, 87;
+  }
+
+  .docs-page :where(p, h1, h2, h3, h4, pre) {
+    margin: 0;
+  }
+
+  .docs-page h1,
+  .docs-page h2,
+  .docs-page h3,
+  .docs-page h4 {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .docs-page p {
+    color: var(--dim);
+  }
+
+  .docs-page pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .docs-page button {
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .docs-page a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .docs-page a:hover {
+    color: var(--accent-hover);
+  }
+}
