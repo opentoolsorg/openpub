@@ -92,7 +92,7 @@ const AGENT_CLIENTS: AgentTab[] = [
     id: 'cli',
     name: 'CLI',
     customIcon: 'CLI',
-    transport: 'Terminal · Node 20+',
+    transport: 'Terminal · Node 22+',
     steps: [
       {
         n: '01',
@@ -105,14 +105,14 @@ const AGENT_CLIENTS: AgentTab[] = [
         title: 'Store a platform key',
         lead: 'Credentials save directly to',
         monoLead: '~/.openpub/config.json',
-        tail: 'on your local machine:',
-        code: "node apps/cli/dist/index.js setup devto '{\"api_key\": \"YOUR_DEVTO_KEY\"}'\nnode apps/cli/dist/index.js status",
+        tail: 'from a private file outside the repo:',
+        code: 'node apps/cli/dist/index.js setup devto /absolute/private/path/devto.json\nnode apps/cli/dist/index.js status',
       },
       {
         n: '03',
         title: 'Dry-run a post',
         lead: 'Test the plan before shipping. Drafts stay default:',
-        code: 'node apps/cli/dist/index.js publish --dry-run post.md --to devto',
+        code: 'node apps/cli/dist/index.js publish post.md --to devto --status draft --dry-run',
       },
     ],
   },
@@ -120,7 +120,7 @@ const AGENT_CLIENTS: AgentTab[] = [
     id: 'claude',
     name: 'Claude Code',
     slug: 'claude',
-    transport: 'Local stdio server · Node 20+',
+    transport: 'Local stdio server · Node 22+',
     steps: [
       BUILD_SERVER_STEP,
       {
@@ -335,7 +335,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Do I need to host anything?',
-    a: 'No. The CLI and local MCP server run on your machine using Node 20+. The web console and API are optional, and you host them on your own Cloudflare account. Build from the repository; the npm package is not released yet.',
+    a: 'No. The CLI and local MCP server run on your machine using Node 22+. The web console and API are optional, and you host them on your own Cloudflare account. Build from the repository; the npm package is not released yet.',
   },
   {
     q: 'Where do my credentials go?',
@@ -622,12 +622,8 @@ function Landing() {
           <Logo />
         </a>
         <div className="flex items-center gap-3 sm:gap-6 text-[15px] font-medium text-(--dim)">
-          <a
-            href="#agents"
-            className="hidden md:inline transition-colors duration-200 hover:text-(--fg)"
-          >
-            Agents
-          </a>
+
+
           <a
             href="#features"
             className="hidden sm:inline transition-colors duration-200 hover:text-(--fg)"
@@ -717,6 +713,12 @@ function Landing() {
             className="inline-flex items-center justify-center rounded-lg bg-(--accent-strong) px-5 py-2.5 text-sm font-semibold text-(--on-accent) shadow-[0_0_20px_-5px_rgba(16,185,129,0.35)] transition-all duration-200 hover:bg-(--accent) hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.5)] active:scale-[0.98]"
           >
             Read the docs
+          </a>
+          <a
+            href="https://openpub.princepal.dev/llms.txt"
+            className="inline-flex items-center justify-center rounded-lg border border-(--border) bg-(--surface2)/50 px-5 py-2.5 text-sm font-semibold text-(--fg3) transition-all duration-200 hover:border-(--surface4) hover:bg-(--surface2) hover:text-(--fg) active:scale-[0.98]"
+          >
+            Agent guide (llms.txt)
           </a>
           <a
             href="#self-host"
@@ -1337,6 +1339,7 @@ function Landing() {
             <span>MIT licensed</span>
             <a href={GITHUB} className="hover:text-(--fg3) transition-colors duration-150">GitHub</a>
             <a href={DOCS} className="hover:text-(--fg3) transition-colors duration-150">Docs</a>
+            <a href="https://openpub.princepal.dev/llms.txt" className="hover:text-(--fg3) transition-colors duration-150">llms.txt</a>
           </div>
           <div>Write once. Publish everywhere. Kept on your own machine.</div>
         </div>

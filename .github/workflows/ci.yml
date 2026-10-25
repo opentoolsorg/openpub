@@ -21,6 +21,14 @@ jobs:
       - run: npm run build --workspace @openpub/site
       - run: npm test --workspace @openpub/site
       - run: npm run build --workspace @openpub/worker
+      - name: Upload site release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-release
+          retention-days: 1
+          if-no-files-found: error
+          include-hidden-files: true
+          path: apps/site/.output/public/
       - name: Upload Worker release artifacts
         uses: actions/upload-artifact@v4
         with:

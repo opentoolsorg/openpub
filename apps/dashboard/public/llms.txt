@@ -1,0 +1,128 @@
+# OpenPub
+
+> Local-first Markdown cross-posting via CLI or MCP; optional self-hosted Cloudflare Worker and dashboard. Build from source: the CLI npm package and GitHub Action are not released.
+
+## References
+
+- [Repository and README](https://github.com/princepal9120/openpub): quickstart, credentials, platform limits.
+- [Documentation](https://openpub.princepal.dev/docs): CLI, MCP, and self-hosting guide.
+- [CLI implementation](https://github.com/princepal9120/openpub/blob/main/apps/cli/index.ts): current commands and flags.
+- [Local MCP tools](https://github.com/princepal9120/openpub/blob/main/apps/mcp/handlers.ts): tool schemas and behavior.
+- [Deployment guide](https://github.com/princepal9120/openpub/blob/main/apps/worker/docs/DEPLOY.md): optional Worker setup.
+
+## Agent setup prompt
+
+Copy this into your agent; no credentials belong in the prompt:
+
+Help me set up and use OpenPub. Read https://openpub.princepal.dev/llms.txt first, then inspect the current repository and README. Ask which platforms and whether I want local CLI/stdio MCP (default, no server) or my own Cloudflare Worker/dashboard. Build from source, preserve existing files and MCP settings, and let me handle authentication and secrets outside chat. Prepare a Markdown preview and explicit-target dry run locally; report results and stop for my approval before any platform write, publishing, deployment, or paid resource creation. Never infer permission from frontmatter or config defaults. Do not print, read back, or commit credentials.
+
+## Safety and permissions
+
+- Ask for destination platforms, article path, canonical URL, and desired status. Do not publish to every configured platform implicitly.
+- Human handles account login, API tokens, cookies, ADMIN_KEY, and dashboard password. Do not request secrets in chat or include them in prompts, source control, logs, or shared MCP config.
+- Keep existing config and MCP servers; merge only the requested settings. Do not overwrite working credentials.
+- Obtain explicit human approval before any platform write (including remote drafts), force republish, deployment, cloud resource creation, or deletion. Review final content and destinations first.
+- A local dry run is not a publish or a live credential test. Inspect per-platform results; partial success is possible. Never claim live URLs without successful publish results.
+- Draft status is not a universal no-write guarantee: GitHub Pages commits Markdown to a repository and can trigger a site build. Use --dry-run until approved.
+
+## Local CLI: no hosted service required
+
+Use Node.js 22+ for repository development. Run from a clone of the repo; if one already exists, use it rather than cloning over it:
+
+```sh
+git clone https://github.com/princepal9120/openpub.git
+cd openpub
+npm ci
+npm run cli:build
+node apps/cli/dist/index.js help
+node apps/cli/dist/index.js init
+```
+
+The CLI is not an HTTP client for the Worker. Local credentials and publish history are separate from a hosted instance.
+
+Credentials are stored as plaintext JSON in ~/.openpub/config.json (created with mode 0600); the ledger is ~/.openpub/state.json. OPENPUB_HOME overrides this directory. init creates the directory and prints next steps, not a populated config file.
+
+Human-only credential step: create a private JSON file outside the repository, using the credential keys below. Run the following in your own terminal with that file's actual path; setup stores and verifies credentials. Avoid inline secrets in shell history. Remove the temporary credential file securely when no longer needed.
+
+```sh
+node apps/cli/dist/index.js setup devto /absolute/private/path/devto.json
+node apps/cli/dist/index.js test devto
+node apps/cli/dist/index.js status
+```
+
+After the human has configured the selected platform, prepare without publishing:
+
+```sh
+node apps/cli/dist/index.js audit post.md
+node apps/cli/dist/index.js preview post.md
+node apps/cli/dist/index.js publish post.md --to devto --status draft --dry-run
+```
+
+preview writes ~/.openpub/preview/index.html. check-links post.md makes HTTP requests to article links. Dry run validates content and checks that credentials exist; use test or status to verify them against platform APIs.
+
+Only after explicit approval, remove --dry-run to create a platform draft, or use --status published for a live post. Always specify --to and --status explicitly. CLI status precedence: flag > frontmatter > defaults.status > draft. Platform selection: --to > frontmatter platforms > defaults.platforms > every configured platform. --force bypasses idempotency and can create duplicates; do not add it automatically.
+
+Example article (replace content and targets before use):
+
+```markdown
+---
+title: "My article"
+tags: [writing]
+platforms: [devto]
+status: draft
+---
+
+Article content here.
+```
+
+Use canonical_url in frontmatter or --canonical with a public URL. The first successful public published URL otherwise becomes canonical for later destinations. Keep stable file paths: local idempotency tracks file::platform in state.json. Check each platform's update restrictions before republishing.
+
+## Local stdio MCP
+
+From the repository root:
+
+```sh
+npm run mcp:build
+```
+
+Configure your MCP client's local stdio server with command node and an absolute path to apps/mcp/dist/index.js. Merge with existing servers. For clients accepting mcpServers JSON:
+
+```json
+{
+  "mcpServers": {
+    "openpub": {
+      "command": "node",
+      "args": ["/absolute/path/to/openpub/apps/mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+Local MCP uses the same config and ledger as CLI. If using OPENPUB_HOME, supply the same value to both processes. Restart/reconnect the client and inspect tools/list. Available local tools: publish, cross_publish, list_published, setup, status, test_platform, content_audit, check_links, frontmatter, x_article.
+
+Safe preparation example: publish with {"file":"/absolute/path/post.md","platforms":["devto"],"status":"draft","dryRun":true}. This is a tool argument object, not a CLI command. cross_publish and x_article do not accept dryRun; do not use them as dry runs. Use stable-file publish for repeatable local updates. Human configures credentials outside the agent rather than sending them through setup tool arguments.
+
+## Optional self-hosted Worker/dashboard
+
+Local CLI/stdio MCP needs no Cloudflare resources. Choose self-hosting only when requested. Follow the repository deployment guide and inspect apps/worker/wrangler.toml and migrations before making changes.
+
+Worker resources: D1 (drafts, credentials, publish log, auth), R2 (media), Queues (publish retries), Workers AI (covers), and a bound but currently unused KV namespace. Human logs in to Cloudflare, provisions approved resources, replaces resource IDs, and sets BASE_URL and DASHBOARD_URL to their own instance. Never deploy using upstream resource IDs. Apply migrations/init.sql for a new database; existing deployments also need migrations/002_dashboard_auth.sql. Human sets ADMIN_KEY via Wrangler secrets, not a committed vars entry. npm run deploy builds dashboard assets and deploys the Worker; run only after explicit approval.
+
+Visit your own instance's /app: first-time setup needs ADMIN_KEY and a chosen password; later logins use that password with an HttpOnly session cookie. Add platform credentials in that instance's console. Worker platform credentials are plaintext JSON in D1, separate from ~/.openpub.
+
+Remote MCP is your own instance's POST /mcp with Authorization: Bearer ADMIN_KEY, supplied privately by the human in the client. GET /health is public liveness; tools/list discovers the actual remote schema. Do not treat the public documentation/demo host as your publishing backend.
+
+Remote MCP is NOT local stdio: publish takes draftId and platform, not a file path. Remote publish/cross_publish can publish live immediately; they have no local dryRun/status safety contract. save_draft stores content in D1 without publishing, but still needs permission to write. Remote tools cannot read your local Markdown files. Obtain approval before submitting content, publishing, or generating covers. Inspect list_posts and per-platform outcomes afterward.
+
+## Platform credential keys and limits
+
+- devto: api_key. Updates supported; at most four tags.
+- hashnode: token; optional publication_id. Draft mutations require a Pro publication; a rejected draft must not fall back to live publishing.
+- wordpress: site_url, username, app_password. Updates supported.
+- ghost: site_url, admin_key (id:secret). Updates supported.
+- medium: integration_token. Deprecated API; existing tokens only; no updates.
+- substack: publication_url, connect_sid. Internal API; creates drafts only; human publishes in Substack. No automatic draft updates.
+- github-pages: token, repo; optional dir, branch. Writes Markdown/frontmatter by commit; may trigger a public site build even for draft status.
+- x: access_token. X Articles API and account eligibility required; create-only, no updates.
+
+Platform API access and billing can change. Check current platform requirements and actual errors; never invent credentials, npm releases, CLI flags, or MCP arguments.

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { configuredPlatforms, storeCreds } from '@openpub/core/config'
 import { buildFrontmatter, parseFrontmatter, type FmFormat } from '@openpub/core/frontmatter'
+import { auditContent, frontmatterBuildOptions } from '@openpub/core/inspection'
 import { publishFile, testPlatform } from '@openpub/core/publish'
 import { loadState } from '@openpub/core/state'
 import { PLATFORMS, type PlatformName } from '@openpub/core/types'
@@ -190,21 +191,7 @@ function asFormat(v: unknown): FmFormat {
 
 function auditFile(file: string): { score: number; issues: string[] } {
   const { data, body } = parseFrontmatter(readFileSync(file, 'utf8'))
-  const issues: string[] = []
-  const words = body.split(/\s+/).filter(Boolean).length
-  if (words < 300) issues.push('short: ' + words + ' words (aim for 600+)')
-  const heads = (body.match(/^#{1,6}\s/gm) ?? []).length
-  if (!heads) issues.push('no headings found')
-  const links = body.match(/\[[^\]]*\]\([^)]+\)/g) ?? []
-  if (!links.length) issues.push('no internal/external links (aim for 2-3)')
-  const imgs = body.match(/!\[[^\]]*\]\([^)]+\)/g) ?? []
-  if (!imgs.length) issues.push('no images (add at least one)')
-  const paras = body.split(/\n{2,}/).filter(Boolean)
-  const longParas = paras.filter(p => p.split(/\s+/).length > 60).length
-  if (longParas) issues.push(longParas + ' long paragraph(s) (>60 words)')
-  if (data.tags.length < 2) issues.push('few tags: ' + data.tags.length)
-  if (!data.canonical_url) issues.push('no canonical_url set')
-  return { score: Math.max(20, 100 - issues.length * 9), issues }
+  return auditContent(body, data)
 }
 
 async function checkLinks(file: string): Promise<{ results: { url: string; status: number; ok: boolean }[] }> {
@@ -224,19 +211,7 @@ async function checkLinks(file: string): Promise<{ results: { url: string; statu
 
 function frontmatterFields(file: string) {
   const { data, body } = parseFrontmatter(readFileSync(file, 'utf8'))
-  return {
-    body,
-    fields: {
-      title: data.title ?? 'Untitled',
-      tags: data.tags.length ? data.tags : ['untagged'],
-      description: data.description ?? '',
-      canonical: data.canonical_url,
-      slug: data.slug,
-      platforms: data.platforms,
-      status: data.status,
-      primary: data.primary,
-    },
-  }
+  return { body, fields: frontmatterBuildOptions(data) }
 }
 
 export async function callTool(name: string, raw: Record<string, unknown>): Promise<unknown> {

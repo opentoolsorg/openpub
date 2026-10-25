@@ -28,7 +28,7 @@ export interface PublishLogRow {
   id: string
   draft_id: string
   platform: PlatformName
-  status: 'pending' | 'success' | 'failed'
+  status: 'pending' | 'queued' | 'publishing' | 'retryable' | 'success' | 'failed'
   url: string | null
   error: string | null
   attempts: number

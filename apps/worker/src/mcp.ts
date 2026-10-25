@@ -2,6 +2,7 @@ import type { Context } from 'hono'
 import * as db from './db'
 import { adapters, platformNames } from './platforms'
 import { enqueuePublish } from './publish'
+import { buildFrontmatter, type FmFormat } from '@openpub/core/frontmatter'
 import type { Env, PlatformName } from './types'
 
 // Minimal MCP JSON-RPC handler over Streamable HTTP (stateless JSON mode).
@@ -116,10 +117,11 @@ async function callTool(env: Env, name: string, args: any): Promise<any> {
       return { results, skipped }
     }
     case 'frontmatter': {
-      const lines = ['---', `title: "${args.title}"`, `date: ${new Date().toISOString()}`]
-      if (args.tags?.length) lines.push(`tags: [${args.tags.map((t: string) => `"${t}"`).join(', ')}]`)
-      lines.push('---')
-      return { format: args.format, frontmatter: lines.join('\n') }
+      const frontmatter = buildFrontmatter(args.format as FmFormat, {
+        title: args.title,
+        tags: args.tags ?? [],
+      }).trimEnd()
+      return { format: args.format, frontmatter }
     }
     default: throw new Error(`unknown tool ${name}`)
   }

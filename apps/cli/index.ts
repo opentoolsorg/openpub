@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { publishFile, testPlatform } from '@openpub/core/publish'
 import { parseFrontmatter, buildFrontmatter, type FmFormat } from '@openpub/core/frontmatter'
+import { auditContent, frontmatterBuildOptions } from '@openpub/core/inspection'
 import {
   loadConfig, removeCreds, storeCreds,
   configuredPlatforms, configPath, openpubHome,
@@ -189,16 +190,7 @@ try {
       const known: FmFormat[] = ['openpub', 'hugo', 'jekyll', 'astro', 'nextjs', 'devto', 'hashnode', 'ghost']
       if (!known.includes(format)) die(`unknown format "${format}". known: ${known.join(', ')}`)
       const { data, body } = parseFrontmatter(readFileSync(file, 'utf8'))
-      const fm = buildFrontmatter(format, {
-        title: data.title ?? 'Untitled',
-        tags: data.tags.length ? data.tags : ['untagged'],
-        description: data.description ?? '',
-        canonical: data.canonical_url,
-        slug: data.slug,
-        platforms: data.platforms,
-        status: data.status,
-        primary: data.primary,
-      })
+      const fm = buildFrontmatter(format, frontmatterBuildOptions(data))
       writeFileSync(file, fm + body)
       console.log(`${file}: frontmatter rewritten (${format})`)
       break
@@ -208,22 +200,7 @@ try {
       const file = args[0]
       if (!file) die('usage: openpub audit <file.md>')
       const { data, body } = parseFrontmatter(readFileSync(file, 'utf8'))
-      const issues: string[] = []
-      const words = body.split(/\s+/).filter(Boolean).length
-      if (words < 300) issues.push(`short: ${words} words (aim for 600+)`)
-      const heads = (body.match(/^#{1,6}\s/gm) ?? []).length
-      if (!heads) issues.push('no headings found')
-      const links = body.match(/\[[^\]]*\]\([^)]+\)/g) ?? []
-      if (!links.length) issues.push('no internal/external links (aim for 2-3)')
-      const imgs = body.match(/!\[[^\]]*\]\([^)]+\)/g) ?? []
-      if (!imgs.length) issues.push('no images (add at least one)')
-      const paras = body.split(/\n{2,}/).filter(Boolean)
-      const longParas = paras.filter(p => p.split(/\s+/).length > 60).length
-      if (longParas) issues.push(`${longParas} long paragraph(s) (>60 words)`)
-      if (data.tags.length < 2) issues.push(`few tags: ${data.tags.length}`)
-      if (!data.canonical_url) issues.push('no canonical_url set')
-
-      const score = Math.max(20, 100 - issues.length * 9)
+      const { score, issues } = auditContent(body, data)
       console.log(`${BOLD('audit')} ${basename(file)}: ${score}/100`)
       for (const i of issues) console.log('  - ' + i)
       if (!issues.length) console.log('  ' + GREEN('looks good'))

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { marked } from 'marked'
+import { resolvePostMetadata } from '@openpub/core/post'
 import * as db from './db'
 import { adapters, platformNames } from './platforms'
 import { enqueuePublish } from './publish'
@@ -187,14 +188,22 @@ api.post('/publish', async (c) => {
 api.get('/drafts/:id/preview', async (c) => {
   const d = await db.getDraft(c.env.DB, c.req.param('id'))
   if (!d) return c.json({ error: 'not found' }, 404)
-  const { frontmatter, body } = parseFrontmatter(d.content)
+  const metadata = resolvePostMetadata(d.content, {
+    title: d.title,
+    coverImage: d.cover_image,
+    canonicalUrl: d.canonical_url,
+    fallbackTitle: 'Untitled',
+  })
+  const frontmatter = { ...metadata.frontmatter }
+  if (metadata.title) frontmatter.title = metadata.title
+  if (metadata.coverImage !== undefined) frontmatter.cover_image = metadata.coverImage
+  if (metadata.canonicalUrl !== undefined) frontmatter.canonical_url = metadata.canonicalUrl
   return c.json({
-    title: (frontmatter.title as string) ?? d.title,
-    html: marked.parse(body) as string,
+    title: metadata.title,
+    html: await marked.parse(metadata.body),
     frontmatter,
   })
 })
-
 api.get('/posts', async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT l.draft_id, l.platform, l.status, l.url, l.error, l.attempts, l.created_at AS logged_at,
@@ -221,24 +230,7 @@ api.post('/history/:draftId/:platform/retry', async (c) => {
   const draft = await db.getDraft(c.env.DB, c.req.param('draftId'))
   if (!draft) return c.json({ error: 'not found' }, 404)
   if (!(draft.platforms as string[]).includes(platform)) return c.json({ error: `${platform} not in draft platforms` }, 400)
-  await c.env.DB.prepare("UPDATE publish_log SET status = 'retryable' WHERE draft_id = ? AND platform = ? AND status = 'failed'")
-    .bind(c.req.param('draftId'), platform).run()
+  await db.retryPublish(c.env.DB, c.req.param('draftId'), platform)
   const jobs = await enqueuePublish(c.env, c.req.param('draftId'), platform)
   return c.json({ jobs })
 })
-
-// ponytail: minimal frontmatter parse — key: value + [a,b] only, no yaml lib (Workers-safe)
-function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
-  const m = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/)
-  if (!m) return { frontmatter: {}, body: content }
-  const frontmatter: Record<string, unknown> = {}
-  for (const line of m[1].split('\n')) {
-    const kv = line.match(/^(\w[\w-]*):\s*(.*)$/)
-    if (!kv) continue
-    const v = kv[2].trim()
-    frontmatter[kv[1]] = v.startsWith('[')
-      ? v.slice(1, v.lastIndexOf(']') + 1 || undefined).split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean)
-      : v.replace(/^['"]|['"]$/g, '')
-  }
-  return { frontmatter, body: m[2] }
-}

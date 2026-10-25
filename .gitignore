@@ -18,6 +18,7 @@ apps/*/.tanstack/
 
 # Generated graph cache
 graphify-out/cache/
+graphify-out/*
 
 # Operating system files
 .DS_Store

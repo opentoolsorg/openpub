@@ -98,6 +98,26 @@ Credentials live in `~/.openpub/config.json`:
 - **Failure isolation**: one platform failing never aborts the others. Every
   outcome is reported per platform.
 
+## Shared content interpretation
+
+`@openpub/core/post` owns browser-safe frontmatter parsing, body extraction, and
+metadata precedence. Node publishing, Worker publishing and preview, and the
+dashboard editor reuse that interpretation. Frontmatter supports inline and block
+lists and LF or CRLF line endings. Saved or explicit title, cover, canonical URL,
+and publish action take precedence over file metadata. The Worker still publishes
+only through its existing explicit action and keeps its six-tag adapter limit.
+
+The browser imports the `post` subpath directly. Frontmatter generation retains
+its existing slug implementation, which imports Node crypto and stays outside the
+browser bundle. `@openpub/core/inspection` owns audit scoring and formatter field
+mapping; CLI and stdio MCP retain their file I/O and result presentation. Worker
+MCP uses the existing frontmatter builder. Link-checking policies remain specific
+to their runtime.
+
+The Worker database module owns publish-log retry transitions and draft-status
+rollup. This stays separate from the local file ledger and does not introduce a
+new persistence adapter or migration.
+
 ## Conventions
 
 - TypeScript, ESM, Node 20+. The core needs no build step; esbuild bundles the CLI.

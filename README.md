@@ -10,19 +10,33 @@ OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machi
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![CI](https://github.com/princepal9120/openpub/actions/workflows/ci.yml/badge.svg)](https://github.com/princepal9120/openpub/actions/workflows/ci.yml)
-[![Live demo](https://img.shields.io/badge/demo-openpub.princslabs.workers.dev-blue)](https://openpub.princslabs.workers.dev)
+[![Live demo](https://img.shields.io/badge/demo-openpub-blue)](https://openpub-site.pages.dev)
 
 | | |
 |---|---|
 | **CLI** | Build from this repository, then run `node apps/cli/dist/index.js publish post.md --to devto,substack` |
 | **MCP server** | Build from this repository; works with Claude Code, Cursor, and any MCP client |
 
+## Set up with your agent
+
+Give your agent [llms.txt](https://openpub.princepal.dev/llms.txt), the public setup/use guide ([source](apps/site/public/llms.txt)), or open [Docs → Agent Setup](https://openpub.princepal.dev/docs#agent-setup) for a copy button. Local CLI/stdio MCP needs no server; the Worker/dashboard is an optional deployment in your own Cloudflare account.
+
+Copy this prompt; handle authentication and secrets yourself, outside chat:
+
+```text
+Help me set up and use OpenPub. Read https://openpub.princepal.dev/llms.txt first, then inspect the current repository and README. Ask which platforms and whether I want local CLI/stdio MCP (default, no server) or my own Cloudflare Worker/dashboard. Build from source, preserve existing files and MCP settings, and let me handle authentication and secrets outside chat. Prepare a Markdown preview and explicit-target dry run locally; report results and stop for my approval before any platform write, publishing, deployment, or paid resource creation. Never infer permission from frontmatter or config defaults. Do not print, read back, or commit credentials.
+```
+
+The guide lives in `apps/site/public/llms.txt`; keep `apps/dashboard/public/llms.txt` identical so both independent deployments serve `/llms.txt`. The site regression test checks source and built copies.
+
+`--dry-run` makes no platform writes, but does not verify credentials against live APIs. Even a draft can write to a platform: GitHub Pages commits can trigger a site build. Review content and targets before approving any write. Worker/remote MCP publishing can go live immediately; it does not accept the local CLI's dry-run/status flags.
+
 ## Why
 
 | Task | Without OpenPub | With OpenPub |
 |---|---|---|
-| Publish to dev.to | Open a browser, paste, fix formatting, add tags, submit | `openpub publish post.md --to devto` |
-| Cross-post to five platforms | Repeat the above five times | `openpub publish post.md` |
+| Publish to dev.to | Open a browser, paste, fix formatting, add tags, submit | `node apps/cli/dist/index.js publish post.md --to devto` |
+| Cross-post to five platforms | Repeat the above five times | `node apps/cli/dist/index.js publish post.md` |
 | Canonical URLs | Set them by hand on every platform afterwards | Wired from the first public published URL |
 | Re-publishing an edit | Find the old post, edit it again, hope you picked the right one | Skipped when unchanged; updated in place when the platform allows it |
 | Letting your agent publish | Paste the file into chat, then paste the result back | OpenPub is an MCP server |
@@ -34,19 +48,19 @@ OpenPub runs locally. Credentials live in `~/.openpub/config.json` on your machi
 npm install
 npm run cli:build
 
-# Store credentials for a platform.
-node apps/cli/dist/index.js setup devto '{"api_key": "dv1_..."}'
+# Store credentials for a platform using a private JSON file outside the repo.
+node apps/cli/dist/index.js setup devto /absolute/private/path/devto.json
 
 # See what is configured and reachable.
 node apps/cli/dist/index.js status
 
-# Publish. Platforms come from --to, or from the file's frontmatter.
-node apps/cli/dist/index.js publish post.md --to devto,hashnode,github-pages
+# Prepare an explicit-target dry run. Draft is the default.
+node apps/cli/dist/index.js publish post.md --to devto,hashnode --status draft --dry-run
 ```
 
 That is the whole flow. No account, no signup, no hosted service to trust.
 
-**The default status is `draft`.** A post goes live only when you pass `--status published`, set `status: published` in frontmatter, or set `defaults.status` to `published` in `~/.openpub/config.json`. `--status` and `--to` require a value, and flags may come before the filename (`openpub publish --dry-run post.md`).
+**The default status is `draft`.** A post goes live only when you pass `--status published`, set `status: published` in frontmatter, or set `defaults.status` to `published` in `~/.openpub/config.json`. GitHub Pages commits Markdown to a repository and can trigger a public site build even for draft status. Use `--dry-run` until approved. `--status` and `--to` require a value, and flags may come before the filename (`node apps/cli/dist/index.js publish --dry-run post.md`).
 
 ## Platforms
 

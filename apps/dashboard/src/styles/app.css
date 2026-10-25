@@ -97,7 +97,7 @@ body {
 .landing > nav, .landing > section, .landing > header, .landing footer > div { max-width: 1200px; padding-inline: 32px; }
 .landing > nav { min-height: 88px; padding-block: 22px; }
 .landing > nav > div { font-family: var(--font-sans); font-size: 15px; gap: 26px; }
-.landing .lp-hero { padding-top: 24px; padding-bottom: 0; }
+.landing .lp-hero { padding-top: 24px; padding-bottom: 40px; }
 .lp-hero > div:first-child { padding: 6px 14px; border-color: var(--surface3); background: var(--surface2); color: var(--fg4); font: 500 13px var(--font-sans); }
 .lp-hero h1 { max-width: 820px; margin-top: 22px; font-size: clamp(42px, 5.4vw, 70px); line-height: 1.04; letter-spacing: -.035em; }
 .lp-hero h1 span { color: var(--dim); }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { enqueuePublish, publishConsumer } from '../apps/worker/src/publish'
 import { adapters } from '../apps/worker/src/platforms'
+import { refreshDraftStatus } from '../apps/worker/src/db'
 import type { Env, PlatformName } from '../apps/worker/src/types'
 
 type Row = Record<string, unknown>
@@ -88,7 +89,7 @@ function fakeD1() {
       },
       all: async () => ({
         results: sql.includes('FROM publish_log')
-          ? [...log.values()]
+          ? [...log.values()].filter(r => !sql.includes('WHERE draft_id = ?') || r.draft_id === args[0])
           : sql.includes('FROM drafts')
             ? [...drafts.values()]
             : [...cfg.values()],
@@ -117,6 +118,37 @@ const seed = async (d1: ReturnType<typeof fakeD1>, platforms: string[], content 
 }
 
 vi.stubGlobal('fetch', vi.fn())
+
+describe('refreshDraftStatus', () => {
+  it.each([
+    { platforms: ['devto', 'hashnode'], statuses: ['success', 'success'], expected: 'published' },
+    { platforms: ['devto', 'devto'], statuses: ['success'], expected: 'published' },
+    { platforms: ['devto', 'hashnode'], statuses: ['success'], expected: 'partial' },
+    { platforms: ['devto', 'hashnode'], statuses: ['success', 'queued'], expected: 'queued' },
+    { platforms: ['devto', 'hashnode'], statuses: ['success', 'publishing'], expected: 'queued' },
+    { platforms: ['devto'], statuses: ['failed'], expected: 'partial' },
+    { platforms: ['devto'], statuses: ['retryable'], expected: 'partial' },
+    { platforms: ['devto'], statuses: ['pending'], expected: 'partial' },
+    { platforms: ['devto'], statuses: [], expected: 'queued' },
+    { platforms: [], statuses: [], expected: 'queued' },
+  ])('rolls up $platforms with $statuses to $expected', async ({ platforms, statuses, expected }) => {
+    const d1 = fakeD1()
+    await seed(d1, platforms)
+    d1.drafts.get('d1')!.status = 'queued'
+    statuses.forEach((status, i) => d1.log.set(`d1:${platforms[i]}`, { draft_id: 'd1', platform: platforms[i], status }))
+    d1.log.set('d1:x', { draft_id: 'd1', platform: 'x', status: 'publishing' })
+    d1.log.set('other:devto', { draft_id: 'other', platform: 'devto', status: 'publishing' })
+    await refreshDraftStatus(d1.db, 'd1')
+    expect(d1.drafts.get('d1')!.status).toBe(expected)
+  })
+
+  it('does nothing when draft no longer exists', async () => {
+    const d1 = fakeD1()
+    d1.log.set('missing:devto', { draft_id: 'missing', platform: 'devto', status: 'success' })
+    await expect(refreshDraftStatus(d1.db, 'missing')).resolves.toBeUndefined()
+    expect(d1.drafts.size).toBe(0)
+  })
+})
 
 describe('enqueuePublish', () => {
   it('sends one queue message per platform', async () => {
@@ -213,6 +245,39 @@ describe('publishConsumer', () => {
     expect(pub).toHaveBeenCalledOnce()
     expect(b2.messages[0].ack).toHaveBeenCalled()
     pub.mockRestore()
+  })
+
+  it('publishes resolved metadata with stored fields winning over frontmatter and live status winning over draft', async () => {
+    const d1 = fakeD1()
+    const content = '---\ntitle: Markdown title\ntags:\n  - alpha\n  - beta\ncover_image: https://fm.example/cover.png\ncanonical_url: https://fm.example/post\nstatus: draft\n---\n# Body heading\n\nBody'
+    await seed(d1, ['devto'], content)
+    d1.drafts.get('d1')!.cover_image = 'https://stored.example/cover.png'
+    d1.drafts.get('d1')!.canonical_url = 'https://stored.example/post'
+    const { env } = makeEnv(d1)
+    d1.cfg.set('devto', { platform: 'devto', credentials: JSON.stringify(credsFor('devto')), enabled: 1 })
+    const pub = vi.spyOn(adapters.devto, 'publish').mockResolvedValue({ url: 'https://dev.to/a' })
+    await publishConsumer(batch({ draftId: 'd1', platform: 'devto' }) as never, env)
+    expect(pub.mock.calls[0][0]).toMatchObject({
+      title: 'T', tags: ['alpha', 'beta'], coverImage: 'https://stored.example/cover.png',
+      canonicalUrl: 'https://stored.example/post', status: 'published',
+      markdown: '# Body heading\n\nBody',
+    })
+    pub.mockRestore()
+  })
+
+  it.each(['https://localhost/preview', 'http://127.0.0.1/admin'])('filters unsafe frontmatter canonical %s before adapter dispatch', async canonical => {
+    const d1 = fakeD1()
+    await seed(d1, ['devto'], `---\ncanonical_url: ${canonical}\n---\n# Body\n\nPost`)
+    const { env } = makeEnv(d1)
+    d1.cfg.set('devto', { platform: 'devto', credentials: JSON.stringify(credsFor('devto')), enabled: 1 })
+    const pub = vi.spyOn(adapters.devto, 'publish').mockResolvedValue({ url: 'https://dev.to/a' })
+    try {
+      await publishConsumer(batch({ draftId: 'd1', platform: 'devto' }) as never, env)
+      expect(pub).toHaveBeenCalledOnce()
+      expect(pub.mock.calls[0][0].canonicalUrl).toBeUndefined()
+    } finally {
+      pub.mockRestore()
+    }
   })
 
   it('finishes subset publishing as partial without waiting for unselected platforms', async () => {
@@ -313,5 +378,10 @@ describe('extractTags (via publishConsumer input)', () => {
   it('caps at 6 tags', async () => {
     expect(await tagsFor('---\ntags: [a, b, c, d, e, f, g, h]\n---\nbody'))
       .toEqual(['a', 'b', 'c', 'd', 'e', 'f'])
+  })
+
+  it('parses CRLF block-list tags and retains the six-tag Worker adapter limit', async () => {
+    expect(await tagsFor('---\r\ntags:\r\n  - alpha\r\n  - "beta two"\r\n  - gamma\r\n  - delta\r\n  - epsilon\r\n  - zeta\r\n  - eta\r\n---\r\n# Body'))
+      .toEqual(['alpha', 'beta two', 'gamma', 'delta', 'epsilon', 'zeta'])
   })
 })

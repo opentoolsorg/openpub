@@ -6,21 +6,26 @@ Publish one Markdown file to dev.to, Hashnode, WordPress, Ghost, Medium, Substac
 
 ## Install
 
+Build from source; the npm package is not released yet:
+
 ```bash
-npm install -g openpub-cli
+git clone https://github.com/princepal9120/openpub.git
+cd openpub
+npm ci
+npm run cli:build
 ```
 
 ## Quick start
 
 ```bash
-# Store credentials for a platform. They never leave your machine.
-openpub setup devto '{"api_key": "dv1_..."}'
+# Store credentials for a platform using a private JSON file outside the repo.
+node apps/cli/dist/index.js setup devto /absolute/private/path/devto.json
 
 # See what is configured and reachable.
-openpub status
+node apps/cli/dist/index.js status
 
-# Publish. Platforms come from --to, or from the file's frontmatter.
-openpub publish post.md --to devto,hashnode,github-pages
+# Prepare an explicit-target dry run. Draft is the default.
+node apps/cli/dist/index.js publish post.md --to devto,hashnode --status draft --dry-run
 ```
 
 ## Commands
@@ -38,7 +43,7 @@ openpub publish post.md --to devto,hashnode,github-pages
 
 `publish` flags: `--to a,b,c`, `--status draft|published`, `--canonical <url>`, `--dry-run`, `--force`.
 
-Full docs: https://openpub.princslabs.workers.dev/docs
+Full docs: https://openpub.princepal.dev/docs
 
 ## License
 

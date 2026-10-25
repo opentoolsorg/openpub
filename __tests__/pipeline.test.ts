@@ -25,6 +25,13 @@ describe('runtime-neutral publish pipeline', () => {
     expect(source.canonicalUrl).toBe('http://localhost/admin')
   })
 
+  it('preserves an already extracted body that begins with Markdown separators', async () => {
+    const markdown = '---\nAn article section\n---\n\nBody.'
+    const prepared = await preparePost({ ...post, markdown })
+    expect(prepared.markdown).toBe(markdown)
+    expect(prepared.html).toContain('An article section')
+  })
+
   it('rejects empty content before dispatch', async () => {
     await expect(preparePost({ ...post, title: ' ' })).rejects.toThrow('title is empty')
     await expect(preparePost({ ...post, markdown: ' ' })).rejects.toThrow('post body is empty')

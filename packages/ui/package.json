@@ -7,9 +7,13 @@
     "./logo": "./src/logo.tsx",
     "./theme-toggle": "./src/theme-toggle.tsx",
     "./not-found": "./src/not-found.tsx",
-    "./default-catch-boundary": "./src/default-catch-boundary.tsx"
+    "./default-catch-boundary": "./src/default-catch-boundary.tsx",
+    "./docs-page": "./src/docs-page.tsx",
+    "./github-label": "./src/github-label.tsx"
   },
-  "scripts": { "typecheck": "tsc --noEmit" },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "peerDependencies": {
     "react": ">=19",
     "@tanstack/react-router": "^1.170.44"

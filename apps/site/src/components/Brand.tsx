@@ -7,7 +7,7 @@ export const platforms = [
   { name: 'Ghost', logo: 'ghost', hex: '#15171A' },
   { name: 'Medium', logo: 'medium', hex: '#000000' },
   { name: 'Substack', logo: 'substack', hex: '#FF6719' },
-  { name: 'GitHub Pages', logo: 'github', hex: '#181717' },
+  { name: 'Your Pages', logo: 'github', hex: '#181717' },
   { name: 'X Articles', logo: 'x', hex: '#000000' },
 ]
 

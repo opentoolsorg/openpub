@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
+import { resolvePostMetadata } from "@openpub/core/post"
 import { Logo, Mark } from "~/components/Logo"
 
 export const Route = createFileRoute("/app")({
@@ -98,7 +99,7 @@ const PLATFORM_DETAILS: Record<PlatformKey, PlatformMeta> = {
     fieldPlaceholders: { connect_sid: "s%3A...", publication_url: "https://yourname.substack.com" },
   },
   "github-pages": {
-    name: "GitHub Pages",
+    name: "Your Pages",
     cap: "Commits markdown post file to your GitHub repository",
     note: "Commits the file to your repo",
     where: "github.com/settings/tokens (classic with repo scope)",
@@ -225,47 +226,8 @@ function getSystemTheme(): "dark" | "light" {
   return "dark"
 }
 
-function parseFrontmatterAndContent(raw: string) {
-  let content = raw
-  const frontmatter: Record<string, string | string[]> = {}
-  if (raw.startsWith("---")) {
-    const end = raw.indexOf("\n---", 3)
-    if (end !== -1) {
-      const yaml = raw.slice(3, end).trim()
-      content = raw.slice(end + 4).trim()
-      yaml.split("\n").forEach((line) => {
-        const idx = line.indexOf(":")
-        if (idx !== -1) {
-          const k = line.slice(0, idx).trim()
-          const v = line.slice(idx + 1).trim()
-          if (v.startsWith("[") && v.endsWith("]")) {
-            frontmatter[k] = v
-              .slice(1, -1)
-              .split(",")
-              .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-              .filter(Boolean)
-          } else {
-            frontmatter[k] = v.replace(/^["']|["']$/g, "")
-          }
-        }
-      })
-    }
-  }
-  return { content, frontmatter }
-}
-
 function extractTitle(md: string): string | undefined {
-  const parsed = parseFrontmatterAndContent(md)
-  if (parsed.frontmatter.title && typeof parsed.frontmatter.title === "string") {
-    return parsed.frontmatter.title
-  }
-  return (
-    md
-      .split("\n")
-      .find((l) => l.startsWith("#"))
-      ?.replace(/^#+\s*/, "")
-      .trim() || undefined
-  )
+  return resolvePostMetadata(md).title
 }
 
 function getDomainFromUrl(url: string): string {
@@ -1339,19 +1301,14 @@ function EditorView({
 }
 
 function MarkdownPreview({ content }: { content: string }) {
-  const { content: body, frontmatter } = parseFrontmatterAndContent(content)
+  const { body, title, tags } = resolvePostMetadata(content)
   const lines = body.split("\n")
-  const tags = Array.isArray(frontmatter.tags)
-    ? frontmatter.tags
-    : typeof frontmatter.tags === "string"
-      ? [frontmatter.tags]
-      : []
 
   return (
     <div className="space-y-4 text-sm leading-relaxed text-(--fg2)">
-      {frontmatter.title && (
+      {title && (
         <h1 className="text-2xl font-bold tracking-tight text-(--fg)">
-          {String(frontmatter.title)}
+          {title}
         </h1>
       )}
 

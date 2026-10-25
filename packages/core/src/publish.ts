@@ -5,7 +5,7 @@ import type {
   Frontmatter, PlatformName, PublishInput, PublishReport,
 } from './types'
 import { PLATFORMS } from './types'
-import { parseFrontmatter } from './frontmatter'
+import { resolvePostMetadata } from './post'
 import { adapters } from './adapters'
 import { configuredPlatforms, getCreds, loadConfig } from './config'
 import { hashContent, loadState, saveState, stateKey } from './state'
@@ -19,11 +19,6 @@ export interface PublishOptions {
   canonical?: string
   force?: boolean
   onProgress?: (msg: string) => void
-}
-
-function firstHeading(body: string): string | undefined {
-  const m = body.match(/^\s*#{1,6}\s+(.+)$/m)
-  return m?.[1]?.trim()
 }
 
 export function resolvePlatforms(data: Frontmatter, opts: PublishOptions): PlatformName[] {
@@ -44,14 +39,15 @@ export function resolvePlatforms(data: Frontmatter, opts: PublishOptions): Platf
 export async function publishFile(file: string, opts: PublishOptions = {}): Promise<PublishReport> {
   const abs = resolve(file)
   const raw = readFileSync(abs, 'utf8')
-  const { data, body } = parseFrontmatter(raw)
-  const title = (data.title ?? firstHeading(body) ?? basename(abs).replace(/\.mdx?$/, '')).trim()
+  const resolved = resolvePostMetadata(raw, { status: opts.status, canonicalUrl: opts.canonical, fallbackTitle: basename(abs).replace(/\.mdx?$/, '') })
+  const { data, body } = resolved
+  const title = resolved.title?.trim() ?? ''
   if (!title) throw new Error('refusing to publish: title is empty')
   if (!body.trim()) throw new Error('refusing to publish: post body is empty')
   // Draft is the safe default. Live publishing has to be asked for.
-  const status = opts.status ?? data.status ?? loadConfig().defaults?.status ?? 'draft'
+  const status = resolved.status ?? loadConfig().defaults?.status ?? 'draft'
   const warnings: string[] = []
-  const requestedCanonical = opts.canonical ?? data.canonical_url
+  const requestedCanonical = resolved.canonicalUrl
   let canonical = requestedCanonical
   if (requestedCanonical && !isPublicCanonicalUrl(requestedCanonical)) {
     warnings.push('ignoring non-public canonical URL')
@@ -61,10 +57,10 @@ export async function publishFile(file: string, opts: PublishOptions = {}): Prom
   const fullHash = hashContent(JSON.stringify({
     title,
     body,
-    tags: data.tags,
+    tags: resolved.tags,
     status,
     canonical: canonical ?? '',
-    cover: data.cover_image ?? '',
+    cover: resolved.coverImage ?? '',
     slug: data.slug ?? '',
   }))
   // Entries written before title and tags were part of the hash stored hash(body).
@@ -75,7 +71,7 @@ export async function publishFile(file: string, opts: PublishOptions = {}): Prom
     throw new Error('no platforms selected: add `platforms: [devto, hashnode]` to frontmatter, pass --to, or run `openpub setup <platform>`')
   }
 
-  const prepared = await preparePost({ title, markdown: body, tags: data.tags, status, canonicalUrl: canonical, coverImage: data.cover_image, slug: data.slug })
+  const prepared = await preparePost({ title, markdown: body, tags: resolved.tags, status, canonicalUrl: canonical, coverImage: resolved.coverImage, slug: data.slug })
   const state = loadState()
   const report: PublishReport = {
     file: abs,
@@ -130,9 +126,9 @@ export async function publishFile(file: string, opts: PublishOptions = {}): Prom
       title,
       markdown: body,
       html: prepared.html,
-      tags: data.tags,
+      tags: resolved.tags,
       canonicalUrl: report.canonical,
-      coverImage: data.cover_image,
+      coverImage: resolved.coverImage,
       status,
       remoteId: prev?.id,
       remoteStatus: prev?.remoteStatus,

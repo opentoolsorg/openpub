@@ -2,6 +2,7 @@ import { preparePost, publishPost } from '@openpub/core'
 import { adapters } from './platforms'
 import * as db from './db'
 import type { Env, PlatformName, PublishInput } from './types'
+import { resolvePostMetadata } from '@openpub/core/post'
 import { isPublicCanonicalUrl } from '@openpub/core/url'
 
 function rid(): string {
@@ -45,19 +46,6 @@ export async function enqueuePublish(env: Env, draftId: string, onlyPlatform?: P
   return jobs
 }
 
-async function refreshDraftStatus(db_: D1Database, draftId: string) {
-  const draft = await db.getDraft(db_, draftId)
-  if (!draft) return
-  const want = new Set(draft.platforms as string[])
-  const { results } = await db_.prepare(
-    `SELECT platform, status FROM publish_log WHERE draft_id = ?`).bind(draftId).all<{ platform: string; status: string }>()
-  const rows = results.filter(r => want.has(r.platform))
-  if (rows.some(r => r.status === 'queued' || r.status === 'publishing')) return
-  const done = rows.filter(r => r.status === 'success').length
-  if (done === want.size && want.size > 0) await db.setDraftStatus(db_, draftId, 'published')
-  else if (rows.length > 0) await db.setDraftStatus(db_, draftId, 'partial')
-}
-
 // 4xx = permanent: retrying won't help (bad creds, bad request). 5xx/network = transient.
 const permanent = (e: unknown) =>
   e instanceof Error && (/missing draft or creds|not in draft platforms/.test(e.message) || /\b4\d{2}\b/.test(e.message))
@@ -80,29 +68,33 @@ export async function publishConsumer(batch: MessageBatch<{ draftId: string; pla
       const draft = await db.getDraft(env.DB, draftId)
       if (draft && !(draft.platforms as string[]).includes(platform)) {
         await db.finishPublish(env.DB, draftId, platform, 'failed', undefined, 'platform no longer selected')
-        await refreshDraftStatus(env.DB, draftId)
+        await db.refreshDraftStatus(env.DB, draftId)
         msg.ack()
         continue
       }
       const creds = await db.getCreds(env.DB, platform)
       if (!draft || !creds) throw new Error(`missing draft or creds for ${platform}`)
 
-      const canonicalUrl = draft.canonical_url && isPublicCanonicalUrl(draft.canonical_url)
-        ? draft.canonical_url
-        : undefined
-      const input: PublishInput = await preparePost({
-        title: draft.title ?? 'Untitled',
-        markdown: draft.content,
-        tags: extractTags(draft.content),
-        canonicalUrl,
-        coverImage: draft.cover_image ?? undefined,
+      const metadata = resolvePostMetadata(draft.content, {
+        title: draft.title,
+        coverImage: draft.cover_image,
+        canonicalUrl: draft.canonical_url,
         status: 'published',
+        fallbackTitle: 'Untitled',
+      })
+      const input: PublishInput = await preparePost({
+        title: metadata.title ?? 'Untitled',
+        markdown: metadata.body,
+        tags: metadata.tags.slice(0, 6),
+        canonicalUrl: metadata.canonicalUrl,
+        coverImage: metadata.coverImage,
+        status: metadata.status ?? 'published',
       })
       const result = await publishPost(platform, input, creds)
       try {
         await db.finishPublish(env.DB, draftId, platform, 'success', result.url)
         if (!draft.canonical_url && isPublicCanonicalUrl(result.url)) await db.setCanonical(env.DB, draftId, result.url)
-        await refreshDraftStatus(env.DB, draftId)
+        await db.refreshDraftStatus(env.DB, draftId)
       } catch { /* post is live; log write failed — leave 'publishing' so a retry reports honestly */ }
       msg.ack()
     } catch (e) {
@@ -111,16 +103,10 @@ export async function publishConsumer(batch: MessageBatch<{ draftId: string; pla
       try {
         // transient -> 'retryable' so queue redelivery re-claims; permanent -> 'failed'
         await db.finishPublish(env.DB, draftId, platform, perm ? 'failed' : 'retryable', undefined, sanitize(e, creds))
-        await refreshDraftStatus(env.DB, draftId)
+        await db.refreshDraftStatus(env.DB, draftId)
       } catch { /* ignore log failure */ }
       if (perm) msg.ack() // don't burn retries on a request that will never succeed
       else msg.retry()
     }
   }
-}
-
-function extractTags(content: string): string[] {
-  const m = content.match(/^---[\s\S]*?tags:\s*\[([^\]]*)\][\s\S]*?---/)
-  if (!m) return []
-  return m[1].split(',').map(t => t.trim().replace(/['"]/g, '')).filter(Boolean).slice(0, 6)
 }

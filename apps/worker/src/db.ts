@@ -58,6 +58,19 @@ export async function setDraftStatus(db: D1Database, id: string, status: string)
   await db.prepare('UPDATE drafts SET status = ? WHERE id = ?').bind(status, id).run()
 }
 
+export async function refreshDraftStatus(db: D1Database, draftId: string) {
+  const draft = await getDraft(db, draftId)
+  if (!draft) return
+  const want = new Set(draft.platforms as string[])
+  const { results } = await db.prepare(
+    `SELECT platform, status FROM publish_log WHERE draft_id = ?`).bind(draftId).all<{ platform: string; status: string }>()
+  const rows = results.filter(r => want.has(r.platform))
+  if (rows.some(r => r.status === 'queued' || r.status === 'publishing')) return
+  const done = rows.filter(r => r.status === 'success').length
+  if (done === want.size && want.size > 0) await setDraftStatus(db, draftId, 'published')
+  else if (rows.length > 0) await setDraftStatus(db, draftId, 'partial')
+}
+
 export async function setCanonical(db: D1Database, id: string, url: string) {
   await db.prepare('UPDATE drafts SET canonical_url = ? WHERE id = ? AND canonical_url IS NULL').bind(url, id).run()
 }
@@ -92,6 +105,11 @@ export async function claimPublish(db: D1Database, id: string, draftId: string, 
      WHERE draft_id = ? AND platform = ? AND (status IN ('queued', 'retryable') OR (status = 'publishing' AND created_at < ?))`)
     .bind(draftId, platform, stale).run()
   return re.meta.changes === 1
+}
+
+export async function retryPublish(db: D1Database, draftId: string, platform: string) {
+  await db.prepare("UPDATE publish_log SET status = 'retryable' WHERE draft_id = ? AND platform = ? AND status = 'failed'")
+    .bind(draftId, platform).run()
 }
 
 export async function finishPublish(db: D1Database, draftId: string, platform: string, status: string, url?: string, error?: string) {
