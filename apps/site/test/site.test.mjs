@@ -15,8 +15,12 @@ test('prerender includes accessible setup controls and safe source-build command
   assert.doesNotMatch(html, /GitHub Action|uses: princepal9120|npx openpub-/)
 })
 
-test('prerender retains platform limits, theme bootstrap and sample-only preview', () => {
-  for (const text of ['Medium', 'Substack', 'X Articles', 'GitHub Pages', 'Draft only', 'Create only', 'Sample content', 'Nothing goes live']) assert.ok(html.includes(text), text)
+test('prerender retains platform limits, theme bootstrap and current landing content', () => {
+  for (const text of ['Medium', 'Substack', 'X Articles', 'GitHub Pages', 'Draft only', 'Create only', 'Nothing goes live']) assert.ok(html.includes(text), text)
+  assert.equal((html.match(/<article class="bn(?: bn-featured)?"/g) || []).length, 6)
+  assert.equal((html.match(/<article class="bn bn-featured"/g) || []).length, 2)
+  assert.doesNotMatch(html, /<section[^>]*(?:id="preview"|class="[^"]*preview)/i)
+  assert.ok(html.includes('node apps/cli/dist/index.js publish post.md --dry-run'))
   assert.ok(html.includes("localStorage.getItem('op-theme')"))
   assert.ok(html.includes('prefers-color-scheme: light'))
   assert.ok(html.includes('Skip to content'))
