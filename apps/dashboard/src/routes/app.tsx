@@ -154,45 +154,54 @@ type Api = (p: string, m?: string, b?: unknown) => Promise<Record<string, unknow
 type Tab = "drafts" | "editor" | "log" | "platforms" | "settings"
 
 function useApi() {
-  const [base, setBaseState] = React.useState(
-    () => (typeof window !== "undefined" ? localStorage.getItem("op-base") || DEFAULT_BASE : DEFAULT_BASE),
+  const [base] = React.useState(
+    () => (typeof window !== "undefined"
+      ? (import.meta.env.DEV ? "http://localhost:8788" : window.location.origin)
+      : DEFAULT_BASE),
   )
-  const [key, setKeyState] = React.useState(
-    () => (typeof window !== "undefined" ? localStorage.getItem("op-key") || "" : ""),
-  )
+  const [authenticated, setAuthenticated] = React.useState(false)
+  const [setupRequired, setSetupRequired] = React.useState(false)
+  const [authLoading, setAuthLoading] = React.useState(true)
+  const [authError, setAuthError] = React.useState("")
 
-  const setBase = (b: string) => {
-    const v = b.replace(/\/$/, "")
-    try {
-      localStorage.setItem("op-base", v)
-    } catch {}
-    setBaseState(v)
-  }
-  const setKey = (k: string) => {
-    try {
-      localStorage.setItem("op-key", k)
-    } catch {}
-    setKeyState(k)
-  }
+  const checkAuth = React.useCallback(() => {
+    setAuthLoading(true)
+    setAuthError("")
+    return fetch(base + "/api/auth/status", { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Login service returned ${res.status}. Try again shortly.`)
+        return res.json() as Promise<{ authenticated?: boolean; setupRequired?: boolean }>
+      })
+      .then((data) => {
+        setAuthenticated(Boolean(data.authenticated))
+        setSetupRequired(Boolean(data.setupRequired))
+      })
+      .catch((error) => setAuthError((error as Error).message || "Could not reach the login service. Check your connection and try again."))
+      .finally(() => setAuthLoading(false))
+  }, [base])
+
+  React.useEffect(() => {
+    try { localStorage.removeItem("op-key") } catch {}
+    checkAuth()
+  }, [checkAuth])
 
   const api = React.useCallback<Api>(
     async (path, method = "GET", body) => {
       const res = await fetch(base + "/api" + path, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + key,
-        },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: body ? JSON.stringify(body) : undefined,
       })
+      if (res.status === 401) setAuthenticated(false)
       const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
       if (!res.ok) throw new Error((data.error as string) || res.statusText || "Request failed")
       return data
     },
-    [base, key],
+    [base],
   )
 
-  return { base, key, setBase, setKey, api }
+  return { base, api, authenticated, setAuthenticated, authLoading, authError, checkAuth, setupRequired }
 }
 
 function useToast() {
@@ -286,10 +295,65 @@ export function App() {
 }
 
 function MainApp() {
-  const { base, key, setBase, setKey, api } = useApi()
+  const { base, api, authenticated, setAuthenticated, authLoading, authError, checkAuth, setupRequired } = useApi()
+  const [theme, setTheme] = React.useState<"dark" | "light">(getSystemTheme)
+
+  const toggleTheme = React.useCallback(
+    (target?: "dark" | "light") => {
+      const next = target || (theme === "dark" ? "light" : "dark")
+      setTheme(next)
+      if (typeof document !== "undefined") {
+        document.documentElement.classList.toggle("light", next === "light")
+        try {
+          localStorage.setItem("op-theme", next)
+        } catch {}
+        const meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute("content", next === "light" ? "#fafaf9" : "#0a0c0b")
+      }
+    },
+    [theme],
+  )
+
+  if (authLoading) {
+    return <div className="min-h-screen bg-(--bg)" role="status" aria-label="Checking login" />
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-(--bg) text-(--fg) p-6 flex items-center justify-center">
+        <div role="alert" className="max-w-md rounded-2xl border border-(--danger)/35 bg-(--surface) p-8 space-y-3">
+          <h1 className="font-semibold">Could not check your session</h1>
+          <p className="text-sm text-(--dim)">{authError} Your login status is unknown.</p>
+          <button type="button" onClick={() => { checkAuth() }} className="text-sm font-semibold text-(--accent)">Try again</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <OnboardingView
+        base={base}
+        setupRequired={setupRequired}
+        onAuthenticated={() => { checkAuth() }}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    )
+  }
+
+  return <ConsoleApp base={base} api={api} setAuthenticated={setAuthenticated} theme={theme} toggleTheme={toggleTheme} />
+}
+
+function ConsoleApp({ base, api, setAuthenticated, theme, toggleTheme }: {
+  base: string
+  api: Api
+  setAuthenticated: (value: boolean) => void
+  theme: "dark" | "light"
+  toggleTheme: (target?: "dark" | "light") => void
+}) {
   const { msg, toast } = useToast()
   const [tab, setTab] = React.useState<Tab>("drafts")
-  const [theme, setTheme] = React.useState<"dark" | "light">(getSystemTheme)
 
   // Editor shared state
   const [editorDraftId, setEditorDraftId] = React.useState<string | null>(null)
@@ -310,25 +374,8 @@ function MainApp() {
   const [configuredPlatforms, setConfiguredPlatforms] = React.useState<string[]>([])
   const [recentFailure, setRecentFailure] = React.useState<string | null>(null)
 
-  const toggleTheme = React.useCallback(
-    (target?: "dark" | "light") => {
-      const next = target || (theme === "dark" ? "light" : "dark")
-      setTheme(next)
-      if (typeof document !== "undefined") {
-        document.documentElement.classList.toggle("light", next === "light")
-        try {
-          localStorage.setItem("op-theme", next)
-        } catch {}
-        const meta = document.querySelector('meta[name="theme-color"]')
-        if (meta) meta.setAttribute("content", next === "light" ? "#fafaf9" : "#0a0c0b")
-      }
-    },
-    [theme],
-  )
-
   // Load configured platforms for cross-tab awareness
   const refreshStatus = React.useCallback(async () => {
-    if (!key) return
     try {
       const d = (await api("/status")) as unknown as { platforms: { platform: string }[] }
       const configured = (d.platforms || []).map((p) => p.platform)
@@ -339,11 +386,10 @@ function MainApp() {
         return valid
       })
     } catch {}
-  }, [api, key])
+  }, [api])
 
   // Check recent failures for the attention banner
   const checkFailures = React.useCallback(async () => {
-    if (!key) return
     try {
       const h = (await api("/history")) as unknown as { history: HistoryRow[] }
       const rows = h.history || []
@@ -354,14 +400,12 @@ function MainApp() {
         setRecentFailure(null)
       }
     } catch {}
-  }, [api, key])
+  }, [api])
 
   React.useEffect(() => {
-    if (key) {
-      refreshStatus()
-      checkFailures()
-    }
-  }, [key, refreshStatus, checkFailures])
+    refreshStatus()
+    checkFailures()
+  }, [refreshStatus, checkFailures])
 
   const openInEditor = (id: string, content: string, platforms: string[], cover?: string | null) => {
     setEditorDraftId(id)
@@ -378,23 +422,6 @@ function MainApp() {
     setEditorSel(new Set(configuredPlatforms.length ? [configuredPlatforms[0]] : []))
     setEditorCover("")
     setTab("editor")
-  }
-
-  if (!key) {
-    return (
-      <OnboardingView
-        base={base}
-        setBase={setBase}
-        message={msg}
-        onKey={(newKey) => {
-          setKey(newKey)
-          toast("Connected to OpenPub")
-        }}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        toast={toast}
-      />
-    )
   }
 
   return (
@@ -435,21 +462,9 @@ function MainApp() {
               }
             />
             <NavItem
-              active={tab === "editor"}
-              onClick={() => setTab("editor")}
-              label="Editor"
-              icon={
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-              }
-            />
-            <NavItem
               active={tab === "log"}
               onClick={() => setTab("log")}
               label="Publish log"
-              badge={recentFailure ? "alert" : undefined}
               icon={
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M4 6h16M4 12h16M4 18h10" />
@@ -460,7 +475,6 @@ function MainApp() {
               active={tab === "platforms"}
               onClick={() => setTab("platforms")}
               label="Platforms"
-              count={`${configuredPlatforms.length}/${PLATFORMS.length}`}
               icon={
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="6" cy="12" r="2" />
@@ -534,6 +548,7 @@ function MainApp() {
               })
             }}
             onGoToLog={() => setTab("log")}
+            onGoToPlatforms={() => setTab("platforms")}
             recentFailure={recentFailure}
           />
         )}
@@ -573,6 +588,7 @@ function MainApp() {
           <LogView
             api={api}
             toast={toast}
+            onGoToDrafts={() => setTab("drafts")}
             onRetry={async (draftId, platform) => {
               await api(`/history/${draftId}/${platform}/retry`, "POST")
               await checkFailures()
@@ -592,12 +608,13 @@ function MainApp() {
         {tab === "settings" && (
           <SettingsView
             base={base}
-            setBase={setBase}
             onSignOut={() => {
-              try {
-                localStorage.removeItem("op-key")
-              } catch {}
-              setKey("")
+              fetch(base + "/api/auth/logout", { method: "POST", credentials: "include" })
+                .then((res) => {
+                  if (!res.ok) throw new Error(`Server returned ${res.status}`)
+                  setAuthenticated(false)
+                })
+                .catch((error) => toast(`Sign out failed: ${(error as Error).message}. Try again.`))
             }}
             theme={theme}
             toggleTheme={toggleTheme}
@@ -726,6 +743,7 @@ function DraftsView({
   onStartNewDraft,
   onPublishDraft,
   onGoToLog,
+  onGoToPlatforms,
   recentFailure,
 }: {
   api: Api
@@ -734,6 +752,7 @@ function DraftsView({
   onStartNewDraft: () => void
   onPublishDraft: (d: Draft) => void
   onGoToLog: () => void
+  onGoToPlatforms?: () => void
   recentFailure: string | null
 }) {
   const [drafts, setDrafts] = React.useState<Draft[]>([])
@@ -869,33 +888,48 @@ function DraftsView({
       ) : loadError ? (
         <div role="alert" className="rounded-2xl border border-(--danger)/35 bg-(--surface) p-8 space-y-3">
           <h2 className="font-semibold text-(--fg)">Could not load drafts</h2>
-          <p className="text-sm text-(--dim)">{loadError} Check your instance URL and admin key in Settings.</p>
+          <p className="text-sm text-(--dim)">{loadError} Check your connection and try again. If your session expired, sign in again with your instance password.</p>
           <button type="button" onClick={() => { setLoading(true); loadDrafts() }} className="text-sm font-semibold text-(--accent)">Try again</button>
         </div>
       ) : filteredDrafts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-(--border) bg-(--surface)/40 space-y-4">
-          <div className="w-12 h-12 rounded-full border border-(--border) flex items-center justify-center text-(--accent)">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-              <path d="M14 3v5h5" />
-            </svg>
-          </div>
+        <div className="flex flex-col items-start gap-4 p-12 sm:p-14 rounded-2xl border border-dashed border-(--border) bg-(--surface) text-left">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-(--accent)" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+            <path d="M14 3v5h5" />
+            <path d="M9 13h6M9 17h4" />
+          </svg>
           <div>
-            <h2 className="text-base font-semibold text-(--fg)">{filter === "all" ? "Your first post starts here." : "No drafts match this filter."}</h2>
-            <p className="text-xs text-(--dim) max-w-sm mt-1">
-              Write in Markdown, pick platforms, and save. Nothing is sent until you publish.
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-(--fg)">
+              {filter === "all" ? "No drafts on this instance yet" : "No drafts match this filter"}
+            </h2>
+            <p className="mt-2 max-w-xl text-base leading-relaxed text-(--dim)">
+              {filter === "all"
+                ? "Write in Markdown, pick where it goes, and save. Nothing is sent to a platform until you press Publish."
+                : "Try selecting a different filter pill above to view drafts."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onStartNewDraft}
-            className="px-4 py-2 rounded-xl bg-(--accent-strong) text-(--on-accent) font-semibold text-xs cursor-pointer"
-          >
-            Write your first draft
-          </button>
+          <div className="flex flex-wrap gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={onStartNewDraft}
+              className="inline-flex items-center min-h-11 px-5 rounded-xl bg-(--accent-strong) text-(--on-accent) font-semibold text-sm cursor-pointer hover:bg-(--accent) transition-colors"
+            >
+              Write your first draft
+            </button>
+            {onGoToPlatforms && (
+              <button
+                type="button"
+                onClick={onGoToPlatforms}
+                className="inline-flex items-center min-h-11 px-5 rounded-xl border border-(--border) bg-transparent text-(--fg) font-medium text-sm cursor-pointer hover:border-(--surface4) transition-colors"
+              >
+                Connect a platform first
+              </button>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <div className="space-y-3">
           {filteredDrafts.map((d) => (
             <article
               key={d.id}
@@ -972,7 +1006,7 @@ function DraftsView({
                   className="p-3.5 rounded-xl border border-red-500/35 bg-red-500/10 flex flex-wrap items-center justify-between gap-3 text-xs"
                 >
                   <span className="text-(--fg2)">
-                    Delete this draft and its log records? Live platform posts will not be deleted.
+                    Delete this draft <strong className="font-semibold">and its publish log</strong> from the instance? Posts already live on platforms stay up.
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -995,6 +1029,10 @@ function DraftsView({
               )}
             </article>
           ))}
+          </div>
+          <p className="text-xs text-(--dim)">
+            Drafts published from the CLI or GitHub Action live in their own local ledger and don't appear here.
+          </p>
         </div>
       )}
     </div>
@@ -1679,10 +1717,12 @@ function LogView({
   api,
   toast,
   onRetry,
+  onGoToDrafts,
 }: {
   api: Api
   toast: (m: string) => void
   onRetry: (draftId: string, platform: string) => Promise<unknown>
+  onGoToDrafts?: () => void
 }) {
   const [rows, setRows] = React.useState<HistoryRow[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -1790,20 +1830,30 @@ function LogView({
       ) : loadError ? (
         <div role="alert" className="rounded-2xl border border-(--danger)/35 bg-(--surface) p-8 space-y-3">
           <h2 className="font-semibold text-(--fg)">Could not load the publish log</h2>
-          <p className="text-sm text-(--dim)">{loadError} Check your instance URL and admin key in Settings, then refresh.</p>
+          <p className="text-sm text-(--dim)">{loadError} Check your connection and try again. If your session expired, sign in again with your instance password.</p>
           <button type="button" onClick={() => { setLoading(true); loadHistory() }} className="text-sm font-semibold text-(--accent)">Try again</button>
         </div>
       ) : filteredRows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-(--border) bg-(--surface)/40 space-y-3">
-          <div className="w-10 h-10 rounded-full border border-(--border) flex items-center justify-center text-(--dim)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-              <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h2 className="text-sm font-semibold text-(--fg)">{filter === "all" ? "No publish attempts yet." : "No attempts match this filter."}</h2>
-          <p className="text-xs text-(--dim) max-w-sm">
-            Publish a draft and each platform's status and live link will show up here.
-          </p>
+        <div className="flex flex-col items-start gap-2 p-8 rounded-2xl border border-dashed border-(--border) bg-(--surface) text-left">
+          <strong className="text-base font-semibold text-(--fg)">
+            {filter === "all" ? "Nothing published yet" : filter === "fail" || filter === "retry" ? "Nothing needs attention" : "No entries match this filter"}
+          </strong>
+          <span className="text-sm text-(--dim)">
+            {filter === "all"
+              ? "Publish a draft and each platform's result appears here, with its live link or error."
+              : filter === "fail" || filter === "retry"
+                ? "No failed or retrying platforms in the latest 200 entries."
+                : "Try selecting a different filter pill above to view log entries."}
+          </span>
+          {filter === "all" && onGoToDrafts && (
+            <button
+              type="button"
+              onClick={onGoToDrafts}
+              className="mt-2 inline-flex items-center min-h-10 text-sm font-medium text-(--accent) hover:underline cursor-pointer"
+            >
+              Go to drafts
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -2039,12 +2089,24 @@ function PlatformsView({
 
   return (
     <div className="space-y-6">
-      {!embedded && <div>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-(--fg)">Platforms</h1>
-        <p className="text-sm text-(--dim) mt-1">
-          {configured.length} of 8 platforms connected on this instance.
-        </p>
-      </div>}
+      {!embedded && (
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-(--fg)">Platforms</h1>
+            <p className="text-sm text-(--dim) mt-1">
+              {configured.length} of 8 platforms connected on this instance.
+            </p>
+          </div>
+          {configured.length === 0 && (
+            <div className="p-4 rounded-xl border border-dashed border-(--border) bg-(--surface2)/30 space-y-1">
+              <strong className="text-sm font-semibold text-(--fg)">No platforms connected</strong>
+              <p className="text-xs text-(--dim)">
+                You can write and save drafts now. To publish, connect at least one platform below.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         {/* Left Column: Platform List */}
@@ -2197,27 +2259,18 @@ function PlatformsView({
 // -------------------------------------------------------------
 function SettingsView({
   base,
-  setBase,
   onSignOut,
   theme,
   toggleTheme,
   toast,
 }: {
   base: string
-  setBase: (b: string) => void
   onSignOut: () => void
   theme: "dark" | "light"
   toggleTheme: (t?: "dark" | "light") => void
   toast: (m: string) => void
 }) {
-  const [urlInput, setUrlInput] = React.useState(base)
   const [showSignOutConfirm, setShowSignOutConfirm] = React.useState(false)
-
-  const handleSaveBase = () => {
-    if (!urlInput.trim()) return
-    setBase(urlInput.trim())
-    toast("Instance URL saved")
-  }
 
   const mcpConfig = JSON.stringify(
     {
@@ -2247,42 +2300,13 @@ function SettingsView({
         </p>
       </div>
 
-      {/* Instance URL */}
-      <section aria-labelledby="instance-heading" className="space-y-3 pb-8 border-b border-(--border)">
-        <h2 id="instance-heading" className="text-lg font-semibold text-(--fg)">Instance</h2>
-        <div className="space-y-2">
-          <label htmlFor="inst-url" className="text-xs font-medium text-(--fg3)">
-            API base URL
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <input
-              id="inst-url"
-              type="url"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              className="flex-1 min-w-[280px] bg-(--surface) border border-(--border) focus:border-(--accent) text-(--fg) px-3.5 py-2.5 rounded-xl font-mono text-xs outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleSaveBase}
-              className="px-4 py-2.5 rounded-xl border border-(--border) hover:border-(--surface4) bg-(--surface) text-(--fg) text-xs font-semibold cursor-pointer transition-colors"
-            >
-              Save
-            </button>
-          </div>
-          <p className="text-xs text-(--dim)">
-            Your Worker only answers requests from its <code className="font-mono text-(--fg2)">DASHBOARD_URL</code>.
-          </p>
-        </div>
-      </section>
-
-      {/* Admin Key */}
-      <section aria-labelledby="key-heading" className="space-y-3 pb-8 border-b border-(--border)">
-        <h2 id="key-heading" className="text-lg font-semibold text-(--fg)">Admin Key</h2>
+      {/* Account */}
+      <section aria-labelledby="account-heading" className="space-y-3 pb-8 border-b border-(--border)">
+        <h2 id="account-heading" className="text-lg font-semibold text-(--fg)">Account</h2>
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-(--border) bg-(--surface)">
           <div>
-            <code className="font-mono text-sm tracking-widest text-(--fg)">•••• •••• •••• ••••</code>
-            <p className="text-xs text-(--dim) mt-0.5">Stored in this browser's localStorage</p>
+            <p className="text-sm font-medium text-(--fg)">Instance password</p>
+            <p className="text-xs text-(--dim) mt-0.5">Password hash stored in your D1 database</p>
           </div>
           <button
             type="button"
@@ -2300,7 +2324,7 @@ function SettingsView({
             className="p-4 rounded-xl border border-red-500/35 bg-red-500/10 flex flex-wrap items-center justify-between gap-3 text-xs"
           >
             <span className="text-(--fg2)">
-              Remove the key from this browser? Your drafts and platforms remain stored on the instance.
+              Sign out of this browser? Your drafts and platform settings stay on the instance.
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -2321,9 +2345,6 @@ function SettingsView({
           </div>
         )}
 
-        <p className="text-xs text-(--dim)">
-          To rotate your key, run <code className="font-mono text-(--fg2)">wrangler secret put ADMIN_KEY</code>, then sign in with the new key.
-        </p>
       </section>
 
       {/* Appearance */}
@@ -2364,7 +2385,7 @@ function SettingsView({
           </button>
         </div>
         <p className="text-xs text-(--dim)">
-          Your instance serves MCP over HTTP at <code className="font-mono text-(--fg2)">/mcp</code>. Add it to Claude Code or Cursor:
+          Your instance serves MCP over HTTP at <code className="font-mono text-(--fg2)">/mcp</code>. Add it to Claude Code or Cursor. Replace <code className="font-mono text-(--fg2)">YOUR_ADMIN_KEY</code> with your Worker's <code className="font-mono text-(--fg2)">ADMIN_KEY</code> secret, not your instance password:
         </p>
         <pre className="p-4 rounded-xl border border-(--border) bg-(--surface) font-mono text-xs text-(--fg2) overflow-x-auto leading-relaxed">
           {mcpConfig}
@@ -2382,204 +2403,87 @@ function SettingsView({
 // -------------------------------------------------------------
 function OnboardingView({
   base,
-  setBase,
-  message,
-  onKey,
+  setupRequired,
+  onAuthenticated,
   theme,
   toggleTheme,
-  toast,
 }: {
   base: string
-  setBase: (b: string) => void
-  message: string
-  onKey: (k: string) => void
+  setupRequired: boolean
+  onAuthenticated: () => void
   theme: "dark" | "light"
   toggleTheme: () => void
-  toast: (m: string) => void
 }) {
-  const [keyInput, setKeyInput] = React.useState("")
-  const [baseInput, setBaseInput] = React.useState(base)
-  const [testing, setTesting] = React.useState(false)
-  const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
-  const [step, setStep] = React.useState(0)
-  const [setupPlatforms, setSetupPlatforms] = React.useState<string[]>([])
-  const [draftId, setDraftId] = React.useState<string | null>(null)
-  const [draftSaved, setDraftSaved] = React.useState(false)
-  const [draftMd, setDraftMd] = React.useState("")
-  const [draftSel, setDraftSel] = React.useState<Set<string>>(new Set())
-  const [draftCover, setDraftCover] = React.useState("")
+  const [adminKey, setAdminKey] = React.useState("")
+  const [password, setPassword] = React.useState("")
+  const [confirmPassword, setConfirmPassword] = React.useState("")
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState("")
 
-  // Reuse the console's real credential and draft forms; setup never publishes.
-  const setupApi = React.useCallback<Api>(async (path, method = "GET", body) => {
-    const res = await fetch(baseInput.replace(/\/$/, "") + "/api" + path, {
-      method,
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + keyInput.trim() },
-      body: body ? JSON.stringify(body) : undefined,
-    })
-    const data = await res.json().catch(() => ({})) as Record<string, unknown>
-    if (!res.ok) throw new Error((data.error as string) || res.statusText || "Request failed")
-    return data
-  }, [baseInput, keyInput])
-
-  const refreshSetupPlatforms = async () => {
-    try {
-      const data = await setupApi("/status") as unknown as { platforms: { platform: string }[] }
-      setSetupPlatforms((data.platforms || []).map((p) => p.platform))
-    } catch (error) {
-      toast((error as Error).message)
-    }
-  }
-
-  const handleTestAndConnect = async () => {
-    if (!keyInput.trim()) {
-      setErrorMsg("Please enter your admin key.")
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError("")
+    if (setupRequired && password !== confirmPassword) {
+      setError("Passwords do not match.")
       return
     }
-    setTesting(true)
-    setErrorMsg(null)
-    const normalizedBase = baseInput.replace(/\/$/, "")
-
+    setBusy(true)
     try {
-      const res = await fetch(normalizedBase + "/api/status", {
-        headers: {
-          Authorization: "Bearer " + keyInput.trim(),
-        },
+      const res = await fetch(`${base}/api/auth/${setupRequired ? "setup" : "login"}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(setupRequired ? { adminKey, password } : { password }),
       })
-      if (res.status === 401) {
-        setErrorMsg("That key didn't match the instance's ADMIN_KEY. Check for spaces or re-set it with wrangler.")
-        setTesting(false)
-        return
-      }
-      if (!res.ok) {
-        throw new Error(res.statusText || "Could not reach worker")
-      }
-      const data = await res.json() as { platforms?: { platform: string }[] }
-      setSetupPlatforms((data.platforms || []).map((p) => p.platform))
-      setStep(1)
-    } catch {
-      setErrorMsg(`Can't reach ${getDomainFromUrl(normalizedBase)}. Check the URL and DASHBOARD_URL in wrangler.toml.`)
+      const data = await res.json().catch(() => ({})) as { error?: string }
+      if (!res.ok) throw new Error(data.error || "Could not sign in")
+      setAdminKey("")
+      setPassword("")
+      setConfirmPassword("")
+      onAuthenticated()
+    } catch (err) {
+      setError((err as Error).message || "Could not reach your OpenPub instance.")
     } finally {
-      setTesting(false)
+      setBusy(false)
     }
   }
 
   return (
-    <div className="op-first-run min-h-screen bg-(--bg) text-(--fg3) font-sans antialiased">
-      <aside className="op-setup-sidebar">
-        <a href="/" aria-label="OpenPub home"><Logo /></a>
-        <nav aria-label="Dashboard" className="op-setup-nav">
-          <span aria-current="page" className="op-setup-current">Setup</span>
-          {['Drafts', 'Platforms', 'Publish ledger'].map((label) => <span key={label} className="op-setup-locked">{label}<small>After setup</small></span>)}
-        </nav>
-        <div className="op-setup-links"><a href="/docs#deploy-guide">Self-host docs ↗</a><a href="/">Back to site ↗</a></div>
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="text-xs font-mono text-(--dim) hover:text-(--fg) cursor-pointer"
-        >
-          {theme === "light" ? "Dark" : "Light"}
-        </button>
-      </aside>
-
-      <main className="op-setup-main">
-        <div className="space-y-2">
-          <span className="text-xs font-bold tracking-widest uppercase text-(--accent)">First run</span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-(--fg)">
-            Set up OpenPub
-          </h1>
-          <p className="text-sm text-(--dim)">
-            Three steps: your instance, one platform, one draft.
-          </p>
+    <main className="min-h-screen bg-(--bg) text-(--fg3) font-sans antialiased flex items-center justify-center px-4 py-10">
+      <section className="w-full max-w-md rounded-2xl border border-(--border) bg-(--surface) p-6 sm:p-8 shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <a href="/" aria-label="OpenPub home"><Logo /></a>
+          <button type="button" onClick={toggleTheme} className="text-xs font-mono text-(--dim) hover:text-(--fg) cursor-pointer">
+            {theme === "light" ? "Dark" : "Light"}
+          </button>
         </div>
-
-        <div role="status" aria-live="polite" className="text-sm text-(--accent)">{message}</div>
-        <ol className="op-setup-steps" aria-label="Setup progress">
-          {[['Your instance', 'Connect your Worker'], ['One platform', 'Save platform credentials'], ['First draft', 'Save without publishing']].map(([title, subtitle], i) => <li key={title} aria-current={i === step ? 'step' : undefined}><span>{i + 1}</span><div><strong>{title}</strong><small>{i < step || (i === 2 && draftSaved) ? 'Completed' : i === step ? `Current step · ${subtitle}` : subtitle}</small></div></li>)}
-        </ol>
-
-        <div className="op-setup-columns">
-        <section className="op-connect-card space-y-5">
-          {step === 0 && <>
-          <div className="space-y-2"><h2 className="text-2xl font-bold tracking-tight text-(--fg)">Connect your OpenPub instance</h2><p className="text-sm leading-relaxed text-(--dim)">The dashboard talks to the Worker you deployed on your own Cloudflare account. No instance yet? <a href="/docs#deploy-guide" className="text-(--accent) font-semibold hover:underline">Read the self-host docs</a> first.</p></div>
+        <h1 className="text-2xl font-bold tracking-tight text-(--fg)">{setupRequired ? "Create your password" : "Welcome back"}</h1>
+        <p className="mt-2 mb-6 text-sm leading-relaxed text-(--dim)">
+          {setupRequired
+            ? "Use your Admin Key once to set up a private password for this instance. You will not need the key to sign in again."
+            : "Sign in to your OpenPub instance."}
+        </p>
+        <form onSubmit={submit} className="space-y-4">
+          {setupRequired && <div className="space-y-1.5">
+            <label htmlFor="setup-admin-key" className="text-sm font-medium text-(--fg)">Admin Key <span className="text-(--dim)">(one time)</span></label>
+            <input id="setup-admin-key" type="password" autoComplete="off" required value={adminKey} onChange={(e) => setAdminKey(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
+          </div>}
           <div className="space-y-1.5">
-            <label htmlFor="login-base" className="text-xs font-semibold text-(--fg)">
-              Instance URL
-            </label>
-            <input
-              id="login-base"
-              type="url"
-              value={baseInput}
-              onChange={(e) => setBaseInput(e.target.value)}
-              placeholder="https://openpub.example.workers.dev"
-              className="w-full bg-(--surface2)/60 border border-(--border) focus:border-(--accent) text-(--fg) placeholder-(--dim3) px-3.5 py-2.5 rounded-xl font-mono text-xs outline-none transition-colors"
-            />
+            <label htmlFor="login-password" className="text-sm font-medium text-(--fg)">{setupRequired ? "Choose a password" : "Password"}</label>
+            <input id="login-password" type="password" autoComplete={setupRequired ? "new-password" : "current-password"} required minLength={setupRequired ? 10 : undefined} maxLength={1024} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
+            {setupRequired && <p className="text-xs text-(--dim)">Use at least 10 characters. The password is stored as a salted hash in D1.</p>}
           </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="login-key" className="text-xs font-semibold text-(--fg)">
-              Admin Key
-            </label>
-            <input
-              id="login-key"
-              type="password"
-              value={keyInput}
-              onChange={(e) => setKeyInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleTestAndConnect()}
-              placeholder="Value from wrangler secret put ADMIN_KEY"
-              className="w-full bg-(--surface2)/60 border border-(--border) focus:border-(--accent) text-(--fg) placeholder-(--dim3) px-3.5 py-2.5 rounded-xl font-mono text-xs outline-none transition-colors"
-            />
-            <p className="text-[11px] text-(--dim)">
-              Stored only in this browser's localStorage and passed as a Bearer token.
-            </p>
-          </div>
-
-          {errorMsg && (
-            <div role="alert" className="p-3.5 rounded-xl border border-red-500/35 bg-red-500/10 text-xs text-(--danger) space-y-1">
-              <strong className="block font-semibold">Could not connect</strong>
-              <p className="font-sans text-(--fg2)">{errorMsg}</p>
-            </div>
-          )}
-
-          <div className="pt-2 flex items-center justify-between gap-3">
-            <a href="/docs" className="text-xs text-(--dim) hover:text-(--fg) hover:underline font-mono">
-              Documentation ↗
-            </a>
-            <button
-              type="button"
-              disabled={testing || !keyInput.trim()}
-              onClick={handleTestAndConnect}
-              className="px-6 py-2.5 rounded-xl bg-(--accent-strong) hover:bg-(--accent) text-(--on-accent) font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
-            >
-              {testing ? "Testing connection…" : "Test connection and continue"}
-            </button>
-          </div>
-          </>}
-          {step === 1 && <>
-            <div><h2 className="text-2xl font-semibold text-(--fg)">Connect your first platform</h2><p className="mt-2 text-sm text-(--dim)">Pick one to start. Saving credentials does not test them; Test connection is a separate check.</p></div>
-            <PlatformsView embedded api={setupApi} toast={toast} configured={setupPlatforms} onRefresh={refreshSetupPlatforms} />
-            <div className="flex items-center justify-between gap-3">
-              <button type="button" onClick={() => setStep(0)} className="op-setup-back">Back</button>
-              <button type="button" disabled={setupPlatforms.length === 0} onClick={() => { setDraftSel((previous) => { const valid = [...previous].filter((p) => setupPlatforms.includes(p)); return new Set(valid.length ? valid : [setupPlatforms[0]]) }); setStep(2) }} className="rounded-xl bg-(--accent) px-5 py-2.5 font-semibold text-(--on-accent) disabled:opacity-50">Continue to first draft</button>
-            </div>
-          </>}
-          {step === 2 && <>
-            <div><h2 className="text-2xl font-semibold text-(--fg)">Write your first draft</h2><p className="mt-2 text-sm text-(--dim)">Saved on your instance. Nothing is sent to a platform until you publish from the console and confirm.</p></div>
-            {draftSaved ? <div className="space-y-4">
-              <p role="status" className="text-sm text-(--accent)">Draft saved on your instance{draftId ? ` (${draftId.slice(0, 8)})` : ''}. Nothing was sent to a platform.</p>
-              <div className="flex flex-wrap gap-3">
-                <button type="button" onClick={() => setDraftSaved(false)} className="op-setup-back">Edit draft</button>
-                <button type="button" onClick={() => { setBase(baseInput.replace(/\/$/, "")); onKey(keyInput.trim()) }} className="rounded-xl bg-(--accent) px-5 py-2.5 font-semibold text-(--on-accent)">Open console</button>
-              </div>
-            </div> : <EditorView api={setupApi} toast={toast} editorDraftId={draftId} setEditorDraftId={setDraftId} md={draftMd} setMd={setDraftMd} sel={draftSel} setSel={setDraftSel} cover={draftCover} setCover={setDraftCover} configuredPlatforms={setupPlatforms} onGoToPlatforms={() => setStep(1)} onSavedDraft={() => { setDraftSaved(true); toast("Draft saved. Nothing was sent to a platform.") }} />}
-            <button type="button" onClick={() => setStep(1)} className="op-setup-back">Back</button>
-          </>}
-        </section>
-        <aside className="op-setup-summary" aria-label="Setup summary">
-          <div><h2>Your setup</h2><dl><dt>Instance</dt><dd>{step > 0 ? getDomainFromUrl(baseInput) : 'Not connected yet'}</dd><dt>Platform</dt><dd>{setupPlatforms.length ? setupPlatforms.map((p) => PLATFORM_DETAILS[p as PlatformKey]?.name || p).join(', ') : 'Not configured yet'}</dd><dt>First draft</dt><dd>{draftSaved ? 'Saved on your instance' : draftMd.trim() ? 'Not saved yet' : 'Not written yet'}</dd></dl></div>
-          <div><h2>Prefer the terminal?</h2><p>The CLI needs no instance. Build it from the repo, and credentials stay in <code>~/.openpub/config.json</code>.</p><a href="/docs#cli">CLI setup ↗</a></div>
-        </aside>
-        </div>
-      </main>
-    </div>
+          {setupRequired && <div className="space-y-1.5">
+            <label htmlFor="confirm-password" className="text-sm font-medium text-(--fg)">Confirm password</label>
+            <input id="confirm-password" type="password" autoComplete="new-password" required minLength={10} maxLength={1024} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
+          </div>}
+          {error && <p role="alert" className="rounded-xl border border-red-500/35 bg-red-500/10 p-3 text-sm text-(--danger)">{error}</p>}
+          <button type="submit" disabled={busy || !password || (setupRequired && !adminKey)} className="w-full rounded-xl bg-(--accent) px-5 py-3 font-semibold text-(--on-accent) disabled:opacity-50">
+            {busy ? "Please wait…" : setupRequired ? "Set password and continue" : "Log in"}
+          </button>
+        </form>
+        <p className="mt-6 text-xs text-(--dim)">Your password stays on your instance. Sessions use a secure, HttpOnly cookie.</p>
+      </section>
+    </main>
   )
 }

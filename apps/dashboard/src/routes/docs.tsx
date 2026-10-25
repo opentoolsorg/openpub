@@ -147,7 +147,7 @@ function CodeBlock({ code, title }: { code: string; title?: string }) {
     status === 'copied' ? 'Copied' : status === 'error' ? 'Failed' : 'Copy'
 
   return (
-    <div className="my-5 overflow-hidden rounded-xl border border-(--border)/85 bg-(--surface) shadow-sm">
+    <div className="my-5 overflow-hidden rounded-xl border border-(--surface3) bg-(--surface)">
       <span className="sr-only" role="status" aria-live="polite">
         {status === 'copied'
           ? 'Code copied to clipboard'
@@ -156,7 +156,7 @@ function CodeBlock({ code, title }: { code: string; title?: string }) {
           : ''}
       </span>
       {title && (
-        <div className="flex items-center justify-between border-b border-(--border)/80 bg-(--surface2)/60 px-4 py-2 font-mono text-xs text-(--dim)">
+        <div className="flex items-center justify-between border-b border-(--surface3) bg-(--surface2) px-3.5 py-2 font-mono text-xs text-(--dim)">
           <span className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-(--accent)" aria-hidden="true" />
             <span className="font-semibold text-(--fg3)">{title}</span>
@@ -165,12 +165,12 @@ function CodeBlock({ code, title }: { code: string; title?: string }) {
             type="button"
             onClick={copy}
             aria-label={ariaLabel}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-(--accent) ${
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-(--accent) ${
               status === 'copied'
                 ? 'border-(--accent) bg-(--accent)/15 text-(--accent)'
                 : status === 'error'
                 ? 'border-(--danger) bg-(--danger)/15 text-(--danger)'
-                : 'border-(--border) bg-(--surface2) text-(--fg3) hover:border-(--surface4) hover:text-(--accent)'
+                : 'border-(--surface4) bg-(--surface) text-(--fg) hover:border-(--accent) hover:text-(--accent)'
             }`}
           >
             {status === 'copied' ? (
@@ -207,12 +207,12 @@ function CodeBlock({ code, title }: { code: string; title?: string }) {
             type="button"
             onClick={copy}
             aria-label={ariaLabel}
-            className={`absolute top-3 right-3 flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-(--accent) ${
+            className={`absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-(--accent) ${
               status === 'copied'
                 ? 'border-(--accent) bg-(--accent)/15 text-(--accent)'
                 : status === 'error'
                 ? 'border-(--danger) bg-(--danger)/15 text-(--danger)'
-                : 'border-(--border) bg-(--surface2)/90 text-(--fg3) hover:border-(--surface4) hover:text-(--accent)'
+                : 'border-(--surface4) bg-(--surface)/90 text-(--fg) hover:border-(--accent) hover:text-(--accent)'
             }`}
           >
             {status === 'copied' ? (
@@ -236,7 +236,7 @@ function CodeBlock({ code, title }: { code: string; title?: string }) {
             )}
           </button>
         )}
-        <pre className="overflow-x-auto p-4 font-mono text-[0.8125rem] leading-[1.65] text-(--fg3) selection:bg-(--accent)/20">
+        <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-[1.7] text-(--fg2) selection:bg-(--accent)/20">
           <code>{code}</code>
         </pre>
       </div>
@@ -258,7 +258,7 @@ function SectionHeading({
   isH1?: boolean
 }) {
   return (
-    <div id={id} className="scroll-mt-24 pt-14 first:pt-0">
+    <div id={id} className="scroll-mt-24 pt-12 first:pt-0">
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 rounded-full bg-(--accent)" aria-hidden="true" />
         <span className="font-['IBM_Plex_Sans',sans-serif] text-xs font-semibold uppercase tracking-wider text-(--accent)">
@@ -266,16 +266,16 @@ function SectionHeading({
         </span>
       </div>
       {isH1 ? (
-        <h1 className="docs-heading mt-2.5 font-['IBM_Plex_Sans',sans-serif] text-2xl font-bold tracking-tight text-(--fg) sm:text-3xl">
+        <h1 className="docs-heading mt-2.5 font-['IBM_Plex_Sans',sans-serif] text-3xl sm:text-[38px] font-semibold tracking-[-0.03em] text-(--fg) leading-[1.15]">
           {title}
         </h1>
       ) : (
-        <h2 className="docs-heading mt-2.5 font-['IBM_Plex_Sans',sans-serif] text-2xl font-bold tracking-tight text-(--fg) sm:text-3xl">
+        <h2 className="docs-heading mt-2.5 font-['IBM_Plex_Sans',sans-serif] text-2xl sm:text-[30px] font-semibold tracking-[-0.025em] text-(--fg) leading-tight">
           {title}
         </h2>
       )}
       {subtitle && (
-        <p className="docs-prose mt-3 max-w-[70ch] text-[1.0625rem] leading-[1.65] text-(--dim)">
+        <p className="docs-prose mt-3 text-[17px] leading-[1.65] text-(--dim)">
           {subtitle}
         </p>
       )}
@@ -288,12 +288,12 @@ function SubHeading({ id, title }: { id: string; title: string }) {
   return (
     <h3
       id={id}
-      className="docs-heading scroll-mt-24 mt-10 mb-3.5 flex items-center gap-2 font-['IBM_Plex_Sans',sans-serif] text-lg font-semibold tracking-tight text-(--fg2) sm:text-xl"
+      className="docs-heading scroll-mt-24 mt-10 mb-3.5 flex items-center gap-2 font-['IBM_Plex_Sans',sans-serif] text-lg sm:text-xl font-semibold tracking-tight text-(--fg2)"
     >
       <a
         href={`#${id}`}
         aria-label={`Link to ${title}`}
-        className="font-mono text-sm text-(--dim3) hover:text-(--accent) transition-colors"
+        className="font-mono text-sm text-(--dim2) hover:text-(--accent) transition-colors"
       >
         #
       </a>
@@ -314,12 +314,12 @@ function Callout({
   return (
     <div
       role="note"
-      className={`my-5 rounded-xl border p-4.5 text-sm leading-[1.6] transition-colors ${
+      className={`my-5 rounded-xl border p-4 text-sm leading-[1.6] transition-colors ${
         isTip
-          ? 'border-(--accent)/35 bg-(--accent)/8 text-(--fg2)'
+          ? 'border-[rgba(var(--accent-rgb),0.3)] bg-[rgba(var(--accent-rgb),0.08)] text-(--fg2)'
           : isWarn
-          ? 'border-(--danger)/40 bg-(--danger)/10 text-(--fg2)'
-          : 'border-(--border) bg-(--surface2)/50 text-(--fg3)'
+          ? 'border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.1)] text-(--fg2)'
+          : 'border-(--surface3) bg-(--surface2) text-(--fg3)'
       }`}
     >
       <div className="flex gap-3 items-start">
@@ -446,12 +446,12 @@ function DocsPage() {
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 border-b border-(--surface3) bg-(--bg)/92 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3 sm:gap-5 sm:px-6 sm:py-3.5">
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-(--border) bg-(--surface2) text-(--dim) hover:text-(--fg) lg:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-(--surface3) bg-(--surface2) text-(--dim) hover:text-(--fg) lg:hidden"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-docs-nav"
@@ -460,80 +460,77 @@ function DocsPage() {
                 {mobileMenuOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 12h16M4 6h16M4 18h16" />}
               </svg>
             </button>
-            <a href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+            <a href="/" className="inline-flex items-center gap-2.5 text-lg font-semibold tracking-[-0.02em] text-(--fg) transition-opacity hover:opacity-90">
               <Logo />
             </a>
-            <span className="hidden sm:inline-flex items-center rounded-md border border-(--border) bg-(--surface2) px-2 py-0.5 font-mono text-[11px] font-medium text-(--dim)">
+            <span className="hidden sm:inline-flex items-center rounded-md border border-(--surface3) bg-(--surface2) px-2 py-0.5 font-mono text-[11px] text-(--dim)">
               docs
             </span>
           </div>
 
-          {/* Quick filter input */}
-          <div className="hidden lg:flex flex-1 max-w-sm mx-4">
-            <div className="relative w-full">
-              <input
-                id="docs-filter-input"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search documentation or quick jump..."
-                aria-label="Search documentation topics or quick jump"
-                className="w-full rounded-lg border border-(--border) bg-(--surface) px-3 py-1.5 pl-8 pr-12 text-xs text-(--fg2) placeholder:text-(--dim2) focus:border-(--accent) focus:outline-none transition-colors"
-              />
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="absolute left-2.5 top-2.5 text-(--dim2)"
-                aria-hidden="true"
+          <div className="hidden lg:flex flex-1 max-w-[440px] items-center gap-2.5 bg-(--surface2) border border-(--surface3) rounded-[10px] px-3.5 py-2 text-xs text-(--dim2)">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 text-(--dim2)"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              id="docs-filter-input"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search documentation or quick jump..."
+              aria-label="Search documentation topics or quick jump"
+              className="w-full bg-transparent text-(--fg2) placeholder:text-(--dim2) focus:outline-none text-xs"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-(--dim2) hover:text-(--fg)"
+                aria-label="Clear filter"
               >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2 text-xs text-(--dim2) hover:text-(--fg)"
-                  aria-label="Clear filter"
-                >
-                  ×
-                </button>
-              ) : (
-                <kbd
-                  aria-hidden="true"
-                  className="pointer-events-none absolute right-2.5 top-2 hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono border border-(--surface3) bg-(--surface2) text-(--dim)"
-                >
-                  ⌘K
-                </kbd>
-              )}
-            </div>
+                ×
+              </button>
+            ) : (
+              <kbd
+                aria-hidden="true"
+                className="pointer-events-none inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono border border-(--surface4) bg-(--surface) text-(--dim)"
+              >
+                ⌘K
+              </kbd>
+            )}
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-2 sm:gap-3.5 text-xs">
             <a
               href="/"
-              className="hidden font-medium text-(--dim) transition-colors hover:text-(--fg) sm:inline"
+              className="hidden sm:inline font-medium text-(--dim) transition-colors hover:text-(--fg)"
             >
               Home
             </a>
             <ThemeToggle />
             <a
               href="/app"
-              className="rounded-lg border border-(--border) bg-(--surface2) px-3 py-1.5 font-medium text-(--fg2) transition-colors hover:border-(--accent) hover:text-(--accent)"
+              className="rounded-lg border border-(--surface3) bg-(--surface2) px-2.5 py-1.5 font-medium text-(--fg2) transition-colors hover:border-(--accent) hover:text-(--accent) sm:px-3"
             >
-              Open Dashboard
+              <span className="hidden sm:inline">Open </span>Dashboard
             </a>
             <a
               href={GITHUB}
               target="_blank"
               rel="noreferrer"
-              className="hidden font-medium text-(--dim) transition-colors hover:text-(--fg) sm:inline"
+              className="hidden sm:inline font-medium text-(--dim) transition-colors hover:text-(--fg)"
             >
               GitHub
             </a>
@@ -552,7 +549,7 @@ function DocsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter topics..."
               aria-label="Filter documentation topics"
-              className="mb-4 w-full rounded-lg border border-(--border) bg-(--surface2) px-3 py-2 text-xs text-(--fg2) placeholder:text-(--dim2) focus:border-(--accent) focus:outline-none"
+              className="mb-4 w-full rounded-lg border border-(--surface3) bg-(--surface2) px-3 py-2 text-xs text-(--fg2) placeholder:text-(--dim2) focus:border-(--accent) focus:outline-none"
             />
             {filteredSections.length === 0 && (
               <div className="py-2 text-xs text-(--dim2)" role="status" aria-live="polite">
@@ -589,92 +586,87 @@ function DocsPage() {
         )}
       </header>
 
-      {/* Main Container */}
-      <div className="docs-layout mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-10">
-          {/* Left Sidebar */}
-          <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 overflow-y-auto py-8 pr-4 lg:block border-r border-(--surface3)">
-            {searchQuery && (
-              <div className="mb-4 text-xs text-(--dim2)" role="status" aria-live="polite">
-                {filteredSections.length === 0
-                  ? `No topics matching "${searchQuery}"`
-                  : `Showing matches for "${searchQuery}"`}
-              </div>
-            )}
-            <nav className="space-y-6">
-              {filteredSections.map((sec) => {
-                const isActive = activeSection === sec.id
-                return (
-                  <div key={sec.id}>
-                    <a
-                      href={`#${sec.id}`}
-                      className={`block font-['IBM_Plex_Sans',sans-serif] text-xs font-semibold uppercase tracking-wider transition-colors ${
-                        isActive ? 'text-(--accent)' : 'text-(--dim) hover:text-(--fg)'
-                      }`}
-                    >
-                      {sec.title}
-                    </a>
-                    <ul className="mt-2.5 space-y-1.5 border-l border-(--surface3) pl-3">
-                      {sec.items.map((item) => (
-                        <li key={item.id}>
-                          <a
-                            href={`#${item.id}`}
-                            className="block text-xs leading-relaxed text-(--dim) transition-colors hover:text-(--fg2)"
-                          >
-                            {item.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-              })}
-            </nav>
-
-            <div className="mt-8 pt-6 border-t border-(--surface3) flex flex-col gap-2.5 text-xs text-(--dim)">
-              <a
-                href="#deploy-guide"
-                className="flex items-center gap-2 hover:text-(--accent) transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-                <span>Deploy Guide</span>
-              </a>
-              <a
-                href="/app"
-                className="flex items-center gap-2 hover:text-(--accent) transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" y1="8" x2="19" y2="14" />
-                  <line x1="22" y1="11" x2="16" y2="11" />
-                </svg>
-                <span>Dashboard Console</span>
-              </a>
+      <div className="docs-layout mx-auto max-w-[1400px] w-full flex min-h-[calc(100vh-57px)]">
+        <aside className="sticky top-[57px] hidden h-[calc(100vh-57px)] w-[260px] shrink-0 overflow-y-auto border-r border-(--surface3) bg-(--surface) p-6 lg:flex flex-col gap-6">
+          {searchQuery && (
+            <div className="text-xs text-(--dim2)" role="status" aria-live="polite">
+              {filteredSections.length === 0
+                ? `No topics matching "${searchQuery}"`
+                : `Showing matches for "${searchQuery}"`}
             </div>
-          </aside>
-
-          {/* Middle Content Column */}
-          <main className="min-w-0 max-w-3xl flex-1 py-8 lg:py-10">
-            {/* Quick jump for small screens */}
-            <div className="mb-8 rounded-xl border border-(--border) bg-(--surface)/70 p-4 lg:hidden">
-              <span className="font-['IBM_Plex_Sans',sans-serif] text-xs font-semibold uppercase tracking-wider text-(--accent)">
-                Documentation Sections
-              </span>
-              <div className="mt-2.5 flex flex-wrap gap-2 text-xs">
-                {NAV_SECTIONS.map((sec) => (
-                  <a
-                    key={sec.id}
-                    href={`#${sec.id}`}
-                    className="rounded-md border border-(--border) bg-(--surface2) px-2.5 py-1 text-(--fg3) hover:border-(--accent) hover:text-(--accent) transition-colors"
+          )}
+          <nav className="space-y-6">
+            {filteredSections.map((sec) => {
+              const isActive = activeSection === sec.id
+              return (
+                <div key={sec.id}>
+                  <div
+                    className={`text-[13px] font-semibold mb-2.5 transition-colors ${
+                      isActive ? 'text-(--accent)' : 'text-(--dim2)'
+                    }`}
                   >
                     {sec.title}
-                  </a>
-                ))}
-              </div>
+                  </div>
+                  <div className="flex flex-col gap-0.5 text-sm">
+                    {sec.items.map((item) => (
+                      <a
+                        key={item.id}
+                        href={`#${item.id}`}
+                        className="flex items-center min-h-[34px] px-2.5 rounded-lg text-[13px] text-(--dim) hover:text-(--fg) hover:bg-(--surface2)/60 transition-colors"
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </nav>
+
+          <div className="mt-auto pt-5 border-t border-(--surface3) flex flex-col gap-2.5 text-[13px]">
+            <a
+              href="#deploy-guide"
+              className="flex items-center gap-2 text-(--fg3) hover:text-(--accent) transition-colors"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <span>Deploy Guide</span>
+            </a>
+            <a
+              href="/app"
+              className="flex items-center gap-2 text-(--fg3) hover:text-(--accent) transition-colors"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+              <span>Dashboard Console</span>
+            </a>
+          </div>
+        </aside>
+
+        <main className="min-w-0 flex-1 px-6 sm:px-10 lg:px-12 xl:px-14 py-10 lg:py-12">
+          <div className="mb-8 rounded-xl border border-(--surface3) bg-(--surface2) p-4 lg:hidden">
+            <span className="font-['IBM_Plex_Sans',sans-serif] text-xs font-semibold uppercase tracking-wider text-(--accent)">
+              Documentation Sections
+            </span>
+            <div className="mt-2.5 flex flex-wrap gap-2 text-xs">
+              {NAV_SECTIONS.map((sec) => (
+                <a
+                  key={sec.id}
+                  href={`#${sec.id}`}
+                  className="rounded-md border border-(--surface3) bg-(--surface) px-2.5 py-1 text-(--fg3) hover:border-(--accent) hover:text-(--accent) transition-colors"
+                >
+                  {sec.title}
+                </a>
+              ))}
             </div>
+          </div>
+
+          <div className="max-w-[760px] flex flex-col gap-10">
 
             {/* SECTION 1: GETTING STARTED */}
             <section className="space-y-6">
@@ -693,7 +685,7 @@ function DocsPage() {
 
               <SubHeading id="two-modes" title="Two Ways to Run OpenPub" />
               <div className="my-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-(--border) bg-(--surface2)/50 p-5 flex flex-col gap-2.5">
+                <div className="rounded-xl border border-(--surface3) bg-(--surface2)/50 p-5 flex flex-col gap-2.5">
                   <div className="flex items-center gap-2 text-sm font-semibold text-(--accent)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polyline points="4 17 10 11 4 5" />
@@ -709,7 +701,7 @@ function DocsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-(--border) bg-(--surface2)/50 p-5 flex flex-col gap-2.5">
+                <div className="rounded-xl border border-(--surface3) bg-(--surface2)/50 p-5 flex flex-col gap-2.5">
                   <div className="flex items-center gap-2 text-sm font-semibold text-(--accent)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
@@ -730,7 +722,7 @@ function DocsPage() {
 
               <SubHeading id="quickstart" title="Quickstart with the CLI" />
               <p className="docs-prose text-(--dim)">
-                The CLI isn&apos;t on npm yet. In a clone of the repo, build it once with <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--border)">npm install &amp;&amp; npm run cli:build</code>, then store credentials, check them, and publish:
+                The CLI isn&apos;t on npm yet. In a clone of the repo, build it once with <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--surface3)">npm install &amp;&amp; npm run cli:build</code>, then store credentials, check them, and publish:
               </p>
 
               <CodeBlock
@@ -758,7 +750,7 @@ function DocsPage() {
               <ul className="list-disc list-inside space-y-1.5 docs-prose text-sm text-(--dim)">
                 <li>Cloudflare account; resource quotas, account eligibility, and billing requirements vary</li>
                 <li>Node.js 22 or newer</li>
-                <li>Wrangler CLI: <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--border)">npm install -g wrangler</code> (or run via <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--border)">npx wrangler</code>)</li>
+                <li>Wrangler CLI: <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--surface3)">npm install -g wrangler</code> (or run via <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--surface3)">npx wrangler</code>)</li>
                 <li>Wrangler 4.x recommended; the repository pins <code className="docs-code">wrangler@^4</code> as a dev dependency</li>
               </ul>
 
@@ -775,7 +767,7 @@ function DocsPage() {
 
               <SubHeading id="step-2-resources" title="2. Create Cloudflare Resources" />
               <p className="docs-prose text-(--dim)">
-                OpenPub relies on five Cloudflare resource bindings matching <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--border)">wrangler.toml</code>. Four are provisioned via the Wrangler CLI, plus Workers AI enabled on your account:
+                OpenPub relies on five Cloudflare resource bindings matching <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--surface3)">wrangler.toml</code>. Four are provisioned via the Wrangler CLI, plus Workers AI enabled on your account:
               </p>
               <CodeBlock
                 code={`# D1 database (drafts, publish log, platform credentials)\nwrangler d1 create openpub-db\n\n# KV namespace (bound but currently unused)\nwrangler kv namespace create KEYS\n\n# R2 bucket (generated cover images)\nwrangler r2 bucket create openpub-media\n\n# Queue (async publish jobs, with consumer configured in wrangler.toml)\nwrangler queues create openpub-publish`}
@@ -783,7 +775,7 @@ function DocsPage() {
               />
 
               <p className="docs-prose text-(--dim)">
-                Each command outputs a resource ID. Update your <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--border)">wrangler.toml</code> with these values:
+                Each command outputs a resource ID. Update your <code className="docs-code rounded bg-(--surface2) px-1.5 py-0.5 text-xs text-(--accent) border border-(--surface3)">wrangler.toml</code> with these values:
               </p>
               <CodeBlock
                 code={`[[d1_databases]]\nbinding = "DB"\ndatabase_name = "openpub-db"\ndatabase_id = "<id from d1 create>"\n\n[[kv_namespaces]]\nbinding = "KEYS"\nid = "<id from kv namespace create>"\n\n[[r2_buckets]]\nbinding = "MEDIA"\nbucket_name = "openpub-media"\n\n[[queues.producers]]\nbinding = "PUBLISH_QUEUE"\nqueue = "openpub-publish"\n\n[[queues.consumers]]\nqueue = "openpub-publish"\nmax_batch_size = 5\nmax_retries = 3\n\n[ai]\nbinding = "AI"`}
@@ -796,19 +788,19 @@ function DocsPage() {
                 title="bash"
               />
               <p className="docs-prose text-(--dim)">
-                This migration initializes the tables <code className="docs-code text-(--accent)">platform_config</code>, <code className="docs-code text-(--accent)">drafts</code>, and <code className="docs-code text-(--accent)">publish_log</code>. Safe to re-run at any time because all statements utilize <code className="docs-code">IF NOT EXISTS</code>.
+                This migration initializes the platform, draft, publish, and dashboard-auth tables. Safe to re-run at any time because all statements utilize <code className="docs-code">IF NOT EXISTS</code>. Existing deployments should also apply <code className="docs-code">migrations/002_dashboard_auth.sql</code> before deploying this version.
               </p>
 
               <SubHeading id="step-4-secret" title="4. Set the Admin Secret" />
               <p className="docs-prose text-(--dim)">
-                The <code className="docs-code rounded bg-(--surface2) px-1 py-0.5 text-xs text-(--accent) border border-(--border)">ADMIN_KEY</code> secret authenticates REST API calls and MCP requests. Use a Bearer token for POST requests and MCP; <code className="docs-code">?key=</code> works only for GET requests under <code className="docs-code">/api</code>. Generate a strong 32-byte hex key:
+                The <code className="docs-code rounded bg-(--surface2) px-1 py-0.5 text-xs text-(--accent) border border-(--surface3)">ADMIN_KEY</code> secret authenticates REST API and MCP clients. The dashboard uses it once to create a password; later sign-ins use that password. Generate a strong 32-byte hex key:
               </p>
               <CodeBlock
                 code={`openssl rand -hex 32\nwrangler secret put ADMIN_KEY\n# paste the generated key when prompted`}
                 title="bash"
               />
               <Callout type="tip">
-                Store this key safely in your password manager. It protects Worker endpoints and access to platform credentials stored in D1 as plaintext JSON.
+                Store this key safely in your password manager. It remains necessary for MCP clients and one-time dashboard setup. The dashboard password is stored as a salted hash in D1, never as plaintext.
               </Callout>
 
               <SubHeading id="step-5-url" title="5. Configure BASE_URL" />
@@ -857,10 +849,10 @@ function DocsPage() {
               </ol>
 
               <SubHeading id="free-tier" title="Cloudflare Free Tier Allocation" />
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Resource</th>
                       <th className="px-3.5 py-3">Free Tier Quota</th>
                       <th className="px-3.5 py-3">Usage in OpenPub</th>
@@ -909,17 +901,17 @@ function DocsPage() {
 
               <SubHeading id="console-onboarding" title="Set up the web console" />
               <p className="docs-prose text-(--dim)">
-                After deploying, <a href="/app" className="text-(--accent) hover:underline">open the console</a> and complete three steps: test your instance URL and admin key, save credentials for a platform, then save your first Markdown draft. Platform credentials are stored as JSON in your instance's D1 database. Saving them is separate from testing the platform connection. The admin key stays in this browser's localStorage and is sent as a Bearer header on API requests.
+                After deploying, <a href="/app" className="text-(--accent) hover:underline">open the console</a>. The first visit asks for your ADMIN_KEY once and lets you choose a password; future visits need only that password. The password hash and platform credentials are stored in your instance's D1 database. Sign-in uses a secure HttpOnly session cookie, not localStorage.
               </p>
               <p className="docs-prose text-(--dim)">
-                Setup never publishes. Saving the first draft shows a saved confirmation; choose Open console when you are ready. Publishing later requires reviewing and confirming the destinations. Substack creates a draft for you to publish in its own editor.
+                After signing in, add platform credentials and drafts from the console. Publishing requires reviewing and confirming the destinations. Substack creates a draft for you to publish in its own editor.
               </p>
 
               <SubHeading id="next-steps" title="Next Steps" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 my-4">
                 <a
                   href="#prerequisites"
-                  className="rounded-xl border border-(--border) bg-(--surface2)/50 p-4 flex flex-col gap-2 transition-colors hover:border-(--accent) hover:bg-(--surface2)/80 text-left"
+                  className="rounded-xl border border-(--surface3) bg-(--surface2)/50 p-4 flex flex-col gap-2 transition-colors hover:border-(--accent) hover:bg-(--surface2)/80 text-left"
                 >
                   <span className="text-sm font-semibold text-(--fg)">Deploy to Cloudflare &rarr;</span>
                   <span className="text-xs leading-relaxed text-(--dim)">
@@ -928,7 +920,7 @@ function DocsPage() {
                 </a>
                 <a
                   href="/app"
-                  className="rounded-xl border border-(--border) bg-(--surface2)/50 p-4 flex flex-col gap-2 transition-colors hover:border-(--accent) hover:bg-(--surface2)/80 text-left"
+                  className="rounded-xl border border-(--surface3) bg-(--surface2)/50 p-4 flex flex-col gap-2 transition-colors hover:border-(--accent) hover:bg-(--surface2)/80 text-left"
                 >
                   <span className="text-sm font-semibold text-(--fg)">Dashboard Walkthrough &rarr;</span>
                   <span className="text-xs leading-relaxed text-(--dim)">
@@ -937,7 +929,7 @@ function DocsPage() {
                 </a>
                 <a
                   href="/"
-                  className="rounded-xl border border-(--border) bg-(--surface2)/50 p-4 flex flex-col gap-2 transition-colors hover:border-(--accent) hover:bg-(--surface2)/80 text-left"
+                  className="rounded-xl border border-(--surface3) bg-(--surface2)/50 p-4 flex flex-col gap-2 transition-colors hover:border-(--accent) hover:bg-(--surface2)/80 text-left"
                 >
                   <span className="text-sm font-semibold text-(--fg)">Main Landing Page &rarr;</span>
                   <span className="text-xs leading-relaxed text-(--dim)">
@@ -981,10 +973,10 @@ function DocsPage() {
               </p>
 
               <SubHeading id="cli-matrix" title="Command Reference Matrix" />
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Command</th>
                       <th className="px-3.5 py-3">Arguments & Flags</th>
                       <th className="px-3.5 py-3">Purpose</th>
@@ -1099,10 +1091,10 @@ function DocsPage() {
               <p className="text-xs text-(--dim) mt-1">
                 Transport: <code className="docs-code text-xs">stdio</code>. Operates directly on local markdown files, <code className="docs-code text-xs">~/.openpub/config.json</code>, and <code className="docs-code text-xs">~/.openpub/state.json</code>.
               </p>
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Tool</th>
                       <th className="px-3.5 py-3">Purpose</th>
                       <th className="px-3.5 py-3">Key Arguments</th>
@@ -1169,10 +1161,10 @@ function DocsPage() {
               <p className="text-xs text-(--dim) mt-1">
                 Transport: <code className="docs-code text-xs">Streamable HTTP</code> (<code className="docs-code text-xs">POST /mcp</code>). Requires <code className="docs-code text-xs">ADMIN_KEY</code> authentication. Worker publish tools publish live immediately; <code className="docs-code">save_draft</code> only creates a draft. Operates on Cloudflare D1, R2, Queues, and Workers AI.
               </p>
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Tool</th>
                       <th className="px-3.5 py-3">Purpose</th>
                       <th className="px-3.5 py-3">Key Arguments</th>
@@ -1298,15 +1290,15 @@ function DocsPage() {
               <p className="docs-prose text-(--dim)">
                 Remote MCP cannot read local files. Include article text in your prompt. Worker publishing sends posts live immediately; use the local CLI or stdio MCP when you need draft-first publishing.
               </p>
-              <div className="rounded-xl border border-(--border) bg-(--surface2)/40 p-4 font-mono text-xs text-(--accent)">
+              <div className="rounded-xl border border-(--surface3) bg-(--surface2)/40 p-4 font-mono text-xs text-(--accent)">
                 &quot;Check these links, generate a cover image, then publish this article to dev.to and Hashnode: [paste article text]&quot;
               </div>
 
               <SubHeading id="mcp-troubleshooting" title="Troubleshooting Guide" />
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Symptom</th>
                       <th className="px-3.5 py-3">Cause</th>
                       <th className="px-3.5 py-3">Resolution</th>
@@ -1371,10 +1363,10 @@ function DocsPage() {
               />
 
               <SubHeading id="platforms-matrix" title="Quick Reference Matrix" />
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Platform</th>
                       <th className="px-3.5 py-3">Slug</th>
                       <th className="px-3.5 py-3">Credential Keys</th>
@@ -1503,7 +1495,7 @@ function DocsPage() {
               />
 
               <SubHeading id="arch-diagram" title="System Diagram" />
-              <div className="my-5 overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface) p-5 font-mono text-xs leading-relaxed text-(--fg3)">
+              <div className="my-5 overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface) p-5 font-mono text-xs leading-relaxed text-(--fg3)">
                 <pre>{`                          +---------------------------------------------+
   MCP clients ----------->|   Cloudflare Worker (Hono)                  |
   (Claude Code, Cursor)   |                                             |
@@ -1535,7 +1527,7 @@ function DocsPage() {
 
               <SubHeading id="arch-components" title="Core Edge Components" />
               <div className="grid gap-4 sm:grid-cols-2 my-4">
-                <div className="rounded-xl border border-(--border)/85 bg-(--surface2)/40 p-4">
+                <div className="rounded-xl border border-(--surface3) bg-(--surface2)/40 p-4">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-(--accent)" aria-hidden="true" />
                     <h4 className="font-['IBM_Plex_Sans',sans-serif] text-sm font-semibold text-(--fg)">
@@ -1547,7 +1539,7 @@ function DocsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-(--border)/85 bg-(--surface2)/40 p-4">
+                <div className="rounded-xl border border-(--surface3) bg-(--surface2)/40 p-4">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-(--accent)" aria-hidden="true" />
                     <h4 className="font-['IBM_Plex_Sans',sans-serif] text-sm font-semibold text-(--fg)">
@@ -1559,7 +1551,7 @@ function DocsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-(--border)/85 bg-(--surface2)/40 p-4">
+                <div className="rounded-xl border border-(--surface3) bg-(--surface2)/40 p-4">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-(--accent)" aria-hidden="true" />
                     <h4 className="font-['IBM_Plex_Sans',sans-serif] text-sm font-semibold text-(--fg)">
@@ -1571,7 +1563,7 @@ function DocsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-(--border)/85 bg-(--surface2)/40 p-4">
+                <div className="rounded-xl border border-(--surface3) bg-(--surface2)/40 p-4">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-(--accent)" aria-hidden="true" />
                     <h4 className="font-['IBM_Plex_Sans',sans-serif] text-sm font-semibold text-(--fg)">
@@ -1606,10 +1598,10 @@ function DocsPage() {
               </p>
 
               <SubHeading id="arch-api-matrix" title="REST API Reference" />
-              <div className="overflow-x-auto rounded-xl border border-(--border)/85 bg-(--surface)/75 my-4">
+              <div className="overflow-x-auto rounded-xl border border-(--surface3) bg-(--surface)/75 my-4">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
-                    <tr className="border-b border-(--border) bg-(--surface2)/50 text-(--dim) font-mono">
+                    <tr className="border-b border-(--surface3) bg-(--surface2)/50 text-(--dim) font-mono">
                       <th className="px-3.5 py-3">Method</th>
                       <th className="px-3.5 py-3">Endpoint</th>
                       <th className="px-3.5 py-3">Description</th>
@@ -1708,60 +1700,58 @@ function DocsPage() {
                 </div>
               </div>
             </footer>
-          </main>
+          </div>
+        </main>
 
-          {/* Right Sidebar: "On this page" TOC */}
-          <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pl-4 xl:block border-l border-(--surface3)">
-            <div className="text-xs font-semibold uppercase tracking-wider text-(--accent) font-['IBM_Plex_Sans',sans-serif]">
-              On this page
-            </div>
-            <div className="mt-1 text-xs text-(--dim) font-medium">
-              {currentSectionData.title}
-            </div>
-            <ul className="mt-3.5 space-y-2 border-l border-(--surface3) pl-3 text-xs">
-              {currentSectionData.items.map((item) => (
-                <li key={item.id}>
-                  <a
-                    href={`#${item.id}`}
-                    className="block text-(--dim) hover:text-(--accent) transition-colors leading-relaxed"
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 rounded-xl border border-(--border) bg-(--surface2)/50 p-4 text-xs">
-              <span className="font-semibold text-(--fg) block">Open Source</span>
-              <p className="mt-1 text-[11px] leading-relaxed text-(--dim)">
-                MIT licensed. Runs completely on your own machine and edge accounts.
-              </p>
+        <aside className="sticky top-[57px] hidden h-[calc(100vh-57px)] w-[240px] shrink-0 overflow-y-auto border-l border-(--surface3) p-6 xl:flex flex-col gap-4">
+          <div className="text-[13px] font-semibold text-(--accent) font-['IBM_Plex_Sans',sans-serif]">
+            On this page
+          </div>
+          <div className="text-xs text-(--dim) font-medium">
+            {currentSectionData.title}
+          </div>
+          <nav className="flex flex-col gap-1.5 text-xs">
+            {currentSectionData.items.map((item) => (
               <a
-                href={GITHUB}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-semibold text-(--accent) hover:underline"
+                key={item.id}
+                href={`#${item.id}`}
+                className="block text-(--dim) hover:text-(--accent) transition-colors leading-relaxed"
               >
-                GitHub Repository &rarr;
+                {item.label}
               </a>
-            </div>
+            ))}
+          </nav>
 
-            <div className="mt-4 rounded-xl border border-(--border) bg-(--surface2)/30 p-4 text-xs">
-              <span className="font-semibold text-(--fg2) block">Need Help?</span>
-              <p className="mt-1 text-[11px] leading-relaxed text-(--dim)">
-                Issues or questions? Check our open source tracker or discussions on GitHub.
-              </p>
-              <a
-                href={`${GITHUB}/issues`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-semibold text-(--accent) hover:underline"
-              >
-                Open an issue &rarr;
-              </a>
-            </div>
-          </aside>
-        </div>
+          <div className="mt-6 rounded-xl border border-(--surface3) bg-(--surface2) p-3.5 text-xs text-(--dim)">
+            <span className="font-semibold text-(--fg) block mb-1">Open Source</span>
+            <p className="text-[11px] leading-relaxed text-(--dim)">
+              MIT licensed. Runs completely on your own machine and edge accounts.
+            </p>
+            <a
+              href={GITHUB}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-(--accent) hover:underline"
+            >
+              GitHub Repository &rarr;
+            </a>
+          </div>
+
+          <div className="rounded-xl border border-(--surface3) bg-(--surface2)/60 p-3.5 text-xs text-(--dim)">
+            <span className="font-semibold text-(--fg2) block mb-1">Need Help?</span>
+            <p className="text-[11px] leading-relaxed text-(--dim)">
+              Issues or questions? Check our open source tracker or discussions on GitHub.
+            </p>
+            <a
+              href={`${GITHUB}/issues`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-(--accent) hover:underline"
+            >
+              Open an issue &rarr;
+            </a>
+          </div>
+        </aside>
       </div>
     </div>
   )

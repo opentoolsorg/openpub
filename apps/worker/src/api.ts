@@ -4,12 +4,20 @@ import * as db from './db'
 import { adapters, platformNames } from './platforms'
 import { enqueuePublish } from './publish'
 import { images } from './images'
+import { auth, hasValidSession, trustedOrigin } from './auth'
 import type { Env, PlatformName } from './types'
 
 export const api = new Hono<{ Bindings: Env }>()
 
+function corsOrigin(request: Request, env: Env): string {
+  const origin = request.headers.get('Origin')
+  const host = new URL(request.url).hostname
+  if (origin === 'http://localhost:3000' && (host === 'localhost' || host === '127.0.0.1')) return origin
+  return env.DASHBOARD_URL ?? 'http://localhost:3000'
+}
+
 api.use('*', async (c, next) => {
-  const origin = c.env.DASHBOARD_URL ?? 'http://localhost:3000'
+  const origin = corsOrigin(c.req.raw, c.env)
   if (c.req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -17,6 +25,7 @@ api.use('*', async (c, next) => {
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization,Content-Type',
+        'Access-Control-Allow-Credentials': 'true',
         Vary: 'Origin',
       },
     })
@@ -24,6 +33,7 @@ api.use('*', async (c, next) => {
   await next()
   c.res.headers.set('Access-Control-Allow-Origin', origin)
   c.res.headers.set('Access-Control-Allow-Headers', 'Authorization,Content-Type')
+  c.res.headers.set('Access-Control-Allow-Credentials', 'true')
 })
 
 // timing-safe-ish key compare; ?key= accepted on GET only (covers/previews need it)
@@ -41,12 +51,20 @@ async function keyMatch(a: string, b: string): Promise<boolean> {
 }
 
 api.use('*', async (c, next) => {
+  if (c.req.path.startsWith('/auth/') || c.req.path.startsWith('/api/auth/')) return next()
   const m = c.req.header('Authorization')?.match(/^Bearer\s+(.+)$/i)
   const key = m?.[1] ?? (c.req.method === 'GET' ? c.req.query('key') : undefined)
-  if (!c.env.ADMIN_KEY || !key || !(await keyMatch(key, c.env.ADMIN_KEY))) return c.json({ error: 'unauthorized' }, 401)
-  return next()
+  if (c.env.ADMIN_KEY && key && await keyMatch(key, c.env.ADMIN_KEY)) return next()
+
+  if (await hasValidSession(c.env.DB, c.req.raw)) {
+    const safeMethod = c.req.method === 'GET' || c.req.method === 'HEAD' || c.req.method === 'OPTIONS'
+    if (!safeMethod && !trustedOrigin(c.req.raw, c.env)) return c.json({ error: 'request origin not allowed' }, 403)
+    return next()
+  }
+  return c.json({ error: 'unauthorized' }, 401)
 })
 
+api.route('/auth', auth)
 api.route('/images', images)
 
 api.get('/status', async (c) => {

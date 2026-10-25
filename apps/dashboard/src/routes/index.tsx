@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
-import { Logo, Mark } from '~/components/Logo'
+import { Logo } from '~/components/Logo'
 import { ThemeToggle } from '~/components/ThemeToggle'
 
 export const Route = createFileRoute('/')({
@@ -13,33 +13,47 @@ const DOCS = '/docs'
 interface PlatformInfo {
   slug: string
   label: string
+  logo: string
+  hex: string
   limitType: 'update' | 'create-only' | 'draft-only'
 }
 
 const PLATFORMS: PlatformInfo[] = [
-  { slug: 'devdotto', label: 'dev.to', limitType: 'update' },
-  { slug: 'hashnode', label: 'Hashnode', limitType: 'update' },
-  { slug: 'wordpress', label: 'WordPress', limitType: 'update' },
-  { slug: 'ghost', label: 'Ghost', limitType: 'update' },
-  { slug: 'medium', label: 'Medium', limitType: 'create-only' },
-  { slug: 'substack', label: 'Substack', limitType: 'draft-only' },
-  { slug: 'github', label: 'GitHub Pages', limitType: 'update' },
-  { slug: 'x', label: 'X Articles', limitType: 'create-only' },
+  { slug: 'devdotto', label: 'dev.to', logo: 'devto', hex: '#0A0A0A', limitType: 'update' },
+  { slug: 'hashnode', label: 'Hashnode', logo: 'hashnode', hex: '#2962FF', limitType: 'update' },
+  { slug: 'wordpress', label: 'WordPress', logo: 'wordpress', hex: '#21759B', limitType: 'update' },
+  { slug: 'ghost', label: 'Ghost', logo: 'ghost', hex: '#15171A', limitType: 'update' },
+  { slug: 'medium', label: 'Medium', logo: 'medium', hex: '#000000', limitType: 'create-only' },
+  { slug: 'substack', label: 'Substack', logo: 'substack', hex: '#FF6719', limitType: 'draft-only' },
+  { slug: 'github', label: 'GitHub Pages', logo: 'github', hex: '#181717', limitType: 'update' },
+  { slug: 'x', label: 'X Articles', logo: 'x', hex: '#000000', limitType: 'create-only' },
 ]
 
-const HERO_AGENTS = ['Claude Code', 'Codex', 'Cursor', 'Copilot', 'Hermes', 'OpenCode', 'OpenClaw', 'CLI']
-
-const ROTATING_PLATFORMS = [
-  'dev.to',
-  'Hashnode',
-  'WordPress',
-  'Ghost',
-  'Medium',
-  'Substack',
-  'GitHub Pages',
-  'X Articles',
-  'dev.to', // repeats first item for seamless loop wrap
+// Grok Bot setup is unverified, so it stays out of the headline; 8 slots keep both rotators in sync.
+const HERO_SOURCES = [
+  ['Claude Code', 'claude-code'],
+  ['Codex', 'codex'],
+  ['Cursor', 'cursor'],
+  ['Copilot', 'copilot'],
+  ['OpenCode', 'opencode'],
+  ['Hermes Agent', 'hermes'],
+  ['OpenClaw', 'openclaw'],
+  ['your terminal', 'terminal'],
 ]
+
+// Offsets each word's blur-fade into its 3s slot of the 24s rotation; slot 8 repeats slot 0.
+const rotSlot = (i: number) => ({ animationDelay: `${i % 8 ? (i % 8) * 3 - 24 : 0}s` })
+
+const AGENT_LOGOS: Record<string, string> = {
+  claude: 'claude-code',
+  codex: 'codex',
+  cursor: 'cursor',
+  copilot: 'copilot',
+  hermes: 'hermes',
+  opencode: 'opencode',
+  openclaw: 'openclaw',
+  grokbot: 'grok',
+}
 
 interface AgentTab {
   id: string
@@ -67,10 +81,10 @@ const BUILD_SERVER_STEP = {
   n: '01',
   title: 'Build the server',
   lead: 'OpenPub is not on npm yet, so build it once from the repository:',
-  code: 'git clone https://github.com/princepal9120/openpub\ncd openpub/mcp\nnpm install && npm run build',
+  code: 'git clone https://github.com/princepal9120/openpub\ncd openpub/apps/mcp\nnpm install && npm run build',
 }
 
-const MCP_PATH = '/path/to/openpub/mcp/dist/index.js'
+const MCP_PATH = '/path/to/openpub/apps/mcp/dist/index.js'
 const ASK_PROMPT = 'Check the links in post.md, then do a dry run to dev.to and Hashnode.'
 
 const AGENT_CLIENTS: AgentTab[] = [
@@ -92,13 +106,13 @@ const AGENT_CLIENTS: AgentTab[] = [
         lead: 'Credentials save directly to',
         monoLead: '~/.openpub/config.json',
         tail: 'on your local machine:',
-        code: "node cli/dist/index.js setup devto '{\"api_key\": \"YOUR_DEVTO_KEY\"}'\nnode cli/dist/index.js status",
+        code: "node apps/cli/dist/index.js setup devto '{\"api_key\": \"YOUR_DEVTO_KEY\"}'\nnode apps/cli/dist/index.js status",
       },
       {
         n: '03',
         title: 'Dry-run a post',
         lead: 'Test the plan before shipping. Drafts stay default:',
-        code: 'node cli/dist/index.js publish --dry-run post.md --to devto',
+        code: 'node apps/cli/dist/index.js publish --dry-run post.md --to devto',
       },
     ],
   },
@@ -340,60 +354,18 @@ const FAQ_ITEMS = [
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = React.useState(false)
   return (
-    <div
-      className={`overflow-hidden rounded-xl border transition-colors duration-200 ${
-        open
-          ? 'border-(--accent-strong)/40 bg-(--surface)'
-          : 'border-(--border) bg-(--surface)/60 hover:border-(--surface4)'
-      }`}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left focus-visible:outline-2 focus-visible:outline-(--accent)"
-      >
-        <span
-          className={`text-sm font-medium transition-colors ${
-            open ? 'text-(--fg)' : 'text-(--fg3) group-hover:text-(--fg)'
-          }`}
-        >
-          {q}
-        </span>
-        <span
-          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-all duration-200 ${
-            open
-              ? 'rotate-45 border-(--accent-strong)/40 bg-(--accent-strong)/10 text-(--accent)'
-              : 'border-(--border) bg-(--surface2)/60 text-(--dim3) group-hover:text-(--dim)'
-          }`}
-        >
-          <svg
-            className="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+    <div className={`overflow-hidden rounded-xl border transition-colors duration-200 ${open ? 'border-(--accent-strong)/40 bg-(--surface)' : 'border-(--border) bg-(--surface)/60 hover:border-(--surface4)'}`}>
+      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="group flex w-full items-center justify-between gap-4 px-5 py-4 text-left focus-visible:outline-2 focus-visible:outline-(--accent)">
+        <span className={`text-sm font-medium transition-colors ${open ? 'text-(--fg)' : 'text-(--fg3) group-hover:text-(--fg)'}`}>{q}</span>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-all duration-200 ${open ? 'rotate-45 border-(--accent-strong)/40 bg-(--accent-strong)/10 text-(--accent)' : 'border-(--border) bg-(--surface2)/60 text-(--dim3) group-hover:text-(--dim)'}`} aria-hidden="true">
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </span>
       </button>
-      <div
-        className={`grid transition-all duration-200 ease-out ${
-          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <p className="border-t border-(--border)/60 px-5 pt-3.5 pb-5 text-sm leading-relaxed text-(--dim)">
-            {a}
-          </p>
-        </div>
-      </div>
+      {open && <p className="border-t border-(--border)/60 px-5 pt-3.5 pb-5 text-sm leading-relaxed text-(--dim)">{a}</p>}
     </div>
   )
 }
+
 
 function Landing() {
   const [activeTabId, setActiveTabId] = React.useState('cli')
@@ -542,7 +514,7 @@ function Landing() {
         .lp-ed-list {
           display: flex;
           flex-direction: column;
-          animation: lpRot 24s cubic-bezier(.76, 0, .24, 1) infinite;
+          animation: lpRot 24s cubic-bezier(0.77, 0, 0.175, 1) infinite;
         }
         .lp-ed:hover .lp-ed-list,
         .lp-ed:focus-within .lp-ed-list { animation-play-state: paused; }
@@ -553,7 +525,30 @@ function Landing() {
           color: var(--accent);
           white-space: nowrap;
         }
-        .lp-ed-list .lp-ed-item { display: flex; }
+        .lp-ed-list .lp-ed-item { display: flex; gap: .18em; }
+        .lp-ed-logo { display: inline-flex; align-items: center; justify-content: center; flex: none; width: .8em; height: .8em; border-radius: .22em; transform: rotate(-6deg); box-shadow: inset 0 0 0 .02em rgba(255, 255, 255, .18); }
+        .lp-ed-logo > span { width: .48em; height: .48em; background: #fff; }
+        .lp-hero-ed { font-size: clamp(40px, 6.6vw, 88px); line-height: 1.02; letter-spacing: -0.045em; text-align: center; }
+        .lp-hero-ed .lp-ed-item { justify-content: center; color: var(--fg); }
+        .lp-hero-ed .lp-ed-list .lp-ed-item { gap: .22em; }
+        .lp-hero-ed .lp-from-item { color: var(--dim2); }
+        .lp-hero-ed .lp-ed-list .lp-ed-item { animation: lpItem 24s cubic-bezier(0.77, 0, 0.175, 1) infinite; }
+        .lp-ed:hover .lp-ed-list .lp-ed-item { animation-play-state: paused; }
+        @keyframes lpItem {
+          0%, 10% { opacity: 1; filter: blur(0); }
+          12.5%, 97.5% { opacity: 0; filter: blur(8px); }
+          100% { opacity: 1; filter: blur(0); }
+        }
+        .lp-hero > * { animation: lpHeroIn .5s cubic-bezier(0.23, 1, 0.32, 1) both; }
+        .lp-hero > :nth-child(2) { animation-delay: 60ms; }
+        .lp-hero > :nth-child(3) { animation-delay: 120ms; }
+        .lp-hero > :nth-child(4) { animation-delay: 180ms; }
+        @keyframes lpHeroIn { from { opacity: 0; transform: translateY(12px); filter: blur(4px); } }
+        @media (prefers-reduced-motion: reduce) {
+          .lp-hero > * { animation: none; }
+        }
+        .lp-from-item .lp-ed-fade { display: inline; padding-right: .04em; }
+        .lp-src-mark { width: .62em; height: .62em; flex: none; background: currentColor; }
         .lp-ed-static { display: none; }
         @media (prefers-reduced-motion: reduce) {
           .lp-ed-static { display: flex; }
@@ -634,12 +629,6 @@ function Landing() {
             Agents
           </a>
           <a
-            href="#platforms"
-            className="hidden md:inline transition-colors duration-200 hover:text-(--fg)"
-          >
-            Platforms
-          </a>
-          <a
             href="#features"
             className="hidden sm:inline transition-colors duration-200 hover:text-(--fg)"
           >
@@ -657,7 +646,6 @@ function Landing() {
           >
             GitHub
           </a>
-          <a href="/app" className="transition-colors duration-200 hover:text-(--fg)">App</a>
           <ThemeToggle />
           <a
             href={DOCS}
@@ -675,16 +663,52 @@ function Landing() {
           <span>Open source · MIT · MCP server included</span>
         </div>
 
-        <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-(--fg) sm:text-5xl md:text-6xl md:leading-[1.08]">
-          Write once.{' '}
-          <span className="text-(--dim2)">Let your agent publish.</span>
+        <h1 className="lp-ed lp-hero-ed mt-8">
+          <span className="lp-sr">Publish articles to eight platforms from Claude Code, Codex, Cursor or your terminal.</span>
+          <span aria-hidden="true" style={{ display: 'block', color: 'var(--fg)' }}>
+            Publish articles to
+          </span>
+          <span aria-hidden="true" className="lp-ed-rot">
+            <span className="lp-ed-static lp-ed-item">eight platforms</span>
+            <span className="lp-ed-list">
+              {[...PLATFORMS, PLATFORMS[0]].map((p, idx) => (
+                <span key={idx} className="lp-ed-item" style={rotSlot(idx)}>
+                  <span className="lp-ed-logo" style={{ background: p.hex }}>
+                    <span
+                      style={{
+                        mask: `url(/logos/${p.logo}.svg) center/contain no-repeat`,
+                        WebkitMask: `url(/logos/${p.logo}.svg) center/contain no-repeat`,
+                      }}
+                    />
+                  </span>
+                  {p.label}
+                </span>
+              ))}
+            </span>
+          </span>
+          <span aria-hidden="true" className="lp-ed-fade">from</span>
+          <span aria-hidden="true" className="lp-ed-rot">
+            <span className="lp-ed-static lp-ed-item lp-from-item"><span className="lp-ed-fade">your agent.</span></span>
+            <span className="lp-ed-list">
+              {[...HERO_SOURCES, HERO_SOURCES[0]].map(([name, logo], idx) => (
+                <span key={idx} className="lp-ed-item lp-from-item" style={rotSlot(idx)}>
+                  <span
+                    className="lp-src-mark"
+                    style={{
+                      mask: `url(/logos/${logo}.svg) center/contain no-repeat`,
+                      WebkitMask: `url(/logos/${logo}.svg) center/contain no-repeat`,
+                    }}
+                  />
+                  <span className="lp-ed-fade">{name}.</span>
+                </span>
+              ))}
+            </span>
+          </span>
         </h1>
 
-        <p className="mt-5 max-w-2xl text-base leading-relaxed text-(--dim) sm:text-lg">
-          OpenPub is an open-source MCP server and CLI that publishes one Markdown
-          file to dev.to, Hashnode, WordPress, Ghost, Medium, Substack, GitHub
-          Pages and X Articles. Credentials stay in a config file on your machine
-          or in your own self-hosted instance.
+        <p className="mt-8 max-w-xl text-base leading-relaxed text-(--dim) sm:text-lg">
+          Write in Markdown once. OpenPub sends it everywhere as a draft,
+          and nothing goes live until you say so.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
@@ -702,75 +726,6 @@ function Landing() {
           </a>
         </div>
 
-        <p className="mt-4 text-xs text-(--dim2) font-mono">
-          Drafts by default. Nothing goes live until you say so.
-        </p>
-
-        {/* Visual Pipeline Band */}
-        <div className="lp-ecosystem relative w-full overflow-hidden rounded-2xl border border-(--border) bg-(--surface)/60">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Left: AI Agents */}
-            <div className="lp-agent-flow flex-1 w-full text-left">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="font-mono text-xs uppercase tracking-wider text-(--dim2)">
-                  AI agents
-                </span>
-                <span className="h-px flex-1 bg-(--border)" />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {[...HERO_AGENTS, ...HERO_AGENTS].map((name, index) => (
-                  <span
-                    key={`${name}-${index}`}
-                    aria-hidden={index >= HERO_AGENTS.length ? true : undefined}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-(--border) bg-(--surface2)/60 px-2.5 py-1 text-xs font-medium text-(--fg3)"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-(--accent)/80" />
-                    {name}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Core Bridge Indicator */}
-            <div className="flex flex-col items-center justify-center px-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-(--accent)/40 bg-(--surface2) text-(--accent) shadow-[0_0_25px_rgba(16,185,129,0.25)]">
-                <Mark className="h-7 w-7 text-(--accent)" />
-              </div>
-              <span className="mt-2 font-mono text-[11px] text-(--accent)">
-                OpenPub MCP
-              </span>
-            </div>
-
-            {/* Right: Platforms */}
-            <div className="lp-platform-flow flex-1 w-full text-right">
-              <div className="flex items-center gap-2 mb-3 justify-end">
-                <span className="h-px flex-1 bg-(--border)" />
-                <span className="font-mono text-xs uppercase tracking-wider text-(--dim2)">
-                  Publishing platforms
-                </span>
-              </div>
-              <div className="flex flex-wrap justify-end gap-2">
-                {[...PLATFORMS, ...PLATFORMS].map((p, index) => (
-                  <span
-                    key={`${p.slug}-${index}`}
-                    aria-hidden={index >= PLATFORMS.length ? true : undefined}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-(--border) bg-(--surface2)/60 px-2.5 py-1 text-xs font-medium text-(--fg3)"
-                  >
-                    <img
-                      src={`https://cdn.simpleicons.org/${p.slug}/e9eaec`}
-                      alt=""
-                      className="brand-icon h-3 w-3 object-contain opacity-70"
-                      loading="lazy"
-                      width={12}
-                      height={12}
-                    />
-                    {p.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
       </header>
 
       {/* Agents & Setup Rail Section with Auto-Advance */}
@@ -844,32 +799,28 @@ function Landing() {
                       selectTabManually(nextId)
                       document.getElementById(`tab-${nextId}`)?.focus()
                     }}
-                    className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-(--accent) ${
+                    className={`lp-tab inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-(--accent) ${
                       isSelected
-                        ? 'bg-(--surface) text-(--fg) border border-(--border) shadow-xs'
+                        ? 'bg-(--fg) text-(--bg) shadow-xs'
                         : 'text-(--dim) hover:text-(--fg2) hover:bg-(--surface2)/50'
                     }`}
                   >
-                    {client.customIcon ? (
-                      <span className="flex h-4 w-4 items-center justify-center rounded bg-(--surface3) font-mono text-[9px] font-bold text-(--accent)">
-                        {client.customIcon}
+                    {client.id === 'cli' ? (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-(--surface3) font-mono text-[10px] font-bold text-(--accent)">
+                        &gt;_
                       </span>
-                    ) : client.slug ? (
-                      <img
-                        src={`https://cdn.simpleicons.org/${client.slug}/e9eaec`}
-                        alt=""
-                        className="brand-icon h-3.5 w-3.5 object-contain opacity-75"
-                        loading="lazy"
-                        width={14}
-                        height={14}
+                    ) : (
+                      // Local SVG as a mask so the logo follows the tab's text color.
+                      <span
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 bg-current"
+                        style={{
+                          mask: `url(/logos/${AGENT_LOGOS[client.id]}.svg) center/contain no-repeat`,
+                          WebkitMask: `url(/logos/${AGENT_LOGOS[client.id]}.svg) center/contain no-repeat`,
+                        }}
                       />
-                    ) : null}
-                    <span>{client.name}</span>
-                    {client.blocked && (
-                      <span className="rounded bg-(--surface3) px-1.5 py-0.2 font-mono text-[10px] text-(--dim2)">
-                        unverified
-                      </span>
                     )}
+                    <span>{client.name}</span>
                   </button>
                 )
               })}
@@ -1050,126 +1001,48 @@ function Landing() {
         </div>
       </section>
 
-      <section id="platforms" className="lp-publishes mx-auto max-w-6xl px-6" aria-labelledby="publishes-heading">
-        <h2 id="publishes-heading">Publishes to</h2>
-        <div>{PLATFORMS.map((platform) => <span key={platform.slug}><img src={`https://cdn.simpleicons.org/${platform.slug}/e9eaec`} className="brand-icon" width={28} height={28} alt="" loading="lazy" />{platform.label}</span>)}</div>
-        <p>Product names and logos belong to their owners and show where OpenPub can publish. No affiliation or endorsement is implied.</p>
-      </section>
+      {/* Feature overview follows agent setup so visitors see what the MCP flow enables. */}
+      <section
+        id="features"
+        aria-labelledby="features-heading"
+        className="mx-auto max-w-6xl px-6 py-18"
+      >
+        <div className="flex flex-col gap-4">
+          <span className="lp-eyebrow">Features</span>
+          <h2 id="features-heading" className="text-3xl font-semibold tracking-tight text-(--fg) sm:text-4xl">
+            What happens after you publish.
+          </h2>
+        </div>
 
-      {/* Dry Run Product Preview Section */}
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="overflow-hidden rounded-2xl border border-(--border) bg-(--surface)">
-          {/* Header bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--border) bg-(--surface2)/60 px-5 py-3">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-(--fg2)">
-                posts/markdown-pipeline.md
-              </span>
-              <span className="rounded bg-(--surface3) px-2 py-0.5 font-mono text-[11px] text-(--dim)">
-                openpub publish --dry-run
-              </span>
-            </div>
-            <span className="rounded-full border border-(--surface4) px-2.5 py-0.5 font-mono text-[10px] text-(--dim)">
-              Dry-run preview · Nothing is sent
-            </span>
-          </div>
-
-          {/* Split Content */}
-          <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-(--border)">
-            {/* Left: Markdown */}
-            <div className="p-6 font-mono text-xs">
-              <div className="text-(--dim2) mb-2 font-mono text-[11px]">
-                // Input Markdown file
-              </div>
-              <div className="space-y-1 text-(--fg3) leading-relaxed">
-                <p className="text-(--dim3)">---</p>
-                <p>
-                  <span className="text-(--accent)">title:</span> Shipping a
-                  Markdown pipeline
-                </p>
-                <p>
-                  <span className="text-(--accent)">tags:</span> [markdown,
-                  publishing, tooling]
-                </p>
-                <p>
-                  <span className="text-(--accent)">platforms:</span> [devto,
-                  hashnode, ghost, wordpress, substack]
-                </p>
-                <p>
-                  <span className="text-(--accent)">status:</span> draft
-                </p>
-                <p className="text-(--dim3)">---</p>
-                <div className="pt-2 text-(--dim)">
-                  <p className="text-(--fg) font-semibold">
-                    # Shipping a Markdown pipeline
-                  </p>
-                  <p className="mt-2">
-                    Every post starts as a markdown file in my git repository.
-                    OpenPub fans it out across platforms while keeping my site as
-                    the canonical source.
-                  </p>
+        <div className="feature-bento">
+          {CORE_PRINCIPLES.map((principle, idx) => {
+            const isFeatured = idx === 0 || idx === 5
+            return (
+              <div
+                key={principle.title}
+                className={`bento-card ${isFeatured ? 'bento-card-featured' : ''}`}
+              >
+                <div className="bento-badge">
+                  <span className="h-1.5 w-1.5 rounded-full bg-(--accent)" />
+                  0{idx + 1}
                 </div>
+                <h3>{principle.title}</h3>
+                <p>
+                  {principle.desc}
+                  {principle.title === 'Self-host on Cloudflare' && (
+                    <> <a href="#self-host" className="text-(--accent) hover:underline">How to deploy &rarr;</a></>
+                  )}
+                </p>
               </div>
-            </div>
-
-            {/* Right: Execution Plan */}
-            <div className="p-6 flex flex-col justify-between">
-              <div>
-                <div className="font-mono text-[11px] text-(--dim2) mb-3">
-                  // Platform Plan Preview
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { name: 'dev.to', action: 'Create draft' },
-                    {
-                      name: 'Hashnode',
-                      action: 'Create draft',
-                      note: 'Requires Pro publication',
-                    },
-                    { name: 'Ghost', action: 'Create draft' },
-                    { name: 'WordPress', action: 'Create draft' },
-                    {
-                      name: 'Substack',
-                      action: 'Create draft',
-                      note: 'Publish via Substack web editor',
-                    },
-                  ].map((row) => (
-                    <div
-                      key={row.name}
-                      className="flex items-center justify-between border-b border-(--border)/60 pb-2 text-xs"
-                    >
-                      <span className="font-medium text-(--fg2)">{row.name}</span>
-                      <div className="text-right">
-                        <span className="text-(--accent) font-mono">
-                          {row.action}
-                        </span>
-                        {row.note && (
-                          <span className="block text-[10px] text-(--dim3)">
-                            {row.note}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-lg border border-(--accent-strong)/30 bg-(--accent-strong)/10 p-3 text-xs text-(--fg3)">
-                <span className="font-semibold text-(--accent)">
-                  Status is draft:
-                </span>{' '}
-                Nothing goes live until you set{' '}
-                <code className="font-mono text-(--fg)">status: published</code>.
-              </div>
-            </div>
-          </div>
+            )
+          })}
         </div>
       </section>
 
       {/* How it works (3-Step overview) */}
-      <section className="mx-auto max-w-6xl px-6 py-14">
+      <section id="how" className="mx-auto max-w-6xl px-6 py-14">
         <div>
-          <span className="font-mono text-xs uppercase tracking-wider text-(--accent)">
+          <span className="lp-eyebrow">
             How it works
           </span>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-(--fg) sm:text-3xl">
@@ -1177,19 +1050,16 @@ function Landing() {
           </h2>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <div className="mt-8 steps-card">
           {HOW_STEPS.map((step) => (
-            <div
-              key={step.n}
-              className="rounded-xl border border-(--border) bg-(--surface)/70 p-6"
-            >
-              <span className="font-mono text-sm font-semibold text-(--accent)">
+            <div key={step.n}>
+              <span className="lp-eyebrow font-mono text-sm">
                 {step.n}
               </span>
-              <h3 className="mt-2 text-base font-semibold text-(--fg)">
+              <h3 className="text-base font-semibold text-(--fg)">
                 {step.title}
               </h3>
-              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
+              <p className="text-sm leading-relaxed text-(--dim)">
                 {step.desc}
               </p>
             </div>
@@ -1200,7 +1070,7 @@ function Landing() {
       {/* Platforms & Platform Limits Section */}
       <section id="platform-capabilities" className="mx-auto max-w-6xl px-6 py-14">
         <div>
-          <span className="font-mono text-xs uppercase tracking-wider text-(--accent)">
+          <span className="lp-eyebrow">
             Platform Capabilities
           </span>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-(--fg) sm:text-3xl">
@@ -1304,132 +1174,10 @@ function Landing() {
         </div>
       </section>
 
-      {/* EDITORIAL FEATURES SECTION (Image #7 Reference with Animated Platform Word) */}
-      <section
-        id="features"
-        aria-labelledby="features-heading"
-        className="mx-auto max-w-6xl px-6 py-18"
-      >
-        <div className="flex flex-col gap-4">
-          <span className="text-sm font-semibold text-(--accent)">
-            Features
-          </span>
-
-          {/* Large Editorial Headline with Single SR Accessible Sentence & Animated Platform Word */}
-          <h2
-            id="features-heading"
-            className="lp-ed"
-          >
-            {/* Single accessible sentence for screen readers */}
-            <span className="lp-sr">
-              Publish to eight platforms from one Markdown file.
-            </span>
-
-            {/* Visual presentation */}
-            <span aria-hidden="true" style={{ display: 'block' }}>
-              Publish to
-            </span>
-            <span aria-hidden="true" className="lp-ed-rot">
-              {/* Static text fallback for reduced-motion */}
-              <span className="lp-ed-static lp-ed-item text-(--accent)">
-                eight platforms
-              </span>
-              {/* Animated rotating words container */}
-              <span className="lp-ed-list">
-                {ROTATING_PLATFORMS.map((platformName, idx) => (
-                  <span key={idx} className="lp-ed-item">
-                    {platformName}
-                  </span>
-                ))}
-              </span>
-            </span>
-            <span aria-hidden="true" className="lp-ed-fade">
-              from one Markdown file.
-            </span>
-          </h2>
-        </div>
-
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          <div className="flex flex-col justify-between rounded-xl border border-(--border) bg-(--surface) p-6 transition-colors hover:border-(--surface4)">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-(--fg)">MCP Server</h3>
-                <span className="rounded bg-(--accent-strong)/10 px-2 py-0.5 font-mono text-[10px] text-(--accent)">10 tools</span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
-                The local stdio server gives your agent 10 tools to audit content,
-                check links, run dry runs, and cross-publish with per-platform results.
-              </p>
-              <p className="mt-4 rounded-lg border border-(--border) bg-(--surface2)/50 p-3 font-mono text-[11px] leading-relaxed text-(--fg3)">
-                publish · cross_publish · list_published · setup · status · test_platform · content_audit · check_links · frontmatter · x_article
-              </p>
-            </div>
-            <a href="#agents" className="mt-6 inline-flex items-center text-xs font-medium text-(--accent) underline-offset-4 hover:underline">Setup instructions for each agent &rarr;</a>
-          </div>
-
-          <div className="flex flex-col justify-between rounded-xl border border-(--border) bg-(--surface) p-6 transition-colors hover:border-(--surface4)">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-(--fg)">CLI</h3>
-                <span className="rounded bg-(--surface2) px-2 py-0.5 font-mono text-[10px] text-(--dim)">Node 20+</span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
-                Built from the repo. Platform credentials stay local in
-                ~/.openpub/config.json. Scriptable for shell scripts and cron jobs.
-              </p>
-              <div className="mt-4 rounded-lg border border-(--border) bg-(--surface2)/50 p-3 font-mono text-[11px] leading-relaxed text-(--fg3) space-y-1 break-words">
-                <p className="text-(--dim2)"># Dry-run before publishing</p>
-                <p>node apps/cli/dist/index.js publish post.md --to devto --dry-run</p>
-                <p className="text-(--dim2) pt-1"># Create draft</p>
-                <p>node apps/cli/dist/index.js publish post.md --to devto --status draft</p>
-              </div>
-            </div>
-            <a href="/docs#cli" className="mt-6 inline-flex items-center text-xs font-medium text-(--accent) underline-offset-4 hover:underline">Full CLI setup &rarr;</a>
-          </div>
-
-          <div className="flex flex-col justify-between rounded-xl border border-(--border) bg-(--surface) p-6 transition-colors hover:border-(--surface4)">
-            <div>
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-(--fg)">GitHub Action</h3>
-                <span className="rounded-full border border-(--warn)/50 bg-(--warn)/10 px-2 py-0.5 font-mono text-[10px] font-medium text-(--warn)">Not released yet</span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-(--dim)">
-                Automated publishing on push is not available as a released Action.
-                The CLI npm package and a tagged Action release are not published yet.
-                Build the CLI from source for now.
-              </p>
-            </div>
-            <a href="/docs#github-action" className="mt-6 inline-flex items-center text-xs font-medium text-(--accent) underline-offset-4 hover:underline">Release status &rarr;</a>
-          </div>
-        </div>
-
-        <div className="mt-12 pt-10 border-t border-(--border)">
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {CORE_PRINCIPLES.map((principle) => (
-              <div
-                key={principle.title}
-                className="group rounded-xl border border-(--border) bg-(--surface)/60 p-5 transition-all duration-150 hover:border-(--surface4) hover:bg-(--surface2)/40"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-(--accent)" />
-                  <h4 className="text-sm font-semibold text-(--fg2)">
-                    {principle.title}
-                  </h4>
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-(--dim)">
-                  {principle.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Frontmatter In, Article Out (Markdown Rendering Preview) */}
       <section className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-6">
-          <span className="font-mono text-xs uppercase tracking-wider text-(--accent)">
+          <span className="lp-eyebrow">
             Markdown Preview
           </span>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-(--fg) sm:text-3xl">
@@ -1524,97 +1272,73 @@ function Landing() {
         </div>
       </section>
 
-      {/* FAQ Accordion Section */}
-      <section className="mx-auto max-w-4xl px-6 py-14">
-        <div className="text-center mb-8">
-          <span className="font-mono text-xs uppercase tracking-wider text-(--accent)">
-            Questions
-          </span>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-(--fg) sm:text-3xl">
-            Before you try it.
-          </h2>
-        </div>
+      {/* FAQ Two-Column Section with First Open */}
+      <section id="faq" className="mx-auto max-w-6xl px-6 py-14">
+        <div className="faq-two-col">
+          <div className="flex flex-col gap-3">
+            <span className="lp-eyebrow">
+              Questions
+            </span>
+            <h2 className="text-3xl font-semibold tracking-tight text-(--fg) sm:text-4xl">
+              Before you try it.
+            </h2>
+          </div>
 
-        <div className="space-y-3">
-          {FAQ_ITEMS.map((item) => (
-            <FaqItem key={item.q} q={item.q} a={item.a} />
-          ))}
+          <div className="questions">
+            {FAQ_ITEMS.map((item, index) => (
+              <details key={item.q} open={index === 0}>
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Self-Host CTA Section */}
       <section id="self-host" className="mx-auto max-w-6xl px-6 py-14">
-        <div className="relative overflow-hidden rounded-3xl border border-(--border) bg-(--surface) p-8 md:p-14 text-center">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-40 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px]"
-            aria-hidden="true"
-          />
+        <div className="self-host-cta">
+          <span className="lp-eyebrow">
+            Self-host
+          </span>
 
-          <div className="relative z-10 flex flex-col items-center">
-            <span className="rounded-full border border-(--accent-strong)/40 bg-(--accent-strong)/10 px-3 py-1 font-mono text-xs text-(--accent)">
-              Self-host
-            </span>
+          <h2>
+            Run it on your own Cloudflare account.
+          </h2>
 
-            <h2 className="mt-4 max-w-2xl text-2xl font-semibold tracking-tight text-(--fg) sm:text-3xl md:text-4xl">
-              Run it on your own Cloudflare account.
-            </h2>
+          <p>
+            The CLI and local MCP server need no external infrastructure.
+            When you want an API or web console, deploy a Worker backed by
+            your own D1, KV, R2, and Queue resources.
+          </p>
 
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-(--dim)">
-              The local CLI and MCP server need no external infrastructure.
-              When you want an API or web console, deploy a Worker backed by
-              your own D1, KV, R2, and Queue resources.
-            </p>
-
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href={DOCS}
-                className="inline-flex items-center justify-center rounded-lg bg-(--accent-strong) px-5 py-2.5 text-sm font-semibold text-(--on-accent) shadow-[0_0_20px_-5px_rgba(16,185,129,0.35)] transition-all duration-200 hover:bg-(--accent) hover:shadow-[0_0_25px_-3px_rgba(16,185,129,0.5)] active:scale-[0.98]"
-              >
-                Read the self-host docs
-              </a>
-              <a
-                href={GITHUB}
-                className="inline-flex items-center justify-center rounded-lg border border-(--border) bg-(--surface2)/50 px-5 py-2.5 text-sm font-semibold text-(--fg3) transition-all duration-200 hover:border-(--surface4) hover:bg-(--surface2) hover:text-(--fg) active:scale-[0.98]"
-              >
-                View source on GitHub
-              </a>
-            </div>
+          <div className="actions">
+            <a
+              href={DOCS}
+              className="lp-btn lp-btn-primary"
+            >
+              Read the self-host docs
+            </a>
+            <a
+              href={GITHUB}
+              className="lp-btn lp-btn-secondary"
+            >
+              View source on GitHub
+            </a>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-(--border) bg-(--surface)/40">
-        <div className="mx-auto max-w-6xl px-6 py-10 flex flex-col gap-6 text-xs text-(--dim2)">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Logo className="opacity-80" />
-              <span className="text-(--dim3)">·</span>
-              <span>MIT Licensed</span>
-            </div>
-            <nav aria-label="Footer" className="flex items-center gap-5">
-              <a
-                href={DOCS}
-                className="hover:text-(--fg3) transition-colors duration-150"
-              >
-                Docs
-              </a>
-              <a
-                href={GITHUB}
-                className="hover:text-(--fg3) transition-colors duration-150"
-              >
-                GitHub
-              </a>
-            </nav>
+      <footer className="border-t border-(--border)">
+        <div className="mx-auto max-w-6xl px-8 py-14 flex flex-wrap items-baseline justify-between gap-5 text-[13px] text-(--dim)">
+          <div className="flex flex-wrap items-center gap-5">
+            <span className="font-semibold text-(--fg)">OpenPub</span>
+            <span>MIT licensed</span>
+            <a href={GITHUB} className="hover:text-(--fg3) transition-colors duration-150">GitHub</a>
+            <a href={DOCS} className="hover:text-(--fg3) transition-colors duration-150">Docs</a>
           </div>
-
-          <p className="text-[11px] leading-relaxed text-(--dim3)">
-            Codex is a trademark of OpenAI. Cursor is a trademark of Anysphere.
-            GitHub and GitHub Copilot are trademarks of GitHub. Grok is a
-            trademark of xAI. OpenCode is a trademark of OpenCode. Other product
-            names belong to their respective owners. OpenPub is an independent
-            open-source project.
-          </p>
+          <div>Write once. Publish everywhere. Kept on your own machine.</div>
         </div>
       </footer>
     </div>

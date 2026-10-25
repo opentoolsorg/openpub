@@ -1,11 +1,11 @@
 # Graph Report - .  (2026-10-25)
 
 ## Corpus Check
-- 66 files · ~69,319 words
+- 69 files · ~65,753 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 228 nodes · 361 edges · 17 communities detected
+- 246 nodes · 389 edges · 17 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
@@ -16,10 +16,10 @@
 4. `tagsFor()` - 5 edges
 5. `saveConfig()` - 5 edges
 6. `mcpHandler()` - 5 edges
-7. `openpubHome()` - 4 edges
-8. `configPath()` - 4 edges
-9. `setCreds()` - 4 edges
-10. `parseFrontmatter()` - 4 edges
+7. `sha256()` - 5 edges
+8. `openpubHome()` - 4 edges
+9. `configPath()` - 4 edges
+10. `setCreds()` - 4 edges
 
 ## Surprising Connections (you probably didn't know these)
 - None detected - all connections are within the same source files.
@@ -28,43 +28,43 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.08
-Nodes (5): input(), tagsSent(), UpdateUnsupportedError, base(), cookieUserId()
+Nodes (5): UpdateUnsupportedError, base64url(), ghostJwt(), base(), cookieUserId()
 
 ### Community 1 - "Community 1"
-Cohesion: 0.13
-Nodes (8): advance(), BOLD(), clearTimer(), die(), DIM(), onMotionChange(), RED(), usage()
+Cohesion: 0.11
+Nodes (13): asPlatforms(), parseFrontmatter(), parseList(), unquote(), fields(), gql(), publicationId(), tags() (+5 more)
 
 ### Community 2 - "Community 2"
+Cohesion: 0.1
+Nodes (8): advance(), BOLD(), clearTimer(), die(), DIM(), onMotionChange(), RED(), usage()
+
+### Community 3 - "Community 3"
 Cohesion: 0.12
 Nodes (2): handleHash(), resolveSectionFromHash()
 
-### Community 3 - "Community 3"
+### Community 4 - "Community 4"
 Cohesion: 0.16
 Nodes (10): enqueuePublish(), extractTags(), firstHeading(), permanent(), publishConsumer(), publishFile(), refreshDraftStatus(), resolvePlatforms() (+2 more)
 
-### Community 4 - "Community 4"
-Cohesion: 0.12
-Nodes (4): extractTitle(), getDomainFromUrl(), handleTestAndConnect(), parseFrontmatterAndContent()
-
 ### Community 5 - "Community 5"
+Cohesion: 0.18
+Nodes (11): asFormat(), asPlatform(), assertKnown(), auditFile(), callTool(), checkLinks(), frontmatterFields(), optionalBool() (+3 more)
+
+### Community 6 - "Community 6"
 Cohesion: 0.12
 Nodes (2): getDraft(), updateDraft()
 
-### Community 6 - "Community 6"
-Cohesion: 0.17
-Nodes (10): asPlatforms(), parseFrontmatter(), parseList(), unquote(), fields(), gql(), publicationId(), tags() (+2 more)
-
 ### Community 7 - "Community 7"
-Cohesion: 0.15
-Nodes (3): escapeHtml(), html(), renderPreviewPage()
+Cohesion: 0.13
+Nodes (2): extractTitle(), parseFrontmatterAndContent()
 
 ### Community 8 - "Community 8"
-Cohesion: 0.14
-Nodes (2): base64url(), ghostJwt()
+Cohesion: 0.17
+Nodes (2): input(), tagsSent()
 
 ### Community 9 - "Community 9"
-Cohesion: 0.28
-Nodes (11): asFormat(), asPlatform(), assertKnown(), auditFile(), callTool(), checkLinks(), frontmatterFields(), optionalBool() (+3 more)
+Cohesion: 0.26
+Nodes (9): adminKeyMatches(), bytesToHex(), cookieValue(), createSession(), derivePassword(), hasValidSession(), readCookie(), sha256() (+1 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.36
@@ -75,12 +75,12 @@ Cohesion: 0.31
 Nodes (7): callTool(), err(), keyEq(), mcpHandler(), ok(), makeEnv(), mockDB()
 
 ### Community 12 - "Community 12"
-Cohesion: 0.48
-Nodes (5): batch(), fakeD1(), makeEnv(), seed(), tagsFor()
+Cohesion: 0.25
+Nodes (2): navigate(), pick()
 
 ### Community 13 - "Community 13"
-Cohesion: 0.4
-Nodes (2): navigate(), pick()
+Cohesion: 0.48
+Nodes (5): batch(), fakeD1(), makeEnv(), seed(), tagsFor()
 
 ### Community 14 - "Community 14"
 Cohesion: 0.67
@@ -106,12 +106,12 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.08 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.13 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.1 - nodes in this community are weakly interconnected._
+- **Should `Community 3` be split into smaller, more focused modules?**
   _Cohesion score 0.12 - nodes in this community are weakly interconnected._
-- **Should `Community 4` be split into smaller, more focused modules?**
+- **Should `Community 6` be split into smaller, more focused modules?**
   _Cohesion score 0.12 - nodes in this community are weakly interconnected._
-- **Should `Community 5` be split into smaller, more focused modules?**
-  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
-- **Should `Community 8` be split into smaller, more focused modules?**
-  _Cohesion score 0.14 - nodes in this community are weakly interconnected._
+- **Should `Community 7` be split into smaller, more focused modules?**
+  _Cohesion score 0.13 - nodes in this community are weakly interconnected._

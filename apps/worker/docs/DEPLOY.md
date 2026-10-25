@@ -79,11 +79,17 @@ binding = "AI"
 npx wrangler d1 execute openpub-db --config apps/worker/wrangler.toml --remote --file=./migrations/init.sql
 ```
 
-This creates `platform_config`, `drafts`, and `publish_log`. Safe to re-run; all statements are `IF NOT EXISTS`.
+This creates the platform, draft, publish, and dashboard-auth tables. Safe to re-run; all statements are `IF NOT EXISTS`.
+
+For an existing deployment, apply the auth migration before deploying the password-login version:
+
+```bash
+npx wrangler d1 execute openpub-db --config apps/worker/wrangler.toml --remote --file=./migrations/002_dashboard_auth.sql
+```
 
 ## 4. Set the admin secret
 
-`ADMIN_KEY` authenticates requests to `/api/*` and `/mcp`. Note: `?key=` query authentication only works on GET requests; POST and DELETE requests must use the `Authorization: Bearer <ADMIN_KEY>` header. Public endpoints such as `/health`, `/docs`, and `GET /covers/<uuid>.png` do not require authentication.
+`ADMIN_KEY` authenticates REST API and MCP clients. The dashboard also uses it once to initialize its password; after setup, you sign in with that password instead. Note: `?key=` query authentication only works on GET requests; POST and DELETE requests must use the `Authorization: Bearer <ADMIN_KEY>` header. Public endpoints such as `/health`, `/docs`, and `GET /covers/<uuid>.png` do not require authentication.
 
 Generate a strong one:
 
@@ -93,7 +99,7 @@ wrangler secret put ADMIN_KEY --config apps/worker/wrangler.toml
 # paste the generated key when prompted
 ```
 
-Store this key in your password manager. It is the only credential for the whole deployment.
+Store this key in your password manager. You still need it for MCP clients and one-time dashboard setup.
 
 ## 5. Set BASE_URL and DASHBOARD_URL
 
@@ -106,7 +112,11 @@ DASHBOARD_URL = "https://openpub.<your-subdomain>.workers.dev"
 ```
 
 - `BASE_URL`: Used to construct absolute URLs for generated cover images. If you do not know the worker URL yet, deploy once (step 6), note the printed URL, update `BASE_URL`, and deploy again.
-- `DASHBOARD_URL`: Restricts CORS for API requests (CORS is restricted to `DASHBOARD_URL` instead of `*`). In local development, it defaults to `http://localhost:3000` if unset.
+- `DASHBOARD_URL`: Sets the exact trusted browser origin for dashboard password setup, login, logout, and cookie-session API mutations; it also controls API CORS (not `*`). Set it to the dashboard's actual origin, including when using a custom domain or preview hostname. If unset, API CORS falls back to `http://localhost:3000`, while trusted-origin checks use the Worker request origin. Localhost Workers also allow `http://localhost:3000` for local development. Direct API clients using `Authorization: Bearer <ADMIN_KEY>` are exempt from the cookie-session origin check.
+
+The dashboard uses the same origin as the Worker, so it fills in the instance URL automatically. On first visit, enter `ADMIN_KEY` once and choose a password. The password is stored as a salted hash in D1; later dashboard sign-ins use an HttpOnly session cookie. Keep `ADMIN_KEY` for MCP and direct API clients.
+
+If you forget the dashboard password, clear only the auth rows in D1 (`auth_sessions`, `auth_login_attempts`, and `auth_settings`) and visit `/app` again to set a new one with `ADMIN_KEY`. Drafts and platform credentials are unaffected.
 
 ### Cover images
 
