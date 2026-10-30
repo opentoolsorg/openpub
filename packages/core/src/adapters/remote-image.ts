@@ -55,7 +55,14 @@ async function fetchNodeImage(url: URL): Promise<Response> {
     const request = https.request(url.toString(), {
       agent: false,
       servername: url.hostname,
-      lookup: (_hostname, _options, callback) => callback(null, address.address, 4),
+      lookup: ((
+        _hostname: string,
+        options: { all?: boolean },
+        callback: (error: NodeJS.ErrnoException | null, address: string | Array<{ address: string; family: number }>, family?: number) => void,
+      ) => {
+        if (options.all) callback(null, [{ address: address.address, family: 4 }])
+        else callback(null, address.address, 4)
+      }) as import('node:net').LookupFunction,
       timeout: 20_000,
     }, response => {
       response.on('data', (chunk: Uint8Array) => {
