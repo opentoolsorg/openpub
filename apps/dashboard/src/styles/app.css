@@ -80,6 +80,40 @@ body {
   outline-offset: 2px;
 }
 
+.preview-cover,
+.preview-markdown img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.preview-cover { width: 100%; max-height: 360px; object-fit: cover; }
+.preview-markdown { overflow-wrap: anywhere; line-height: 1.75; color: var(--fg3); }
+.preview-markdown > * + * { margin-top: 1rem; }
+.preview-markdown h1, .preview-markdown h2, .preview-markdown h3,
+.preview-markdown h4, .preview-markdown h5, .preview-markdown h6 {
+  color: var(--fg);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.6rem;
+}
+.preview-markdown h1 { font-size: 1.65rem; }
+.preview-markdown h2 { font-size: 1.35rem; }
+.preview-markdown h3 { font-size: 1.15rem; }
+.preview-markdown a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.preview-markdown ul, .preview-markdown ol { padding-left: 1.5rem; }
+.preview-markdown ul { list-style: disc; }
+.preview-markdown ol { list-style: decimal; }
+.preview-markdown li + li { margin-top: .35rem; }
+.preview-markdown blockquote { border-left: 2px solid var(--accent); padding-left: 1rem; color: var(--dim); }
+.preview-markdown pre { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; background: var(--surface2); }
+.preview-markdown :not(pre) > code { border-radius: 5px; padding: .12em .35em; background: var(--surface2); font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; }
+.preview-markdown hr { border: 0; border-top: 1px solid var(--border); }
+.preview-markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.preview-markdown th, .preview-markdown td { border: 1px solid var(--border); padding: .5rem .75rem; text-align: left; }
+.preview-markdown th { color: var(--fg); background: var(--surface2); }
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

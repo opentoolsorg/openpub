@@ -1473,6 +1473,9 @@ export function DocsPage() {
                 Copy <code className="docs-code text-xs">connect.sid</code> from browser DevTools Cookies on your publication domain:
               </p>
               <CodeBlock code={`{\n  "publication_url": "https://yourpub.substack.com",\n  "connect_sid": "s%3Axxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"\n}`} title="substack credentials JSON" />
+              <p className="docs-prose text-(--dim)">
+                Inline Markdown images are uploaded to Substack and embedded in the draft. The Substack writing endpoint is undocumented and can change.
+              </p>
 
               <SubHeading id="platform-github-pages" title="Your Pages (github-pages)" />
               <p className="docs-prose text-(--dim)">
@@ -1482,7 +1485,7 @@ export function DocsPage() {
 
               <SubHeading id="platform-x" title="X Articles (x)" />
               <p className="docs-prose text-(--dim)">
-                Publishes articles via the X Articles API v2. Requires an account with active X Premium:
+                Publishes articles via the X Articles API v2. Inline Markdown images are uploaded to X and embedded in the article. Requires an account with active X Premium:
               </p>
               <CodeBlock code={`{\n  "access_token": "xxxxxxxxxxxxxxxxxxxxxxxx"\n}`} title="x credentials JSON" />
             </section>

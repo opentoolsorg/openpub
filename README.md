@@ -60,6 +60,14 @@ node apps/cli/dist/index.js publish post.md --to devto,hashnode --status draft -
 
 That is the whole flow. No account, no signup, no hosted service to trust.
 
+Inline images use standard Markdown and must be publicly reachable HTTPS image URLs (JPEG, PNG, GIF, or WebP; up to 5 MB each):
+
+```markdown
+![Architecture diagram](https://example.com/images/architecture.png)
+```
+
+DEV.to, Hashnode, WordPress, Ghost, Medium, and GitHub Pages receive the image reference in their Markdown/HTML body. X Articles and Substack upload the image to the platform first, then embed the platform-hosted copy. If that upload fails, publishing to X or Substack fails for that destination instead of silently dropping the image.
+
 **The default status is `draft`.** A post goes live only when you pass `--status published`, set `status: published` in frontmatter, or set `defaults.status` to `published` in `~/.openpub/config.json`. GitHub Pages commits Markdown to a repository and can trigger a public site build even for draft status. Use `--dry-run` until approved. `--status` and `--to` require a value, and flags may come before the filename (`node apps/cli/dist/index.js publish --dry-run post.md`).
 
 ## Platforms

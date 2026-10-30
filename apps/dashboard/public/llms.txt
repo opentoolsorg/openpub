@@ -75,6 +75,8 @@ status: draft
 Article content here.
 ```
 
+Inline images use `![alt text](https://public-host.example/image.png)`. Use a publicly reachable HTTPS image URL in JPEG, PNG, GIF, or WebP format, up to 5 MB. DEV.to, Hashnode, WordPress, Ghost, Medium, and GitHub Pages receive the Markdown/HTML image reference. X Articles and Substack upload the image and embed the platform-hosted asset; upload failures are reported for that destination.
+
 Use canonical_url in frontmatter or --canonical with a public URL. The first successful public published URL otherwise becomes canonical for later destinations. Keep stable file paths: local idempotency tracks file::platform in state.json. Check each platform's update restrictions before republishing.
 
 ## Local stdio MCP
