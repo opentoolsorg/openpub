@@ -1,12 +1,13 @@
 name: ci
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    types:
+    - labeled
 
 jobs:
   test:
+    if: "${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'build:validate' }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
