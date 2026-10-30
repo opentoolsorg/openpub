@@ -47,16 +47,12 @@ async function toProseMirror(title: string, markdown: string, creds: Record<stri
       blocks.push({ type: 'paragraph', content: [{ type: 'text', text: token.raw.trimEnd() }] })
       continue
     }
-    if (token.type === 'heading') {
-      blocks.push({ type: 'heading', attrs: { level: Math.min(token.depth, 3) }, content: [{ type: 'text', text: token.text }] })
-      continue
-    }
-
-    const source = token.raw.trim()
+    const heading = token.type === 'heading'
+    const source = heading ? token.text : token.raw.trim()
     let text = ''
     const flushText = () => {
       const value = text.replace(/\n/g, ' ').trim()
-      if (value) blocks.push({ type: 'paragraph', content: [{ type: 'text', text: value }] })
+      if (value) blocks.push({ type: heading ? 'heading' : 'paragraph', ...(heading ? { attrs: { level: Math.min(token.depth, 3) } } : {}), content: [{ type: 'text', text: value }] })
       text = ''
     }
     for (const part of splitInlineMarkdownImages(source)) {

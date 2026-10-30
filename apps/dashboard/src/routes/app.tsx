@@ -1326,9 +1326,9 @@ const previewMarkdown = new Marked({
     },
     link({ href, title, text }) {
       const safeHref = safePreviewUrl(href)
-      if (!safeHref) return text
+      if (!safeHref) return escapePreviewHtml(text)
       const titleAttr = title ? ` title="${escapePreviewHtml(title)}"` : ""
-      return `<a href="${escapePreviewHtml(safeHref)}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`
+      return `<a href="${escapePreviewHtml(safeHref)}"${titleAttr} target="_blank" rel="noopener noreferrer">${escapePreviewHtml(text)}</a>`
     },
     image({ href, title, text }) {
       const safeSrc = safePreviewUrl(href, true)
