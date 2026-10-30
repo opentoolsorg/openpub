@@ -128,5 +128,5 @@ Same shapes as the CLI. This server does not reimplement publishing, credential 
 - medium: integration_token
 - substack: publication_url, connect_sid
 - github-pages: token, repo (owner/name), dir (content/posts), branch (main)
-- x: access_token (OAuth2 user token, tweet.write, X Premium required)
+- x: access_token (OAuth2 user token, tweet.write and media.write, X Premium required)
 

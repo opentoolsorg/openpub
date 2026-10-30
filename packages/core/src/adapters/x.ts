@@ -5,7 +5,7 @@ import { fetchRemoteImage, toBase64 } from './remote-image'
 import { splitInlineMarkdownImages } from './markdown-images'
 
 // X Articles API (v2). Two-step: create draft then publish.
-// Auth: OAuth2 user-context Bearer token with tweet.write scope.
+// Auth: OAuth2 user-context Bearer token with tweet.write and media.write scopes.
 // Requires X Premium on the publishing account.
 // Creds: { access_token }
 

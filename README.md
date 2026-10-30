@@ -81,7 +81,7 @@ DEV.to, Hashnode, WordPress, Ghost, Medium, and GitHub Pages receive the image r
 | `medium` | `{"integration_token": "..."}` | medium.com/me/settings, Security and apps, Integration tokens |
 | `substack` | `{"publication_url": "...", "connect_sid": "..."}` | Log in, then copy the `connect.sid` cookie from devtools |
 | `github-pages` | `{"token": "...", "repo": "owner/name", "dir": "content/posts", "branch": "main"}` | A fine-grained PAT with Contents read and write on your site repo |
-| `x` | `{"access_token": "..."}` | X Articles API v2. OAuth2 user token with `tweet.write`. X Premium required |
+| `x` | `{"access_token": "..."}` | X Articles API v2. OAuth2 user token with `tweet.write` and `media.write`. X Premium required |
 
 Two upstream limits worth knowing, documented rather than hidden:
 

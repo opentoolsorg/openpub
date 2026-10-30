@@ -206,7 +206,7 @@ Notes: files are written as `<dir>/<slug>.md` with YAML frontmatter (`title`, `d
 
 X Articles API (v2). Long-form articles on X, not tweets. Publishing is two-step: OpenPub creates a draft article via `POST /2/articles/draft`, then publishes it via `POST /2/articles/:id/publish`. Draft-status publishes stop after step one and return the composer URL.
 
-**Get it:** developer.x.com, create a project + app, enable OAuth 2.0 (user context) with the `tweet.write` scope (plus `tweet.read`/`users.read` for the test call), then run the authorization-code flow to obtain a user access token. Client credentials / app-only tokens will not work - the token must act as your account.
+**Get it:** developer.x.com, create a project + app, enable OAuth 2.0 (user context) with the `tweet.write` and `media.write` scopes (plus `tweet.read`/`users.read` for the test call), then run the authorization-code flow to obtain a user access token. Client credentials / app-only tokens will not work - the token must act as your account.
 
 **Requires X Premium** on the publishing account; the Articles endpoint rejects non-Premium accounts.
 
