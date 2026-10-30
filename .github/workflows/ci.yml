@@ -49,3 +49,7 @@ jobs:
           node apps/cli/dist/index.js status
       - name: MCP handshake
         run: python3 test/mcp-handshake.py
+    timeout-minutes: 30
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.label.name || github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'build:validate' }}
