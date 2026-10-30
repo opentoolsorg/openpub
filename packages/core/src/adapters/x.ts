@@ -2,6 +2,7 @@ import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
 import { assertPublishable } from '../limits'
 import { UpdateUnsupportedError } from '../errors'
 import { fetchRemoteImage, toBase64 } from './remote-image'
+import { splitInlineMarkdownImages } from './markdown-images'
 
 // X Articles API (v2). Two-step: create draft then publish.
 // Auth: OAuth2 user-context Bearer token with tweet.write scope.
@@ -9,7 +10,10 @@ import { fetchRemoteImage, toBase64 } from './remote-image'
 // Creds: { access_token }
 
 type Block = { key?: string; text: string; type: string; entity_ranges?: { key: number; offset: number; length: number }[]; inline_style_ranges?: { style: string; offset: number; length: number }[] }
-type Entity = { type: 'link' | 'image'; mutability: 'mutable' | 'immutable'; data: Record<string, unknown> }
+type Entity = {
+  key: string
+  value: { type: 'link' | 'image'; mutability: 'mutable' | 'immutable'; data: Record<string, unknown> }
+}
 
 // markdown -> X content_state (DraftJS-ish, snake_case).
 // Handles headings, lists, quotes, code, bold/italic/links inline.
@@ -45,7 +49,7 @@ async function toContentState(md: string, token: string) {
       if (lt && lu) {
         const entityKey = entities.length
         ranges.push({ key: entityKey, offset: out.length, length: lt.length })
-        entities.push({ type: 'link', mutability: 'mutable', data: { url: lu } })
+        entities.push({ key: String(entityKey), value: { type: 'link', mutability: 'mutable', data: { url: lu } } })
         out += lt
       } else {
         const inner = b ?? it ?? code ?? strike ?? ''
@@ -87,22 +91,23 @@ async function toContentState(md: string, token: string) {
       if (ranges.length) blk.entity_ranges = ranges
       blocks.push(blk)
     }
-    const imagePattern = /!\[([^\]]*)\]\((https:\/\/[^)\s]+)(?:\s+["']([^"']*)["'])?\)/g
-    let cursor = 0
-    let match: RegExpExecArray | null
-    while ((match = imagePattern.exec(text))) {
-      appendText(text.slice(cursor, match.index))
-      const mediaId = await uploadImage(match[2], token)
+    for (const part of splitInlineMarkdownImages(text)) {
+      if (part.type === 'text') {
+        appendText(part.text)
+        continue
+      }
+      const mediaId = await uploadImage(part.url, token)
       const entityKey = entities.length
       entities.push({
-        type: 'image',
-        mutability: 'immutable',
-        data: { caption: match[1], media_items: [{ media_category: 'tweet_image', media_id: mediaId }] },
+        key: String(entityKey),
+        value: {
+          type: 'image',
+          mutability: 'immutable',
+          data: { caption: part.alt, media_items: [{ media_category: 'tweet_image', media_id: mediaId }] },
+        },
       })
       blocks.push({ key: `b${k++}`, text: ' ', type: 'atomic', entity_ranges: [{ key: entityKey, offset: 0, length: 1 }] })
-      cursor = match.index + match[0].length
     }
-    appendText(text.slice(cursor))
   }
   return { blocks, entities }
 }

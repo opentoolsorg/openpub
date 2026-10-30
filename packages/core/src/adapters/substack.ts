@@ -3,6 +3,8 @@ import { siteBase } from './guard'
 import { assertPublishable } from '../limits'
 import { UpdateUnsupportedError } from '../errors'
 import { fetchRemoteImage, toBase64 } from './remote-image'
+import { Lexer } from 'marked'
+import { splitInlineMarkdownImages } from './markdown-images'
 
 function base(creds: Record<string, string>): string {
   return siteBase(creds.publication_url)
@@ -39,20 +41,31 @@ async function uploadImage(url: string, creds: Record<string, string>) {
 async function toProseMirror(title: string, markdown: string, creds: Record<string, string>) {
   // Minimal ProseMirror doc: heading + paragraphs. Substack accepts this for drafts.
   const blocks: Record<string, unknown>[] = []
-  const imagePattern = /!\[([^\]]*)\]\((https:\/\/[^)\s]+)(?:\s+["']([^"']*)["'])?\)/g
-  for (const p of markdown.split(/\n{2,}/).filter(Boolean)) {
-    const m = p.match(/^(#{1,6})\s+(.*)/)
-    if (m) {
-      blocks.push({ type: 'heading', attrs: { level: Math.min(m[1].length, 3) }, content: [{ type: 'text', text: m[2] }] })
+  for (const token of Lexer.lex(markdown)) {
+    if (token.type === 'space') continue
+    if (token.type === 'code') {
+      blocks.push({ type: 'paragraph', content: [{ type: 'text', text: token.raw.trimEnd() }] })
+      continue
+    }
+    if (token.type === 'heading') {
+      blocks.push({ type: 'heading', attrs: { level: Math.min(token.depth, 3) }, content: [{ type: 'text', text: token.text }] })
       continue
     }
 
-    let cursor = 0
-    let image: RegExpExecArray | null
-    while ((image = imagePattern.exec(p))) {
-      const before = p.slice(cursor, image.index).replace(/\n/g, ' ').trim()
-      if (before) blocks.push({ type: 'paragraph', content: [{ type: 'text', text: before }] })
-      const uploaded = await uploadImage(image[2], creds)
+    const source = token.raw.trim()
+    let text = ''
+    const flushText = () => {
+      const value = text.replace(/\n/g, ' ').trim()
+      if (value) blocks.push({ type: 'paragraph', content: [{ type: 'text', text: value }] })
+      text = ''
+    }
+    for (const part of splitInlineMarkdownImages(source)) {
+      if (part.type === 'text') {
+        text += part.text
+        continue
+      }
+      flushText()
+      const uploaded = await uploadImage(part.url, creds)
       const imageNode = {
         type: 'image2',
         attrs: {
@@ -64,8 +77,8 @@ async function toProseMirror(title: string, markdown: string, creds: Record<stri
           height: uploaded.imageHeight,
           resizeWidth: null,
           bytes: uploaded.bytes,
-          alt: image[1] || null,
-          title: image[3] || null,
+          alt: part.alt || null,
+          title: part.title,
           type: uploaded.contentType,
           href: null,
           belowTheFold: false,
@@ -74,12 +87,10 @@ async function toProseMirror(title: string, markdown: string, creds: Record<stri
         },
       }
       const captionedImage: Record<string, unknown> = { type: 'captionedImage', content: [imageNode] }
-      if (image[3]) captionedImage.content = [imageNode, { type: 'caption', content: [{ type: 'text', text: image[3] }] }]
+      if (part.title) captionedImage.content = [imageNode, { type: 'caption', content: [{ type: 'text', text: part.title }] }]
       blocks.push(captionedImage)
-      cursor = image.index + image[0].length
     }
-    const after = p.slice(cursor).replace(/\n/g, ' ').trim()
-    if (after) blocks.push({ type: 'paragraph', content: [{ type: 'text', text: after }] })
+    flushText()
   }
   return { type: 'doc', content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: title }] }, ...blocks] }
 }
