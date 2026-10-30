@@ -161,7 +161,7 @@ function useApi() {
       : DEFAULT_BASE),
   )
   const [authenticated, setAuthenticated] = React.useState(false)
-  const [setupRequired, setSetupRequired] = React.useState(false)
+  const [passwordConfigured, setPasswordConfigured] = React.useState(false)
   const [authLoading, setAuthLoading] = React.useState(true)
   const [authError, setAuthError] = React.useState("")
 
@@ -171,11 +171,11 @@ function useApi() {
     return fetch(base + "/api/auth/status", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error(`Login service returned ${res.status}. Try again shortly.`)
-        return res.json() as Promise<{ authenticated?: boolean; setupRequired?: boolean }>
+        return res.json() as Promise<{ authenticated?: boolean; passwordConfigured?: boolean }>
       })
       .then((data) => {
         setAuthenticated(Boolean(data.authenticated))
-        setSetupRequired(Boolean(data.setupRequired))
+        setPasswordConfigured(Boolean(data.passwordConfigured))
       })
       .catch((error) => setAuthError((error as Error).message || "Could not reach the login service. Check your connection and try again."))
       .finally(() => setAuthLoading(false))
@@ -202,7 +202,7 @@ function useApi() {
     [base],
   )
 
-  return { base, api, authenticated, setAuthenticated, authLoading, authError, checkAuth, setupRequired }
+  return { base, api, authenticated, setAuthenticated, authLoading, authError, checkAuth, passwordConfigured }
 }
 
 function useToast() {
@@ -257,7 +257,7 @@ export function App() {
 }
 
 function MainApp() {
-  const { base, api, authenticated, setAuthenticated, authLoading, authError, checkAuth, setupRequired } = useApi()
+  const { base, api, authenticated, setAuthenticated, authLoading, authError, checkAuth, passwordConfigured } = useApi()
   const [theme, setTheme] = React.useState<"dark" | "light">(getSystemTheme)
 
   const toggleTheme = React.useCallback(
@@ -296,7 +296,7 @@ function MainApp() {
     return (
       <OnboardingView
         base={base}
-        setupRequired={setupRequired}
+        passwordConfigured={passwordConfigured}
         onAuthenticated={() => { checkAuth() }}
         theme={theme}
         toggleTheme={toggleTheme}
@@ -2360,43 +2360,45 @@ function SettingsView({
 // -------------------------------------------------------------
 function OnboardingView({
   base,
-  setupRequired,
+  passwordConfigured,
   onAuthenticated,
   theme,
   toggleTheme,
 }: {
   base: string
-  setupRequired: boolean
+  passwordConfigured: boolean
   onAuthenticated: () => void
   theme: "dark" | "light"
   toggleTheme: () => void
 }) {
   const [adminKey, setAdminKey] = React.useState("")
   const [password, setPassword] = React.useState("")
-  const [confirmPassword, setConfirmPassword] = React.useState("")
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState("")
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError("")
-    if (setupRequired && password !== confirmPassword) {
-      setError("Passwords do not match.")
-      return
-    }
     setBusy(true)
     try {
-      const res = await fetch(`${base}/api/auth/${setupRequired ? "setup" : "login"}`, {
+      const body: { adminKey?: string; password?: string } = {}
+      if (adminKey.trim()) body.adminKey = adminKey
+      if (passwordConfigured && password) body.password = password
+      if (!body.adminKey && !body.password) {
+        setError(passwordConfigured ? "Enter your Admin Key or instance password." : "Enter your Admin Key.")
+        setBusy(false)
+        return
+      }
+      const res = await fetch(`${base}/api/auth/login`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(setupRequired ? { adminKey, password } : { password }),
+        body: JSON.stringify(body),
       })
       const data = await res.json().catch(() => ({})) as { error?: string }
       if (!res.ok) throw new Error(data.error || "Could not sign in")
       setAdminKey("")
       setPassword("")
-      setConfirmPassword("")
       onAuthenticated()
     } catch (err) {
       setError((err as Error).message || "Could not reach your OpenPub instance.")
@@ -2404,6 +2406,10 @@ function OnboardingView({
       setBusy(false)
     }
   }
+
+  const canSubmit = passwordConfigured
+    ? Boolean(adminKey.trim() || password)
+    : Boolean(adminKey.trim())
 
   return (
     <main className="min-h-screen bg-(--bg) text-(--fg3) font-sans antialiased flex items-center justify-center px-4 py-10">
@@ -2414,32 +2420,26 @@ function OnboardingView({
             {theme === "light" ? "Dark" : "Light"}
           </button>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-(--fg)">{setupRequired ? "Create your password" : "Welcome back"}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-(--fg)">Sign in</h1>
         <p className="mt-2 mb-6 text-sm leading-relaxed text-(--dim)">
-          {setupRequired
-            ? "Use your Admin Key once to set up a private password for this instance. You will not need the key to sign in again."
-            : "Sign in to your OpenPub instance."}
+          Paste the <code className="font-mono text-(--fg2)">ADMIN_KEY</code> Wrangler secret for this Worker.
+          {passwordConfigured ? " You can use your instance password instead if you set one in Settings." : ""}
         </p>
         <form onSubmit={submit} className="space-y-4">
-          {setupRequired && <div className="space-y-1.5">
-            <label htmlFor="setup-admin-key" className="text-sm font-medium text-(--fg)">Admin Key <span className="text-(--dim)">(one time)</span></label>
-            <input id="setup-admin-key" type="password" autoComplete="off" required value={adminKey} onChange={(e) => setAdminKey(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
-          </div>}
           <div className="space-y-1.5">
-            <label htmlFor="login-password" className="text-sm font-medium text-(--fg)">{setupRequired ? "Choose a password" : "Password"}</label>
-            <input id="login-password" type="password" autoComplete={setupRequired ? "new-password" : "current-password"} required minLength={setupRequired ? 10 : undefined} maxLength={1024} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
-            {setupRequired && <p className="text-xs text-(--dim)">Use at least 10 characters. The password is stored as a salted hash in D1.</p>}
+            <label htmlFor="login-admin-key" className="text-sm font-medium text-(--fg)">Admin Key</label>
+            <input id="login-admin-key" type="password" autoComplete="off" required={!passwordConfigured} value={adminKey} onChange={(e) => setAdminKey(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
           </div>
-          {setupRequired && <div className="space-y-1.5">
-            <label htmlFor="confirm-password" className="text-sm font-medium text-(--fg)">Confirm password</label>
-            <input id="confirm-password" type="password" autoComplete="new-password" required minLength={10} maxLength={1024} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
+          {passwordConfigured && <div className="space-y-1.5">
+            <label htmlFor="login-password" className="text-sm font-medium text-(--fg)">Instance password <span className="text-(--dim)">(optional)</span></label>
+            <input id="login-password" type="password" autoComplete="current-password" maxLength={1024} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-(--border) bg-(--bg) px-3.5 py-3 font-mono text-sm text-(--fg) outline-none focus:border-(--accent)" />
           </div>}
           {error && <p role="alert" className="rounded-xl border border-red-500/35 bg-red-500/10 p-3 text-sm text-(--danger)">{error}</p>}
-          <button type="submit" disabled={busy || !password || (setupRequired && !adminKey)} className="w-full rounded-xl bg-(--accent) px-5 py-3 font-semibold text-(--on-accent) disabled:opacity-50">
-            {busy ? "Please wait…" : setupRequired ? "Set password and continue" : "Log in"}
+          <button type="submit" disabled={busy || !canSubmit} className="w-full rounded-xl bg-(--accent) px-5 py-3 font-semibold text-(--on-accent) disabled:opacity-50">
+            {busy ? "Please wait…" : "Enter"}
           </button>
         </form>
-        <p className="mt-6 text-xs text-(--dim)">Your password stays on your instance. Sessions use a secure, HttpOnly cookie.</p>
+        <p className="mt-6 text-xs text-(--dim)">Sessions use a secure, HttpOnly cookie on this instance.</p>
       </section>
     </main>
   )

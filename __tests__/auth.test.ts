@@ -67,9 +67,36 @@ function authEnv() {
 }
 
 describe('dashboard password authentication', () => {
-  it('requires the ADMIN_KEY to initialize a password and stores only a salted hash', async () => {
+  it('signs in with ADMIN_KEY without password setup and honors session cookies', async () => {
     const { request } = authEnv()
-    expect(await (await request('/auth/status')).json()).toEqual({ setupRequired: true, authenticated: false })
+    expect(await (await request('/auth/status')).json()).toEqual({
+      setupRequired: false,
+      passwordConfigured: false,
+      authenticated: false,
+    })
+
+    const rejected = await request('/auth/login', 'POST', { adminKey: 'wrong' })
+    expect(rejected.status).toBe(401)
+
+    const response = await request('/auth/login', 'POST', { adminKey: 'bootstrap-secret' })
+    expect(response.status).toBe(200)
+    expect(response.headers.get('set-cookie')).toMatch(/HttpOnly/)
+    expect(response.headers.get('set-cookie')).toMatch(/SameSite=Strict/)
+    expect(response.headers.get('set-cookie')).toMatch(/Secure/)
+    const setCookie = response.headers.get('set-cookie') || ''
+    const cookie = setCookie.split(';')[0]
+    const authStatus = await request('/auth/status', 'GET', undefined, cookie)
+    expect((await authStatus.json() as { authenticated: boolean }).authenticated).toBe(true)
+
+    const unauthenticated = await request('/status')
+    expect(unauthenticated.status).toBe(401)
+    expect((await request('/drafts', 'POST', { content: 'post', platforms: ['devto'] }, cookie, undefined, 'https://attacker.example')).status).toBe(403)
+    const sessionAccess = await request('/status', 'GET', undefined, cookie)
+    expect(sessionAccess.status).toBe(200)
+  })
+
+  it('requires the ADMIN_KEY to initialize an optional password and stores only a salted hash', async () => {
+    const { request } = authEnv()
 
     const rejected = await request('/auth/setup', 'POST', { adminKey: 'wrong', password: 'a long test password' })
     expect(rejected.status).toBe(401)
@@ -83,7 +110,7 @@ describe('dashboard password authentication', () => {
     const setCookie = response.headers.get('set-cookie') || ''
     const cookie = setCookie.split(';')[0]
     const authStatus = await request('/auth/status', 'GET', undefined, cookie)
-    expect((await authStatus.json() as { authenticated: boolean }).authenticated).toBe(true)
+    expect(await authStatus.json()).toMatchObject({ authenticated: true, passwordConfigured: true })
 
     const unauthenticated = await request('/status')
     expect(unauthenticated.status).toBe(401)

@@ -4,8 +4,8 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat", "assets_navigation_has_no_effect"]
 
 [vars]
-BASE_URL = "https://openpub.princslabs.workers.dev"
-DASHBOARD_URL = "https://openpub.princslabs.workers.dev"
+BASE_URL = "https://openpub.opentoolsorg.workers.dev"
+DASHBOARD_URL = "https://openpub.opentoolsorg.workers.dev"
 
 # SPA (TanStack Start, built to dashboard/.output/public) served as free static
 # assets: navigation/asset requests never invoke the worker -> no bill.
@@ -19,12 +19,12 @@ run_worker_first = ["/api/*", "/mcp", "/covers/*", "/health", "/dashboard"]
 [[d1_databases]]
 binding = "DB"
 database_name = "openpub-db"
-database_id = "a046242c-c914-44a9-87bc-0fe48a881a3c"
+database_id = "5ea6b34a-26ce-4528-a572-d411d00f684e"
 migrations_dir = "../../migrations"
 
 [[kv_namespaces]]
 binding = "KEYS"
-id = "78642abd78d640d6b9506dc8b12657bb"
+id = "86d5f868566a4e589f70762badf565af"
 
 [[r2_buckets]]
 binding = "MEDIA"

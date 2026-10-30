@@ -94,8 +94,8 @@ auth.use('*', async (c, next) => {
 
 auth.get('/status', async (c) => {
   const configured = await c.env.DB.prepare('SELECT id FROM auth_settings WHERE id = 1').first<{ id: number }>()
-  const authenticated = configured ? await hasValidSession(c.env.DB, c.req.raw) : false
-  return c.json({ setupRequired: !configured, authenticated })
+  const authenticated = await hasValidSession(c.env.DB, c.req.raw)
+  return c.json({ setupRequired: false, passwordConfigured: !!configured, authenticated })
 })
 
 auth.post('/setup', async (c) => {
@@ -125,24 +125,10 @@ auth.post('/setup', async (c) => {
   return c.json({ ok: true })
 })
 
-auth.post('/login', async (c) => {
-  if (!trustedOrigin(c.req.raw, c.env)) return c.json({ error: 'request origin not allowed' }, 403)
-  const settings = await c.env.DB.prepare(
-    'SELECT password_salt, password_hash, password_iterations FROM auth_settings WHERE id = 1',
-  ).first<{ password_salt: string; password_hash: string; password_iterations: number }>()
-  if (!settings) return c.json({ error: 'password setup required' }, 409)
-
-  let body: { password?: unknown }
-  try { body = await c.req.json() } catch { return c.json({ error: 'invalid JSON body' }, 400) }
-  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'invalid request body' }, 400)
-  if (typeof body.password !== 'string' || body.password.length > 1024) return c.json({ error: 'Invalid password' }, 401)
-
-  const clientIp = c.req.header('CF-Connecting-IP') || 'unknown'
-  const ipHash = await sha256(clientIp)
-  await c.env.DB.prepare('DELETE FROM auth_login_attempts WHERE window_started_at <= unixepoch() - ?')
+async function reserveLoginAttempt(db: D1Database, ipHash: string): Promise<{ ok: true } | { ok: false; status: 429 }> {
+  await db.prepare('DELETE FROM auth_login_attempts WHERE window_started_at <= unixepoch() - ?')
     .bind(LOGIN_WINDOW_SECONDS).run()
-  // Reserve before hashing so concurrent requests cannot bypass the attempt limit.
-  const attempt = await c.env.DB.prepare(`
+  const attempt = await db.prepare(`
     INSERT INTO auth_login_attempts (ip_hash, attempts, window_started_at) VALUES (?, 1, unixepoch())
     ON CONFLICT(ip_hash) DO UPDATE SET
       attempts = CASE WHEN window_started_at <= unixepoch() - ? THEN 1 ELSE attempts + 1 END,
@@ -150,9 +136,42 @@ auth.post('/login', async (c) => {
     WHERE window_started_at <= unixepoch() - ? OR attempts < ?
     RETURNING attempts
   `).bind(ipHash, LOGIN_WINDOW_SECONDS, LOGIN_WINDOW_SECONDS, LOGIN_WINDOW_SECONDS, MAX_LOGIN_ATTEMPTS).first<{ attempts: number }>()
-  if (!attempt) {
-    return c.json({ error: 'Too many attempts. Try again in 15 minutes.' }, 429)
+  if (!attempt) return { ok: false, status: 429 }
+  return { ok: true }
+}
+
+auth.post('/login', async (c) => {
+  if (!trustedOrigin(c.req.raw, c.env)) return c.json({ error: 'request origin not allowed' }, 403)
+
+  let body: { adminKey?: unknown; password?: unknown }
+  try { body = await c.req.json() } catch { return c.json({ error: 'invalid JSON body' }, 400) }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'invalid request body' }, 400)
+
+  const clientIp = c.req.header('CF-Connecting-IP') || 'unknown'
+  const ipHash = await sha256(clientIp)
+
+  if (typeof body.adminKey === 'string' && body.adminKey.length > 0) {
+    if (!c.env.ADMIN_KEY) return c.json({ error: 'ADMIN_KEY is not configured on this Worker' }, 503)
+    const attempt = await reserveLoginAttempt(c.env.DB, ipHash)
+    if (!attempt.ok) return c.json({ error: 'Too many attempts. Try again in 15 minutes.' }, attempt.status)
+    if (!(await adminKeyMatches(body.adminKey, c.env.ADMIN_KEY))) {
+      return c.json({ error: 'Admin key did not match' }, 401)
+    }
+    await c.env.DB.prepare('DELETE FROM auth_login_attempts WHERE ip_hash = ?').bind(ipHash).run()
+    const session = await createSession(c.env.DB, c.req.raw)
+    c.header('Set-Cookie', session.cookie)
+    return c.json({ ok: true })
   }
+
+  const settings = await c.env.DB.prepare(
+    'SELECT password_salt, password_hash, password_iterations FROM auth_settings WHERE id = 1',
+  ).first<{ password_salt: string; password_hash: string; password_iterations: number }>()
+  if (!settings) return c.json({ error: 'Sign in with your Admin Key' }, 401)
+
+  if (typeof body.password !== 'string' || body.password.length > 1024) return c.json({ error: 'Invalid password' }, 401)
+
+  const attempt = await reserveLoginAttempt(c.env.DB, ipHash)
+  if (!attempt.ok) return c.json({ error: 'Too many attempts. Try again in 15 minutes.' }, attempt.status)
 
   const passwordHash = await derivePassword(body.password, fromHex(settings.password_salt), settings.password_iterations)
   const left = encoder.encode(passwordHash)
