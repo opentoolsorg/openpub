@@ -9,7 +9,7 @@ import { fetchRemoteImage, toBase64 } from './remote-image'
 // Creds: { access_token }
 
 type Block = { key?: string; text: string; type: string; entity_ranges?: { key: number; offset: number; length: number }[]; inline_style_ranges?: { style: string; offset: number; length: number }[] }
-type Entity = { key: string; value: { data: Record<string, unknown> } }
+type Entity = { type: 'link' | 'image'; mutability: 'mutable' | 'immutable'; data: Record<string, unknown> }
 
 // markdown -> X content_state (DraftJS-ish, snake_case).
 // Handles headings, lists, quotes, code, bold/italic/links inline.
@@ -45,7 +45,7 @@ async function toContentState(md: string, token: string) {
       if (lt && lu) {
         const entityKey = entities.length
         ranges.push({ key: entityKey, offset: out.length, length: lt.length })
-        entities.push({ key: String(entityKey), value: { data: { entity_key: 'LINK', url: lu } } })
+        entities.push({ type: 'link', mutability: 'mutable', data: { url: lu } })
         out += lt
       } else {
         const inner = b ?? it ?? code ?? strike ?? ''
@@ -95,8 +95,9 @@ async function toContentState(md: string, token: string) {
       const mediaId = await uploadImage(match[2], token)
       const entityKey = entities.length
       entities.push({
-        key: String(entityKey),
-        value: { data: { entity_key: 'IMAGE', caption: match[1], media_items: [{ media_category: 'tweet_image', media_id: mediaId }] } },
+        type: 'image',
+        mutability: 'immutable',
+        data: { caption: match[1], media_items: [{ media_category: 'tweet_image', media_id: mediaId }] },
       })
       blocks.push({ key: `b${k++}`, text: ' ', type: 'atomic', entity_ranges: [{ key: entityKey, offset: 0, length: 1 }] })
       cursor = match.index + match[0].length
