@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { resolvePostMetadata } from "@openpub/core/post"
+import { Marked } from "marked"
 import { Logo, Mark } from "~/components/Logo"
 
 export const Route = createFileRoute("/app")({
@@ -1192,8 +1193,8 @@ function EditorView({
               <span>Preview</span>
               <span>Rendered output</span>
             </div>
-            <div className="p-6 prose-like overflow-y-auto max-h-[500px]">
-              <MarkdownPreview content={md} />
+            <div className="p-6 prose-like overflow-y-auto max-h-[650px]">
+              <MarkdownPreview content={md} cover={cover} />
             </div>
           </section>
         )}
@@ -1300,75 +1301,61 @@ function EditorView({
   )
 }
 
-function MarkdownPreview({ content }: { content: string }) {
-  const { body, title, tags } = resolvePostMetadata(content)
-  const lines = body.split("\n")
+function escapePreviewHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]!)
+}
+
+function safePreviewUrl(value: string, image = false): string | null {
+  const url = value.trim()
+  if (!url || /[\u0000-\u001f\\]/.test(url)) return null
+  if (image && !/^https:\/\//i.test(url)) return null
+  try {
+    const parsed = new URL(url, "https://openpub.invalid")
+    if (parsed.protocol === "https:" || (!image && parsed.protocol === "http:")) return url
+    if (!image && (parsed.protocol === "mailto:" || parsed.protocol === "tel:")) return url
+  } catch {}
+  return null
+}
+
+const previewMarkdown = new Marked({
+  renderer: {
+    html({ text }) {
+      return escapePreviewHtml(text)
+    },
+    link({ href, title, text }) {
+      const safeHref = safePreviewUrl(href)
+      if (!safeHref) return escapePreviewHtml(text)
+      const titleAttr = title ? ` title="${escapePreviewHtml(title)}"` : ""
+      return `<a href="${escapePreviewHtml(safeHref)}"${titleAttr} target="_blank" rel="noopener noreferrer">${escapePreviewHtml(text)}</a>`
+    },
+    image({ href, title, text }) {
+      const safeSrc = safePreviewUrl(href, true)
+      if (!safeSrc) return escapePreviewHtml(text || "[image]")
+      const titleAttr = title ? ` title="${escapePreviewHtml(title)}"` : ""
+      return `<img src="${escapePreviewHtml(safeSrc)}" alt="${escapePreviewHtml(text)}"${titleAttr} loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+    },
+  },
+})
+
+function MarkdownPreview({ content, cover }: { content: string; cover: string }) {
+  const { body, title, tags, coverImage } = resolvePostMetadata(content)
+  const coverSrc = safePreviewUrl(cover.trim() || coverImage || "", true)
+  const html = previewMarkdown.parse(body, { async: false })
 
   return (
     <div className="space-y-4 text-sm leading-relaxed text-(--fg2)">
-      {title && (
-        <h1 className="text-2xl font-bold tracking-tight text-(--fg)">
-          {title}
-        </h1>
-      )}
-
+      {title && <h1 className="text-2xl font-bold tracking-tight text-(--fg)">{title}</h1>}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {tags.map((t) => (
-            <span key={t} className="px-2 py-0.5 rounded-md bg-(--surface2) text-(--dim) text-xs font-mono">
-              #{t}
-            </span>
+          {tags.map((tag) => (
+            <span key={tag} className="px-2 py-0.5 rounded-md bg-(--surface2) text-(--dim) text-xs font-mono">#{tag}</span>
           ))}
         </div>
       )}
-
-      {lines.map((line, i) => {
-        const trimmed = line.trim()
-        if (!trimmed) return <div key={i} className="h-2" />
-        if (trimmed.startsWith("# ")) {
-          return (
-            <h1 key={i} className="text-xl font-bold text-(--fg) mt-4 mb-2">
-              {trimmed.slice(2)}
-            </h1>
-          )
-        }
-        if (trimmed.startsWith("## ")) {
-          return (
-            <h2 key={i} className="text-lg font-semibold text-(--fg) mt-3 mb-1.5">
-              {trimmed.slice(3)}
-            </h2>
-          )
-        }
-        if (trimmed.startsWith("### ")) {
-          return (
-            <h3 key={i} className="text-base font-semibold text-(--fg) mt-2 mb-1">
-              {trimmed.slice(4)}
-            </h3>
-          )
-        }
-        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-          return (
-            <li key={i} className="list-disc ml-5 text-(--fg3)">
-              {trimmed.slice(2)}
-            </li>
-          )
-        }
-        if (trimmed.startsWith("> ")) {
-          return (
-            <blockquote key={i} className="border-l-2 border-(--accent) pl-3.5 italic text-(--dim) my-2">
-              {trimmed.slice(2)}
-            </blockquote>
-          )
-        }
-        if (trimmed.startsWith("```")) {
-          return (
-            <div key={i} className="p-3 rounded-lg bg-(--surface2) font-mono text-xs text-(--dim) my-1 overflow-x-auto">
-              {trimmed}
-            </div>
-          )
-        }
-        return <p key={i} className="text-(--fg3)">{line}</p>
-      })}
+      {coverSrc && <img className="preview-cover" src={coverSrc} alt="Post cover" loading="lazy" decoding="async" referrerPolicy="no-referrer" />}
+      <div className="preview-markdown" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   )
 }

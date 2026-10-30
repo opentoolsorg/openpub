@@ -1,18 +1,37 @@
 import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
 import { assertPublishable } from '../limits'
 import { UpdateUnsupportedError } from '../errors'
+import { fetchRemoteImage, toBase64 } from './remote-image'
+import { splitInlineMarkdownImages } from './markdown-images'
 
 // X Articles API (v2). Two-step: create draft then publish.
-// Auth: OAuth2 user-context Bearer token with tweet.write scope.
+// Auth: OAuth2 user-context Bearer token with tweet.write and media.write scopes.
 // Requires X Premium on the publishing account.
 // Creds: { access_token }
 
 type Block = { key?: string; text: string; type: string; entity_ranges?: { key: number; offset: number; length: number }[]; inline_style_ranges?: { style: string; offset: number; length: number }[] }
-type Entity = { type: string; value?: { url?: string } }
+type Entity = {
+  key: string
+  value: { type: 'link' | 'image'; mutability: 'mutable' | 'immutable'; data: Record<string, unknown> }
+}
 
 // markdown -> X content_state (DraftJS-ish, snake_case).
 // Handles headings, lists, quotes, code, bold/italic/links inline.
-function toContentState(md: string) {
+async function uploadImage(url: string, token: string): Promise<string> {
+  const image = await fetchRemoteImage(url)
+  const r = await fetch('https://api.x.com/2/media/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ media: toBase64(image.bytes), media_category: 'tweet_image' }),
+  })
+  if (!r.ok) throw new Error(`x image upload ${r.status}: ${(await r.text()).slice(0, 300)}`)
+  const result = (await r.json()) as { data?: { id?: string; media_id?: string }; media_id?: string }
+  const id = result.data?.id ?? result.data?.media_id ?? result.media_id
+  if (!id) throw new Error('x image upload returned no media id')
+  return id
+}
+
+async function toContentState(md: string, token: string) {
   const blocks: Block[] = []
   const entities: Entity[] = []
   let k = 0
@@ -28,8 +47,9 @@ function toContentState(md: string) {
       if (!m) { out += s[i]; i++; continue }
       const [full, lt, lu, b, it, code, strike] = m
       if (lt && lu) {
-        ranges.push({ key: entities.length, offset: out.length, length: lt.length })
-        entities.push({ type: 'LINK', value: { url: lu } })
+        const entityKey = entities.length
+        ranges.push({ key: entityKey, offset: out.length, length: lt.length })
+        entities.push({ key: String(entityKey), value: { type: 'link', mutability: 'mutable', data: { url: lu } } })
         out += lt
       } else {
         const inner = b ?? it ?? code ?? strike ?? ''
@@ -63,13 +83,33 @@ function toContentState(md: string) {
     else if (/^[-*] /.test(line)) { type = 'unordered-list-item'; text = line.slice(2) }
     else if (/^\d+\. /.test(line)) { type = 'ordered-list-item'; text = line.replace(/^\d+\. /, '') }
     else if (/^> /.test(line)) { type = 'blockquote'; text = line.slice(2) }
-    const { text: t, styles, ranges } = inline(text)
-    const blk: Block = { key: `b${k++}`, text: t, type }
-    if (styles.length) blk.inline_style_ranges = styles
-    if (ranges.length) blk.entity_ranges = ranges
-    blocks.push(blk)
+    const appendText = (part: string) => {
+      if (!part) return
+      const { text: t, styles, ranges } = inline(part)
+      const blk: Block = { key: `b${k++}`, text: t, type }
+      if (styles.length) blk.inline_style_ranges = styles
+      if (ranges.length) blk.entity_ranges = ranges
+      blocks.push(blk)
+    }
+    for (const part of splitInlineMarkdownImages(text)) {
+      if (part.type === 'text') {
+        appendText(part.text)
+        continue
+      }
+      const mediaId = await uploadImage(part.url, token)
+      const entityKey = entities.length
+      entities.push({
+        key: String(entityKey),
+        value: {
+          type: 'image',
+          mutability: 'immutable',
+          data: { caption: part.alt, media_items: [{ media_category: 'tweet_image', media_id: mediaId }] },
+        },
+      })
+      blocks.push({ key: `b${k++}`, text: ' ', type: 'atomic', entity_ranges: [{ key: entityKey, offset: 0, length: 1 }] })
+    }
   }
-  return { blocks, entityMap: entities.reduce((m, e, i) => ({ ...m, [i]: { type: e.type, mutability: 'MUTABLE', data: e.value ?? {} } }), {} as Record<number, unknown>) }
+  return { blocks, entities }
 }
 
 export const x: PlatformAdapter = {
@@ -81,7 +121,7 @@ export const x: PlatformAdapter = {
     if (input.remoteId) {
       throw new UpdateUnsupportedError('x: the Articles API has no edit endpoint; skipped to avoid creating another draft or post')
     }
-    const content_state = toContentState(input.markdown)
+    const content_state = await toContentState(input.markdown, token)
     const dr = await fetch('https://api.x.com/2/articles/draft', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

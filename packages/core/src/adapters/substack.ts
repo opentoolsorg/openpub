@@ -2,18 +2,92 @@ import type { PlatformAdapter, PublishInput, PublishResult } from '../types'
 import { siteBase } from './guard'
 import { assertPublishable } from '../limits'
 import { UpdateUnsupportedError } from '../errors'
+import { fetchRemoteImage, toBase64 } from './remote-image'
+import { Lexer } from 'marked'
+import { splitInlineMarkdownImages } from './markdown-images'
 
 function base(creds: Record<string, string>): string {
   return siteBase(creds.publication_url)
 }
 
-function toProseMirror(title: string, markdown: string) {
-  // Minimal ProseMirror doc: heading + paragraphs. Substack accepts this for drafts.
-  const blocks = markdown.split(/\n{2,}/).filter(Boolean).map(p => {
-    const m = p.match(/^(#{1,6})\s+(.*)/)
-    if (m) return { type: 'heading', attrs: { level: Math.min(m[1].length, 3) }, content: [{ type: 'text', text: m[2] }] }
-    return { type: 'paragraph', content: [{ type: 'text', text: p.replace(/\n/g, ' ') }] }
+async function uploadImage(url: string, creds: Record<string, string>) {
+  const image = await fetchRemoteImage(url)
+  const r = await fetch(`${base(creds)}/api/v1/image`, {
+    method: 'POST',
+    headers: {
+      Cookie: `connect.sid=${creds.connect_sid}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'openpub/1.0',
+    },
+    body: JSON.stringify({ image: `data:${image.contentType};base64,${toBase64(image.bytes)}` }),
   })
+  if (!r.ok) throw new Error(`substack image upload ${r.status}: ${(await r.text()).slice(0, 300)}`)
+  const uploaded = (await r.json()) as {
+    url?: string
+    contentType?: string
+    bytes?: number
+    imageWidth?: number
+    imageHeight?: number
+  }
+  if (!uploaded.url || !uploaded.url.startsWith('https://') || !uploaded.url.includes('substack-post-media.s3.amazonaws.com')) {
+    throw new Error('substack image upload returned an unusable image URL')
+  }
+  if (!uploaded.imageWidth || !uploaded.imageHeight || !uploaded.bytes || !uploaded.contentType) {
+    throw new Error('substack image upload returned incomplete image metadata')
+  }
+  return uploaded
+}
+
+async function toProseMirror(title: string, markdown: string, creds: Record<string, string>) {
+  // Minimal ProseMirror doc: heading + paragraphs. Substack accepts this for drafts.
+  const blocks: Record<string, unknown>[] = []
+  for (const token of Lexer.lex(markdown)) {
+    if (token.type === 'space') continue
+    if (token.type === 'code') {
+      blocks.push({ type: 'paragraph', content: [{ type: 'text', text: token.raw.trimEnd() }] })
+      continue
+    }
+    const heading = token.type === 'heading'
+    const source = heading ? token.text : token.raw.trim()
+    let text = ''
+    const flushText = () => {
+      const value = text.replace(/\n/g, ' ').trim()
+      if (value) blocks.push({ type: heading ? 'heading' : 'paragraph', ...(heading ? { attrs: { level: Math.min(token.depth, 3) } } : {}), content: [{ type: 'text', text: value }] })
+      text = ''
+    }
+    for (const part of splitInlineMarkdownImages(source)) {
+      if (part.type === 'text') {
+        text += part.text
+        continue
+      }
+      flushText()
+      const uploaded = await uploadImage(part.url, creds)
+      const imageNode = {
+        type: 'image2',
+        attrs: {
+          src: uploaded.url,
+          srcNoWatermark: null,
+          fullscreen: null,
+          imageSize: null,
+          width: uploaded.imageWidth,
+          height: uploaded.imageHeight,
+          resizeWidth: null,
+          bytes: uploaded.bytes,
+          alt: part.alt || null,
+          title: part.title,
+          type: uploaded.contentType,
+          href: null,
+          belowTheFold: false,
+          topImage: false,
+          internalRedirect: null,
+        },
+      }
+      const captionedImage: Record<string, unknown> = { type: 'captionedImage', content: [imageNode] }
+      if (part.title) captionedImage.content = [imageNode, { type: 'caption', content: [{ type: 'text', text: part.title }] }]
+      blocks.push(captionedImage)
+    }
+    flushText()
+  }
   return { type: 'doc', content: [{ type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: title }] }, ...blocks] }
 }
 
@@ -46,7 +120,7 @@ export const substack: PlatformAdapter = {
       body: JSON.stringify({
         draft_title: input.title,
         draft_subtitle: '',
-        draft_body: toProseMirror(input.title, input.markdown),
+        draft_body: await toProseMirror(input.title, input.markdown, creds),
         user_id: Number(uid),
         type: 'newsletter',
       }),
