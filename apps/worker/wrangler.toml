@@ -4,8 +4,8 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat", "assets_navigation_has_no_effect"]
 
 [vars]
-BASE_URL = "https://openpub.princslabs.workers.dev"
-DASHBOARD_URL = "https://openpub.princslabs.workers.dev"
+BASE_URL = "https://openpub.opentoolsorg.workers.dev"
+DASHBOARD_URL = "https://openpub.opentoolsorg.workers.dev"
 
 # SPA (TanStack Start, built to dashboard/.output/public) served as free static
 # assets: navigation/asset requests never invoke the worker -> no bill.
